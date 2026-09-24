@@ -1,5 +1,8 @@
 # Quiz Digital Awareness - ChefAi
 
+Nama : Anisa Dwi Ramahdani
+NPM : 24782037
+
 ## Bagian 1. Identitas dan Topik Proyek Aplikasi
 
 ### Nama Aplikasi
