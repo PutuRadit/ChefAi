@@ -1,0 +1,16 @@
+# Hanya PostgreSQL untuk development lokal.
+# Jalankan: docker compose up -d
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: chefai
+      POSTGRES_PASSWORD: chefai
+      POSTGRES_DB: chefai
+    ports:
+      - "5432:5432"
+    volumes:
+      - chefai_pgdata:/var/lib/postgresql/data
+
+volumes:
+  chefai_pgdata:
