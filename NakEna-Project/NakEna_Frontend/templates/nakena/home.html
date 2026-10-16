@@ -1,0 +1,505 @@
+<!DOCTYPE html><html class="scroll-smooth" lang="id"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>NakEna - Masak Jadi Lebih Seru</title>
+<!-- Google Fonts: Plus Jakarta Sans & Fredoka -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<!-- Tailwind CSS CDN with forms and container-queries -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Configuration -->
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              dark: '#060d1a',
+              navy: '#0b192e',
+              card: '#10223d',
+              accent: '#ff5e14',
+              accentHover: '#e04e0b',
+              gold: '#fbbf24',
+              goldHover: '#f59e0b',
+            }
+          },
+          fontFamily: {
+            heading: ['Fredoka', 'sans-serif'],
+            sans: ['Plus Jakarta Sans', 'sans-serif'],
+          },
+          boxShadow: {
+            'glow-orange': '0 0 40px -10px rgba(255, 94, 20, 0.45)',
+            'glow-gold': '0 0 40px -10px rgba(251, 191, 36, 0.35)',
+            'card': '0 12px 30px -10px rgba(2, 8, 20, 0.6)',
+          }
+        }
+      }
+    }
+  </script>
+<!-- Custom CSS for specialized visual elements and animations -->
+<style data-purpose="custom-decorations">
+    body {
+      background-color: #060d1a;
+      color: #f1f5f9;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      overflow-x: hidden;
+    }
+    
+    .font-fun {
+      font-family: 'Fredoka', cursive, sans-serif;
+    }
+
+    /* Subtle background celestial particles/bokeh effect */
+    .bg-sparkles {
+      background-image: 
+        radial-gradient(2px 2px at 20px 30px, #fbbf24, rgba(0,0,0,0)),
+        radial-gradient(3px 3px at 80px 120px, #ff5e14, rgba(0,0,0,0)),
+        radial-gradient(2px 2px at 200px 90px, #ffffff, rgba(0,0,0,0)),
+        radial-gradient(3px 3px at 300px 240px, #f59e0b, rgba(0,0,0,0)),
+        radial-gradient(2px 2px at 450px 180px, #ffffff, rgba(0,0,0,0)),
+        radial-gradient(3px 3px at 600px 320px, #ff944d, rgba(0,0,0,0));
+      background-repeat: repeat;
+      background-size: 700px 500px;
+    }
+
+    /* Soft floating ambient animation */
+    @keyframes gentleFloat {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-10px) rotate(1deg); }
+    }
+    .animate-float {
+      animation: gentleFloat 5s ease-in-out infinite;
+    }
+
+    /* Golden Cloud Ripple Shapes */
+    .golden-cloud {
+      filter: drop-shadow(0 0 18px rgba(251, 191, 36, 0.35));
+    }
+  </style>
+</head>
+<body class="bg-[#060d1a] text-slate-100 antialiased selection:bg-orange-500 selection:text-white">
+<!-- BEGIN: MainHeader -->
+<header class="fixed top-0 left-0 right-0 z-50 backdrop-blur-md bg-[#060d1a]/80 border-b border-white/10 transition-all duration-300"><div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+<!-- Logo Component -->
+<a class="flex items-center gap-3 group" href="#">
+<div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-orange-500 to-amber-400 flex items-center justify-center shadow-lg shadow-orange-500/30 group-hover:scale-105 transition-transform duration-200">
+<!-- Chef Hat Icon -->
+<svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+<path d="M12.005 3a5.002 5.002 0 0 0-4.773 3.518A4.498 4.498 0 0 0 4.5 11c0 2.2 1.584 4.029 3.666 4.417.112.548.339 1.053.666 1.483V19a2 2 0 0 0 2 2h6.336a2 2 0 0 0 2-2v-2.1c.327-.43.554-.935.666-1.483A4.502 4.502 0 0 0 19.5 11a4.498 4.498 0 0 0-2.732-4.482A5.002 5.002 0 0 0 12.005 3z"></path>
+</svg>
+</div>
+<span class="font-fun text-2xl font-bold tracking-tight text-white">Chef<span class="text-amber-400">AI</span></span>
+</a>
+<!-- Desktop Navigation Links -->
+<nav class="hidden md:flex items-center space-x-8 text-sm font-semibold text-slate-300">
+<a class="text-white hover:text-amber-400 transition-colors" href="#beranda">Beranda</a>
+<a class="hover:text-amber-400 transition-colors" href="#cara-kerja">Cara Kerja</a>
+<a class="hover:text-amber-400 transition-colors" href="#fitur">Fitur</a>
+<a class="hover:text-amber-400 transition-colors" href="#testimoni">Testimoni</a>
+<a class="hover:text-amber-400 transition-colors" href="#tentang">Tentang</a>
+</nav>
+<!-- Desktop Auth CTA Buttons -->
+<div class="hidden md:flex items-center gap-3">
+<a class="inline-flex items-center justify-center px-4 py-2 rounded-full font-medium text-sm text-orange-400 border border-orange-500/50 hover:border-orange-500 hover:text-white transition duration-200" href="/login/">
+Masuk
+</a>
+<a class="inline-flex items-center justify-center px-5 py-2 rounded-full font-semibold text-sm bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white shadow-glow-orange hover:shadow-orange-500/50 hover:scale-[1.03] active:scale-95 transition duration-200" href="/register/">
+Daftar
+</a>
+</div>
+<!-- Mobile Hamburger Button -->
+<div class="flex md:hidden items-center">
+<button aria-label="Toggle Menu" class="p-2 rounded-xl text-slate-300 hover:text-white hover:bg-white/10 transition" id="mobile-menu-btn" onclick="document.getElementById('mobile-menu').classList.toggle('hidden')">
+<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path d="M4 6h16M4 12h16M4 18h16" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</button>
+</div>
+</div>
+<!-- Mobile Collapsible Menu Dropdown -->
+<div class="hidden md:hidden bg-[#060d1a]/95 border-b border-white/10 px-4 pt-2 pb-6 space-y-4 backdrop-blur-md" id="mobile-menu">
+<nav class="flex flex-col space-y-3 text-sm font-semibold text-slate-300 pt-2">
+<a class="hover:text-amber-400 transition-colors py-1" href="#beranda" onclick="document.getElementById('mobile-menu').classList.add('hidden')">Beranda</a>
+<a class="hover:text-amber-400 transition-colors py-1" href="#cara-kerja" onclick="document.getElementById('mobile-menu').classList.add('hidden')">Cara Kerja</a>
+<a class="hover:text-amber-400 transition-colors py-1" href="#fitur" onclick="document.getElementById('mobile-menu').classList.add('hidden')">Fitur</a>
+<a class="hover:text-amber-400 transition-colors py-1" href="#testimoni" onclick="document.getElementById('mobile-menu').classList.add('hidden')">Testimoni</a>
+<a class="hover:text-amber-400 transition-colors py-1" href="#tentang" onclick="document.getElementById('mobile-menu').classList.add('hidden')">Tentang</a>
+</nav>
+<div class="flex flex-col gap-2.5 pt-3 border-t border-white/10">
+<a class="w-full inline-flex items-center justify-center px-4 py-2.5 rounded-full font-medium text-sm text-orange-400 border border-orange-500/50 hover:border-orange-500 hover:text-white transition duration-200" href="/login/">
+Masuk
+</a>
+<a class="w-full inline-flex items-center justify-center px-5 py-2.5 rounded-full font-semibold text-sm bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white shadow-glow-orange text-center transition duration-200" href="/register/">
+Daftar
+</a>
+</div>
+</div></header>
+<!-- END: MainHeader -->
+<!-- BEGIN: HeroSection -->
+<section class="relative pt-32 pb-20 lg:pt-36 lg:pb-32 overflow-hidden bg-sparkles" id="beranda">
+<!-- Ambient glowing backdrops -->
+<div class="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-orange-600/15 rounded-full blur-[140px] pointer-events-none"></div>
+<div class="absolute top-1/3 right-10 w-[450px] h-[450px] bg-amber-500/20 rounded-full blur-[120px] pointer-events-none"></div>
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
+<!-- Hero Text Column (Left) -->
+<div class="lg:col-span-6 space-y-6 text-center lg:text-left">
+<!-- Fun Badge -->
+<div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-orange-500/10 border border-orange-500/30 text-amber-300 font-semibold text-xs tracking-wider uppercase">
+<span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+            Sahabat Masak Paling Asyik
+          </div>
+<!-- Main Headline -->
+<h1 class="font-fun text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-white leading-[1.15]">
+            Masak Jadi <br class="hidden sm:inline">
+<span class="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-orange-400 to-amber-400">Lebih Seru</span> 🍳
+          </h1>
+<!-- Subtitle -->
+<p class="text-lg sm:text-xl text-slate-300 max-w-xl mx-auto lg:mx-0 leading-relaxed font-normal">
+            Gunakan bahan yang kamu punya, temukan resep yang cocok, lalu mulai memasak hidangan istimewa dengan mudah!
+          </p>
+<!-- Action Buttons -->
+<div class="pt-2 flex flex-col sm:flex-row gap-4 justify-center lg:justify-start items-center">
+<a class="w-full sm:w-auto inline-flex items-center justify-center px-8 py-4 rounded-full font-bold text-base bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white shadow-glow-orange hover:shadow-orange-500/60 transition duration-300 hover:scale-105 active:scale-95 group" href="#mulai">
+              Mulai Sekarang
+              <svg class="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path d="M14 5l7 7m0 0l-7 7m7-7H3" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"></path>
+</svg>
+</a>
+<a class="w-full sm:w-auto inline-flex items-center justify-center px-7 py-4 rounded-full font-bold text-base bg-white/5 hover:bg-white/10 text-white border border-white/15 hover:border-amber-400/40 backdrop-blur-sm transition duration-200" href="#cara-kerja">
+              Lihat Cara Kerja
+            </a>
+</div>
+<!-- Micro Social Proof -->
+<div class="pt-4 flex items-center justify-center lg:justify-start gap-4">
+<div class="flex -space-x-2">
+<div class="w-9 h-9 rounded-full bg-amber-400 border-2 border-[#060d1a] flex items-center justify-center text-xs font-bold text-slate-900">👩🏻</div>
+<div class="w-9 h-9 rounded-full bg-orange-400 border-2 border-[#060d1a] flex items-center justify-center text-xs font-bold text-slate-900">👨🏻</div>
+<div class="w-9 h-9 rounded-full bg-yellow-300 border-2 border-[#060d1a] flex items-center justify-center text-xs font-bold text-slate-900">🍳</div>
+</div>
+<div class="text-left text-xs sm:text-sm">
+<div class="flex items-center text-amber-400 font-bold">
+<span class="">★★★★★</span>
+<span class="ml-1 text-white">4.9/5</span>
+</div>
+<p class="text-slate-400 text-xs">Dipercaya 10.000+ koki rumahan</p>
+</div>
+</div>
+</div>
+<!-- Hero Mascot Visual Column (Right) -->
+<div class="lg:col-span-6 flex justify-center relative">
+<!-- Warm glow ring behind mascot -->
+<div class="absolute inset-0 bg-gradient-to-tr from-orange-500/30 to-amber-400/20 rounded-full blur-3xl scale-90 -z-10"></div>
+<div class="relative w-full max-w-lg lg:max-w-none animate-float">
+<img alt="Maskot Chef Ceria dengan Wajan Lezat" class="w-full h-auto object-contain drop-shadow-[0_20px_35px_rgba(255,94,20,0.35)] hover:scale-105 transition-transform duration-500" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB1DyRGuek5LvaGgBxbHknsNyJTT8F7TBkzoUhiwTuO28wdzQu0PNhHEOTu_gZkFKsUi8Eyo31V9ZmqoEjyFig2xuu7lnf7E-VpCO3gXKxUkuHTcWa12Yvqa_rZEZmQT9500aul15fhqGEz0p-PgxhWqJWx1ccBpXEEqFet9hz_DwbrD5y40gFmb_0QuV7hM3hSa5acJGOP7rJGfyHpcpz2V6sQArMr5sDRxo1hGUsmkTLtjHq_pBsIhDmYl6bfgscJoqU">
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- END: HeroSection -->
+<!-- BEGIN: HowItWorksSection -->
+<section class="py-24 relative bg-gradient-to-b from-[#060d1a] via-[#09152a] to-[#060d1a]" id="cara-kerja">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+<!-- Section Header -->
+<div class="text-center max-w-3xl mx-auto mb-16 space-y-3">
+<div class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-amber-400/10 border border-amber-400/30 text-amber-300 font-bold text-xs uppercase tracking-wider">
+          ✨ MUDAH &amp; CEPAT
+        </div>
+<h2 class="font-fun text-3xl sm:text-4xl lg:text-5xl font-bold text-white">
+          Cara Kerja
+        </h2>
+<p class="text-base sm:text-lg text-slate-300">
+          Scan bahan, pilih resep, lalu mulai memasak tanpa ribet.
+        </p>
+</div>
+<!-- Feature Visual Graphic (3 Steps Showcase) -->
+<div class="w-full mb-14 rounded-3xl overflow-hidden border border-amber-400/20 shadow-glow-gold bg-[#0a1830]/80 p-2 sm:p-4 backdrop-blur-md">
+<img alt="Tiga langkah memasak seru bersama NakEna" class="w-full h-auto object-cover rounded-2xl" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB67eF_n7jYGmIN7qkPoMAGgg48CHkbKRC0oy517UsaBxelKgfEjMuyL4m3Fdsky6wdDGOWoZoQcLpLFJ5G_WDHt8m-OSVFfSTytVplEahSmdEOZGyNRc5YeIGO8zF5htlrCzRrjBdG0cs4G3r-6nRWM8fCHIaNLYl1xRlvZDWq8KuwGcUsDWS-gEQ39rkcpItWVqaWwSoXNwMrdeJ-PeLqLeSUR-V3UBAVqhi3AtOWYBnYaQWft7L1vbZoZHMbwsQeyoc">
+</div>
+<!-- Three Steps Description Grid Cards -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+<!-- Step 1 Card -->
+<div class="relative group bg-gradient-to-b from-[#112444] to-[#0a172c] p-8 rounded-3xl border border-white/10 hover:border-amber-400/40 transition-all duration-300 hover:-translate-y-2 shadow-card">
+<div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center font-fun text-2xl font-bold text-slate-900 shadow-glow-orange mb-6">
+            1
+          </div>
+<h3 class="font-fun text-2xl font-bold text-white mb-3 group-hover:text-amber-300 transition-colors">
+            Scan Bahan
+          </h3>
+<p class="text-slate-300 text-sm leading-relaxed">
+            Foto bahan makanan yang ada di kulkas atau mejamu. Cukup jepret tanpa perlu repot mengetik satu per satu!
+          </p>
+</div>
+<!-- Step 2 Card -->
+<div class="relative group bg-gradient-to-b from-[#112444] to-[#0a172c] p-8 rounded-3xl border border-white/10 hover:border-amber-400/40 transition-all duration-300 hover:-translate-y-2 shadow-card">
+<div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-400 flex items-center justify-center font-fun text-2xl font-bold text-slate-900 shadow-glow-orange mb-6">
+            2
+          </div>
+<h3 class="font-fun text-2xl font-bold text-white mb-3 group-hover:text-amber-300 transition-colors">
+            Pilih Resep
+          </h3>
+<p class="text-slate-300 text-sm leading-relaxed">
+            Dapatkan berbagai rekomendasi kreasi menu yang sesuai dengan bahan yang kamu punya. Pilih yang paling bikin ngiler!
+          </p>
+</div>
+<!-- Step 3 Card -->
+<div class="relative group bg-gradient-to-b from-[#112444] to-[#0a172c] p-8 rounded-3xl border border-white/10 hover:border-amber-400/40 transition-all duration-300 hover:-translate-y-2 shadow-card">
+<div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center font-fun text-2xl font-bold text-slate-900 shadow-glow-orange mb-6">
+            3
+          </div>
+<h3 class="font-fun text-2xl font-bold text-white mb-3 group-hover:text-amber-300 transition-colors">
+            Mulai Memasak
+          </h3>
+<p class="text-slate-300 text-sm leading-relaxed">
+            Ikuti panduan langkah interaktif yang simpel, jelas, dan santai. Hidangan hangat siap disantap bersama keluarga!
+          </p>
+</div>
+</div>
+</div>
+</section>
+<!-- END: HowItWorksSection -->
+<!-- BEGIN: FeaturesSection -->
+<section class="py-24 relative bg-sparkles overflow-hidden" id="fitur">
+<!-- Golden cloud glow decoration -->
+<div class="absolute bottom-10 left-1/2 -translate-x-1/2 w-4/5 h-48 bg-amber-500/10 blur-[130px] rounded-full pointer-events-none"></div>
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+<!-- Section Header -->
+<div class="text-center max-w-2xl mx-auto mb-16 space-y-3">
+<div class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-orange-500/15 border border-orange-500/30 text-orange-400 font-bold text-xs uppercase tracking-wider">
+          🍳 FITUR UNGGULAN
+        </div>
+<h2 class="font-fun text-3xl sm:text-4xl lg:text-5xl font-bold text-white">
+          Fitur Favoritmu
+        </h2>
+<p class="text-base sm:text-lg text-slate-300">
+          Teman masak yang selalu siap membantumu di dapur setiap waktu.
+        </p>
+</div>
+<!-- Feature Cards Grid (4 Cards) -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+<!-- Card 1 -->
+<div class="group relative bg-[#0b1b36]/70 hover:bg-[#112444] border border-white/10 hover:border-orange-500/50 p-6 rounded-3xl transition-all duration-300 hover:-translate-y-2 flex flex-col items-center text-center backdrop-blur-md shadow-card">
+<div class="w-20 h-20 mb-5 rounded-2xl bg-orange-500/20 border border-orange-500/30 flex items-center justify-center text-3xl group-hover:scale-110 group-hover:rotate-6 transition-transform">
+            🍲
+          </div>
+<h3 class="font-fun text-xl font-bold text-white mb-2 group-hover:text-amber-400 transition-colors">
+            Resep dari Bahanmu
+          </h3>
+<p class="text-slate-300 text-sm leading-relaxed">
+            Ubah bahan seadanya yang tersisa di dapur menjadi hidangan lezat penuh selera.
+          </p>
+</div>
+<!-- Card 2 -->
+<div class="group relative bg-[#0b1b36]/70 hover:bg-[#112444] border border-white/10 hover:border-amber-400/50 p-6 rounded-3xl transition-all duration-300 hover:-translate-y-2 flex flex-col items-center text-center backdrop-blur-md shadow-card">
+<div class="w-20 h-20 mb-5 rounded-2xl bg-amber-400/20 border border-amber-400/30 flex items-center justify-center text-3xl group-hover:scale-110 group-hover:-rotate-6 transition-transform">
+            📋
+          </div>
+<h3 class="font-fun text-xl font-bold text-white mb-2 group-hover:text-amber-400 transition-colors">
+            Langkah Mudah Diikuti
+          </h3>
+<p class="text-slate-300 text-sm leading-relaxed">
+            Panduan memasak yang simpel, ringkas, dan jelas tanpa ribet bagi pemula sekalipun.
+          </p>
+</div>
+<!-- Card 3 -->
+<div class="group relative bg-[#0b1b36]/70 hover:bg-[#112444] border border-white/10 hover:border-orange-500/50 p-6 rounded-3xl transition-all duration-300 hover:-translate-y-2 flex flex-col items-center text-center backdrop-blur-md shadow-card">
+<div class="w-20 h-20 mb-5 rounded-2xl bg-orange-500/20 border border-orange-500/30 flex items-center justify-center text-3xl group-hover:scale-110 group-hover:rotate-6 transition-transform">
+            🥘
+          </div>
+<h3 class="font-fun text-xl font-bold text-white mb-2 group-hover:text-amber-400 transition-colors">
+            Beragam Pilihan Menu
+          </h3>
+<p class="text-slate-300 text-sm leading-relaxed">
+            Dari masakan rumahan harian yang gurih sampai menu akhir pekan spesial keluarga.
+          </p>
+</div>
+<!-- Card 4 -->
+<div class="group relative bg-[#0b1b36]/70 hover:bg-[#112444] border border-white/10 hover:border-amber-400/50 p-6 rounded-3xl transition-all duration-300 hover:-translate-y-2 flex flex-col items-center text-center backdrop-blur-md shadow-card">
+<div class="w-20 h-20 mb-5 rounded-2xl bg-amber-400/20 border border-amber-400/30 flex items-center justify-center text-3xl group-hover:scale-110 group-hover:-rotate-6 transition-transform">
+            👨‍🍳
+          </div>
+<h3 class="font-fun text-xl font-bold text-white mb-2 group-hover:text-amber-400 transition-colors">
+            Teman Masak Tiap Hari
+          </h3>
+<p class="text-slate-300 text-sm leading-relaxed">
+            Selalu hadir dengan ide kreasi baru yang segar kapan pun kamu bingung mau masak apa.
+          </p>
+</div>
+</div>
+</div>
+</section>
+<!-- END: FeaturesSection -->
+<!-- BEGIN: TestimonialSection -->
+<section class="py-24 bg-gradient-to-b from-[#060d1a] via-[#09152a] to-[#060d1a] relative" id="testimoni">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+<!-- Section Header -->
+<div class="text-center max-w-2xl mx-auto mb-16 space-y-3">
+<div class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-amber-400/15 border border-amber-400/30 text-amber-300 font-bold text-xs uppercase tracking-wider">
+          💬 CERITA MEREKA
+        </div>
+<h2 class="font-fun text-3xl sm:text-4xl lg:text-5xl font-bold text-white">
+          Kata Mereka
+        </h2>
+<p class="text-base sm:text-lg text-slate-300">
+          Masak jadi lebih mudah, praktis, dan menyenangkan bagi siapa saja.
+        </p>
+</div>
+<!-- Testimonial Cards Grid -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+<!-- Review 1: Dinda -->
+<div class="relative bg-gradient-to-b from-[#0f223f] to-[#0a172c] p-8 rounded-3xl border border-white/10 hover:border-amber-400/40 transition-all duration-300 shadow-card flex flex-col justify-between">
+<div class="space-y-4">
+<!-- Stars -->
+<div class="flex text-amber-400 text-lg">
+              ★★★★★
+            </div>
+<p class="text-slate-300 italic leading-relaxed text-sm sm:text-base">
+              "Resepnya mudah diikuti dan hasilnya enak banget! Sekarang jadi lebih sering masak di rumah dibanding beli jajan luar."
+            </p>
+</div>
+<div class="flex items-center gap-4 pt-6 mt-6 border-t border-white/10">
+<div class="w-12 h-12 rounded-full bg-amber-400/20 border-2 border-amber-400 flex items-center justify-center text-xl">
+              👩🏻
+            </div>
+<div>
+<h4 class="font-fun font-bold text-white text-base">Dinda</h4>
+<p class="text-xs text-amber-400">Ibu Rumah Tangga</p>
+</div>
+</div>
+</div>
+<!-- Review 2: Raka -->
+<div class="relative bg-gradient-to-b from-[#0f223f] to-[#0a172c] p-8 rounded-3xl border border-white/10 hover:border-orange-500/40 transition-all duration-300 shadow-card flex flex-col justify-between">
+<div class="space-y-4">
+<!-- Stars -->
+<div class="flex text-amber-400 text-lg">
+              ★★★★★
+            </div>
+<p class="text-slate-300 italic leading-relaxed text-sm sm:text-base">
+              "Bisa masak dari bahan yang ada di kulkas! Praktis dan banyak pilihan menunya. Cocok banget buat anak kos yang mau hemat."
+            </p>
+</div>
+<div class="flex items-center gap-4 pt-6 mt-6 border-t border-white/10">
+<div class="w-12 h-12 rounded-full bg-orange-400/20 border-2 border-orange-400 flex items-center justify-center text-xl">
+              👦🏻
+            </div>
+<div>
+<h4 class="font-fun font-bold text-white text-base">Raka</h4>
+<p class="text-xs text-orange-400">Karyawan &amp; Mahasiswa</p>
+</div>
+</div>
+</div>
+<!-- Review 3: Sari -->
+<div class="relative bg-gradient-to-b from-[#0f223f] to-[#0a172c] p-8 rounded-3xl border border-white/10 hover:border-amber-400/40 transition-all duration-300 shadow-card flex flex-col justify-between">
+<div class="space-y-4">
+<!-- Stars -->
+<div class="flex text-amber-400 text-lg">
+              ★★★★★
+            </div>
+<p class="text-slate-300 italic leading-relaxed text-sm sm:text-base">
+              "Tampilan aplikasinya seru banget! Ada maskot koki imut yang bikin masak jadi tidak membosankan lagi."
+            </p>
+</div>
+<div class="flex items-center gap-4 pt-6 mt-6 border-t border-white/10">
+<div class="w-12 h-12 rounded-full bg-yellow-300/20 border-2 border-yellow-400 flex items-center justify-center text-xl">
+              👧🏻
+            </div>
+<div>
+<h4 class="font-fun font-bold text-white text-base">Sari</h4>
+<p class="text-xs text-yellow-400">Content Creator Kuliner</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- END: TestimonialSection -->
+<!-- BEGIN: CallToActionSection -->
+<section class="py-20 relative bg-sparkles" id="mulai">
+<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+<!-- Big Festive Callout Banner -->
+<div class="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-[#122444] via-[#0e1d38] to-[#1c1825] border-2 border-amber-400/30 p-8 sm:p-14 lg:p-16 shadow-2xl shadow-orange-500/20">
+<!-- Warm Glowing Ambient Blobs inside banner -->
+<div class="absolute -top-24 -right-24 w-80 h-80 bg-orange-500/20 rounded-full blur-3xl pointer-events-none"></div>
+<div class="absolute -bottom-24 -left-24 w-80 h-80 bg-amber-400/20 rounded-full blur-3xl pointer-events-none"></div>
+<div class="relative z-10 max-w-2xl mx-auto text-center space-y-6">
+<h2 class="font-fun text-3xl sm:text-4xl lg:text-5xl font-bold text-white tracking-tight">
+            Siap Masak <span class="text-amber-400">Hari Ini?</span> ✨
+          </h2>
+<p class="text-base sm:text-lg text-slate-200 leading-relaxed font-normal">
+            Gunakan bahan yang kamu punya, temukan resep favoritmu, dan nikmati momen memasak yang lebih seru bersama NakEna.
+          </p>
+<div class="pt-4 flex flex-col sm:flex-row justify-center items-center gap-4">
+<a class="w-full sm:w-auto inline-flex items-center justify-center px-10 py-4 rounded-full font-bold text-lg bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white shadow-glow-orange hover:shadow-orange-500/70 hover:scale-105 active:scale-95 transition duration-300" href="#">
+              Mulai Sekarang →
+            </a>
+</div>
+<p class="text-xs text-slate-400">
+            Gratis • Tanpa ribet • Langsung bisa dipakai dari browser &amp; smartphone
+          </p>
+</div>
+</div>
+</div>
+</section>
+<!-- END: CallToActionSection -->
+<!-- BEGIN: MainFooter -->
+<footer class="bg-[#040812] border-t border-white/10 pt-16 pb-12 text-slate-400 text-sm" id="tentang">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="flex flex-col md:flex-row items-center justify-between gap-8 pb-10 border-b border-white/10">
+<!-- Footer Brand -->
+<div class="flex items-center gap-3">
+<div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-orange-500 to-amber-400 flex items-center justify-center text-white font-bold">
+<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+<path d="M12.005 3a5.002 5.002 0 0 0-4.773 3.518A4.498 4.498 0 0 0 4.5 11c0 2.2 1.584 4.029 3.666 4.417.112.548.339 1.053.666 1.483V19a2 2 0 0 0 2 2h6.336a2 2 0 0 0 2-2v-2.1c.327-.43.554-.935.666-1.483A4.502 4.502 0 0 0 19.5 11a4.498 4.498 0 0 0-2.732-4.482A5.002 5.002 0 0 0 12.005 3z"></path>
+</svg>
+</div>
+<span class="font-fun text-2xl font-bold text-white tracking-tight">Chef<span class="text-amber-400">AI</span></span>
+</div>
+<!-- Footer Navigation Links -->
+<div class="flex flex-wrap justify-center gap-6 text-sm">
+<a class="hover:text-white transition-colors" href="#beranda">Beranda</a>
+<a class="hover:text-white transition-colors" href="#cara-kerja">Cara Kerja</a>
+<a class="hover:text-white transition-colors" href="#fitur">Fitur</a>
+<a class="hover:text-white transition-colors" href="#testimoni">Testimoni</a>
+<a class="hover:text-white transition-colors" href="#tentang">Tentang</a>
+<a class="hover:text-white transition-colors" href="#">Kebijakan Privasi</a>
+</div>
+<!-- Social Icons -->
+<div class="flex items-center gap-4">
+<!-- Youtube -->
+<a aria-label="YouTube" class="w-9 h-9 rounded-full bg-white/5 hover:bg-orange-500 flex items-center justify-center text-white transition duration-200" href="#">
+<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"></path></svg>
+</a>
+<!-- Instagram -->
+<a aria-label="Instagram" class="w-9 h-9 rounded-full bg-white/5 hover:bg-orange-500 flex items-center justify-center text-white transition duration-200" href="#">
+<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"></path></svg>
+</a>
+<!-- TikTok -->
+<a aria-label="TikTok" class="w-9 h-9 rounded-full bg-white/5 hover:bg-orange-500 flex items-center justify-center text-white transition duration-200" href="#">
+<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 3 15.68 6.34 6.34 0 0 0 9.34 22a6.34 6.34 0 0 0 6.34-6.32V8.75a8.16 8.16 0 0 0 4.91 1.62v-3.68z"></path></svg>
+</a>
+</div>
+</div>
+<!-- Copyright Statement -->
+<div class="mt-8 text-center text-xs text-slate-500">
+        © 2025 NakEna. Hak Cipta Dilindungi. Dibuat dengan penuh rasa cinta untuk para pecinta kuliner.
+      </div>
+</div>
+</footer>
+<!-- END: MainFooter -->
+<!-- Interactivity Scripts -->
+<script data-purpose="navbar-scroll">
+    // Add glass background shade on navbar scroll
+    window.addEventListener('scroll', () => {
+      const header = document.querySelector('header');
+      if (window.scrollY > 20) {
+        header.classList.add('bg-[#060d1a]/95', 'shadow-lg');
+      } else {
+        header.classList.remove('bg-[#060d1a]/95', 'shadow-lg');
+      }
+    });
+  </script>
+
+
+</body></html>

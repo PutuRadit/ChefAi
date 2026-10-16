@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from typing import Optional
 
-from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Integer, String
+from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -26,6 +26,9 @@ class User(Base):
         back_populates="user", uselist=False, cascade="all, delete-orphan"
     )
     uploads: Mapped[list["Upload"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
+    recipes: Mapped[list["RecipeEntry"]] = relationship(
         back_populates="user", cascade="all, delete-orphan"
     )
 
@@ -75,3 +78,20 @@ class Upload(Base):
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
 
     user: Mapped["User"] = relationship(back_populates="uploads")
+
+
+class RecipeEntry(Base):
+    __tablename__ = "recipe_entries"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    title: Mapped[str] = mapped_column(String(200))
+    recipe_text: Mapped[str] = mapped_column(Text, default="")
+    ingredients: Mapped[list] = mapped_column(JSON, default=list)
+    is_history: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
+    is_favorite: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+    user: Mapped["User"] = relationship(back_populates="recipes")

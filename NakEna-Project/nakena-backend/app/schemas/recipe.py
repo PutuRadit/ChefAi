@@ -1,4 +1,6 @@
-from pydantic import BaseModel, Field
+from datetime import datetime
+
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class RecipeRequest(BaseModel):
@@ -26,3 +28,20 @@ class RecipeRequest(BaseModel):
 class RecipeResponse(BaseModel):
     success: bool
     recipe: str
+
+
+class RecipeEntryCreate(BaseModel):
+    title: str = Field(..., min_length=1, max_length=200)
+    recipe_text: str = Field(default="", max_length=20000)
+    ingredients: list[str] = Field(default_factory=list, max_length=30)
+
+
+class RecipeEntryRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    title: str
+    recipe_text: str
+    ingredients: list[str]
+    is_favorite: bool
+    created_at: datetime

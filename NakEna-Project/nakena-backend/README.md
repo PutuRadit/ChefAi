@@ -24,7 +24,8 @@ tests/                 # pytest
 
 PostgreSQL dijalankan langsung di komputer; Docker tidak diperlukan. Pastikan layanan PostgreSQL
 Windows berjalan dan database `nakena` tersedia, dengan user `nakena` dan password `nakena`
-sesuai URL koneksi lokal di `.env`.
+sesuai URL koneksi lokal di `.env`. Backend ini juga menyajikan halaman dari folder
+`../NakEna_Frontend/templates/nakena`; jalankan server dari folder `nakena-backend` agar path tersebut ditemukan.
 
 Di Command Prompt, dari folder `nakena-backend`:
 
@@ -45,10 +46,15 @@ Halaman login: http://localhost:8000/login
 Dokumentasi interaktif API: http://localhost:8000/docs (klik **Authorize**, isi `username` dengan email).
 Tes: `pytest`
 
-Halaman web NakEna dilayani langsung oleh FastAPI, tidak memerlukan server frontend terpisah.
+Halaman web NakEna dilayani backend yang sama, tidak memerlukan server frontend terpisah. Template HTML
+dan desain frontend dipakai langsung; integrasi interaksi berada di `app/web/static/frontend.js`.
 Login memakai endpoint `POST /auth/login` yang sudah ada. Akun harus didaftarkan terlebih dahulu
 melalui `POST /auth/register` di dokumentasi API. Token login disimpan di `sessionStorage` dan
 terhapus ketika pengguna memilih Keluar atau sesi tab berakhir.
+
+Upload foto disimpan lewat `/uploads`, tetapi deteksi YOLO belum tersedia sehingga bahan, confidence,
+dan bounding box belum dihasilkan otomatis. Pengguna dapat memasukkan bahan secara manual dan meminta
+resep melalui endpoint Gemini yang sudah ada. Riwayat resep dan favorit disimpan di database per akun.
 
 ## Endpoint
 
@@ -64,6 +70,9 @@ terhapus ketika pengguna memilih Keluar atau sesi tab berakhir.
 | POST | `/uploads` | Bearer | Upload foto bahan (multipart, field `file`) |
 | GET | `/uploads`, `/uploads/{id}` | Bearer | Daftar / detail upload milik sendiri |
 | DELETE | `/uploads/{id}` | Bearer | Hapus foto sendiri |
+| POST / GET | `/recipes/history` | Bearer | Simpan / lihat riwayat resep |
+| POST / GET | `/recipes/favorites` | Bearer | Simpan / lihat resep favorit |
+| DELETE | `/recipes/favorites/{id}` | Bearer | Hapus resep dari favorit |
 | GET | `/health` | - | Cek server |
 
 Contoh:
