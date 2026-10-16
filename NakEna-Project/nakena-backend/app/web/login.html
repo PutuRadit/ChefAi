@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f8f8f3">
+    <title>Masuk — NakEna</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <script src="/static/app.js" defer></script>
+  </head>
+  <body class="login-page">
+    <header class="site-header login-header">
+      <a class="brand" href="/" aria-label="NakEna, beranda">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 32 32" fill="none"><path d="M25.8 5.6C17 5.7 9.4 7.4 7 13.5c-1.6 4.2 1.1 8.1 5 8.1 7.5 0 12.4-8 13.8-16Z" fill="currentColor"/><path d="M5.7 27c3.3-7 8.2-11.3 14.4-14.8" stroke="#F8F8F3" stroke-width="2" stroke-linecap="round"/></svg>
+        </span>
+        <span>Nak<span class="brand-accent">Ena</span></span>
+      </a>
+      <a class="nav-link" href="/">← Kembali ke beranda</a>
+    </header>
+
+    <main class="login-layout">
+      <section class="login-aside">
+        <span class="eyebrow eyebrow-light"><span class="eyebrow-dot"></span> Senang melihatmu kembali</span>
+        <h1>Satu langkah<br>lebih dekat ke<br><span>masakan enak.</span></h1>
+        <p>Masuk untuk melanjutkan perjalanan memasak lebih bijak bersama NakEna.</p>
+        <div class="aside-stamp" aria-hidden="true">
+          <svg viewBox="0 0 140 140" fill="none"><circle cx="70" cy="70" r="60" stroke="currentColor" stroke-dasharray="2 5"/><path d="M93 35C67 37 45 44 39 62c-5 12 3 23 14 23 22 0 36-23 40-50Z" fill="currentColor"/><path d="M33 104c10-22 25-35 44-45" stroke="#1B3327" stroke-width="3" stroke-linecap="round"/></svg>
+          <span>Masak dengan<br>apa yang ada.</span>
+        </div>
+      </section>
+
+      <section class="login-panel">
+        <div class="login-form-wrap" id="login-content">
+          <span class="section-kicker">AKUN NAKENA</span>
+          <h2>Selamat datang<br>kembali.</h2>
+          <p class="form-intro">Masukkan email dan password untuk masuk ke akunmu.</p>
+          <form id="login-form">
+            <label for="email">Email</label>
+            <input id="email" name="email" type="email" autocomplete="email" placeholder="nama@email.com" required>
+            <label for="password">Password</label>
+            <input id="password" name="password" type="password" autocomplete="current-password" placeholder="Masukkan password" required>
+            <p class="form-message" id="login-message" role="status" aria-live="polite"></p>
+            <button class="button button-dark submit-button" type="submit">
+              <span class="button-label">Masuk ke akun</span>
+              <span class="button-arrow" aria-hidden="true">↗</span>
+            </button>
+          </form>
+          <p class="form-footnote">Belum punya akun? Pendaftaran dapat dilakukan lewat endpoint <a href="/docs#/auth/register_auth_register_post">register API</a>.</p>
+        </div>
+      </section>
+    </main>
+    <footer class="site-footer login-footer">
+      <a class="footer-api" href="/docs">Dokumentasi API <span aria-hidden="true">↗</span></a>
+      <span class="footer-copy">NakEna · Masak baik, minim sisa.</span>
+    </footer>
+  </body>
+</html>

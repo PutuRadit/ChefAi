@@ -4,7 +4,7 @@ import tempfile
 # Harus diset SEBELUM app di-import
 os.environ["SECRET_KEY"] = "test-secret-key-test-secret-key-1234567890"
 os.environ["DATABASE_URL"] = "sqlite://"
-os.environ["UPLOAD_DIR"] = tempfile.mkdtemp(prefix="chefai-test-uploads-")
+os.environ["UPLOAD_DIR"] = tempfile.mkdtemp(prefix="nakena-test-uploads-")
 
 import pytest  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402

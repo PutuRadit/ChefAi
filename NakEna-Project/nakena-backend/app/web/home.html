@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f8f8f3">
+    <meta name="description" content="NakEna membantu mengolah bahan makanan yang ada menjadi inspirasi resep.">
+    <title>NakEna — Masak baik, minim sisa</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <script src="/static/app.js" defer></script>
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="/" aria-label="NakEna, beranda">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 32 32" fill="none"><path d="M25.8 5.6C17 5.7 9.4 7.4 7 13.5c-1.6 4.2 1.1 8.1 5 8.1 7.5 0 12.4-8 13.8-16Z" fill="currentColor"/><path d="M5.7 27c3.3-7 8.2-11.3 14.4-14.8" stroke="#F8F8F3" stroke-width="2" stroke-linecap="round"/></svg>
+        </span>
+        <span>Nak<span class="brand-accent">Ena</span></span>
+      </a>
+      <nav class="header-nav" aria-label="Navigasi utama">
+        <a class="nav-link active" href="/">Beranda</a>
+        <a class="nav-link" href="#cara-kerja">Cara kerja</a>
+        <a class="button button-small button-dark" href="/login" data-auth-link>Masuk</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="hero-copy">
+          <span class="eyebrow"><span class="eyebrow-dot"></span> Teman baik isi kulkasmu</span>
+          <h1>Bahan yang ada,<br><span class="text-accent">jadi istimewa.</span></h1>
+          <p class="hero-description">Ubah bahan makanan di rumah menjadi inspirasi masakan. Lebih mudah menentukan menu, lebih sedikit bahan yang terbuang.</p>
+          <div class="hero-actions">
+            <a class="button button-dark" href="/login" data-auth-link>Mulai sekarang <span aria-hidden="true">↗</span></a>
+            <a class="text-link" href="#cara-kerja">Kenali NakEna <span aria-hidden="true">↓</span></a>
+          </div>
+          <p class="hero-note">Inspirasi resep yang dimulai dari bahan milikmu.</p>
+        </div>
+
+        <div class="hero-art" aria-label="Ilustrasi bahan makanan segar" role="img">
+          <div class="art-orbit orbit-one"></div>
+          <div class="art-orbit orbit-two"></div>
+          <div class="art-caption"><span class="caption-mark">N.</span><span>Dari kulkas<br>jadi hidangan</span></div>
+          <div class="ingredient ingredient-tomato"><span></span></div>
+          <div class="ingredient ingredient-leaf"><span></span></div>
+          <div class="ingredient ingredient-carrot"><span></span></div>
+          <div class="ingredient ingredient-lemon"><span></span></div>
+          <div class="art-label label-fresh">SEGAR &amp; SIAP DIOLAH</div>
+          <div class="art-label label-love">Dibuat untuk keseharianmu</div>
+        </div>
+      </section>
+
+      <section class="benefits" id="cara-kerja">
+        <div class="benefit-intro">
+          <span class="section-kicker">KEBAIKAN KECIL, DAMPAK BESAR</span>
+          <h2>Masak dengan<br>lebih <span class="text-accent">bermakna.</span></h2>
+        </div>
+        <article class="benefit-card">
+          <span class="benefit-number">01</span>
+          <span class="benefit-icon icon-spark" aria-hidden="true">✳</span>
+          <h3>Mulai dari yang ada</h3>
+          <p>Pilih bahan yang tersedia di dapurmu sebagai awal mencari inspirasi.</p>
+        </article>
+        <article class="benefit-card">
+          <span class="benefit-number">02</span>
+          <span class="benefit-icon icon-heart" aria-hidden="true">♡</span>
+          <h3>Ide yang lebih personal</h3>
+          <p>Sesuaikan ide masakan dengan preferensi dan kebutuhanmu.</p>
+        </article>
+        <article class="benefit-card">
+          <span class="benefit-number">03</span>
+          <span class="benefit-icon icon-leaf" aria-hidden="true">⌁</span>
+          <h3>Kurangi yang terbuang</h3>
+          <p>Manfaatkan bahan makanan dengan lebih bijak, satu masakan setiap kali.</p>
+        </article>
+      </section>
+
+      <section class="closing-banner">
+        <div>
+          <span class="section-kicker">DAPURMU, CERITAMU</span>
+          <h2>Yuk, mulai dari bahan<br>yang sudah kamu punya.</h2>
+        </div>
+        <a class="button button-light" href="/login" data-auth-link>Masuk ke NakEna <span aria-hidden="true">↗</span></a>
+        <span class="banner-decoration" aria-hidden="true">N.</span>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <a class="brand footer-brand" href="/">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 32 32" fill="none"><path d="M25.8 5.6C17 5.7 9.4 7.4 7 13.5c-1.6 4.2 1.1 8.1 5 8.1 7.5 0 12.4-8 13.8-16Z" fill="currentColor"/><path d="M5.7 27c3.3-7 8.2-11.3 14.4-14.8" stroke="#F8F8F3" stroke-width="2" stroke-linecap="round"/></svg>
+        </span>
+        <span>Nak<span class="brand-accent">Ena</span></span>
+      </a>
+      <span class="footer-copy">Masak baik, minim sisa.</span>
+      <a class="footer-api" href="/docs">Dokumentasi API <span aria-hidden="true">↗</span></a>
+    </footer>
+  </body>
+</html>

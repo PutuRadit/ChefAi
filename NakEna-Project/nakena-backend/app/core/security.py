@@ -22,7 +22,7 @@ def verify_password(password: str, hashed: str) -> bool:
 @lru_cache
 def dummy_hash() -> str:
     """Hash palsu untuk menyamakan waktu respons login saat email tidak ditemukan."""
-    return hash_password("chefai-dummy-password")
+    return hash_password("nakena-dummy-password")
 
 
 def create_access_token(subject: int | str) -> str:

@@ -1,5 +1,5 @@
 ### Judul Proyek
-**ChefAI: Smart Food Waste Management System Menggunakan Computer Vision YOLOv8 dan LLM untuk Klasifikasi Bahan dan Generasi Resep**
+**NakEna: Smart Food Waste Management System Menggunakan Computer Vision YOLOv8 dan LLM untuk Klasifikasi Bahan dan Generasi Resep**
 
 **Anggota Tim:**
 * 24782035 - Akbar Dzikrullah

@@ -16,7 +16,7 @@ def generate_recipe_endpoint(request: RecipeRequest):
     allergies = ", ".join(request.allergies) or "Tidak ada"
 
     prompt = f"""
-Kamu adalah ChefAI, asisten rekomendasi resep makanan.
+Kamu adalah NakEna, asisten rekomendasi resep makanan.
 
 Bahan yang tersedia:
 {ingredients}

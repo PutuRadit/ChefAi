@@ -1,21 +1,23 @@
 from functools import lru_cache
 
-from pydantic import field_validator
+from pydantic import SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(env_file=".env", env_ignore_empty=True, extra="ignore")
 
-    app_name: str = "ChefAI API"
+    app_name: str = "NakEna API"
     debug: bool = False
 
-    database_url: str = "postgresql+psycopg2://chefai:chefai@localhost:5432/chefai"
+    database_url: str = "postgresql+psycopg2://nakena:nakena@localhost:5432/nakena"
 
     # Wajib diisi lewat environment / .env (tidak ada nilai default demi keamanan)
     secret_key: str
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 60
+    gemini_api_key: SecretStr | None = None
+    gemini_model: str = "gemini-3.8-flash"
 
     cors_origins: list[str] = ["http://localhost:5173", "http://localhost:3000"]
 

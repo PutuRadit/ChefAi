@@ -1,7 +1,10 @@
-# ChefAI Backend
+# NakEna Backend
 
-Backend FastAPI untuk ChefAI (Smart Food Waste Management System). Cakupan versi ini:
+Backend FastAPI untuk NakEna (Smart Food Waste Management System). Cakupan versi ini:
 **Setup FastAPI, Authentication, User & Preference, Image Upload.**
+
+Konfigurasi lokal dibaca dari `.env`. Variabel Gemini yang didukung: `GEMINI_API_KEY` dan
+`GEMINI_MODEL` (default `gemini-3.8-flash`). Jangan simpan API key asli di `.env.example` atau commit.
 
 ## Struktur
 
@@ -19,18 +22,33 @@ tests/                 # pytest
 
 ## Menjalankan
 
-```bash
-python -m venv .venv && source .venv/bin/activate      # Windows: .venv\Scripts\activate
-pip install -r requirements-dev.txt
+PostgreSQL dijalankan langsung di komputer; Docker tidak diperlukan. Pastikan layanan PostgreSQL
+Windows berjalan dan database `nakena` tersedia, dengan user `nakena` dan password `nakena`
+sesuai URL koneksi lokal di `.env`.
 
-cp .env.example .env        # isi SECRET_KEY (lihat petunjuk di dalam file)
-docker compose up -d        # PostgreSQL lokal
+Di Command Prompt, dari folder `nakena-backend`:
 
+```cmd
+python -m venv .venv
+.venv\Scripts\activate
+python -m pip install -r requirements-dev.txt
+if not exist .env copy .env.example .env
+notepad .env
 uvicorn app.main:app --reload
 ```
 
-Dokumentasi interaktif: http://localhost:8000/docs (klik **Authorize**, isi `username` dengan email).
+Isi `SECRET_KEY` pada `.env` dengan nilai acak minimal 32 karakter sebelum menjalankan server.
+Perintah `notepad .env` digunakan untuk memastikan URL PostgreSQL dan pengaturan lokal sesuai.
+
+Beranda web: http://localhost:8000/  
+Halaman login: http://localhost:8000/login  
+Dokumentasi interaktif API: http://localhost:8000/docs (klik **Authorize**, isi `username` dengan email).
 Tes: `pytest`
+
+Halaman web NakEna dilayani langsung oleh FastAPI, tidak memerlukan server frontend terpisah.
+Login memakai endpoint `POST /auth/login` yang sudah ada. Akun harus didaftarkan terlebih dahulu
+melalui `POST /auth/register` di dokumentasi API. Token login disimpan di `sessionStorage` dan
+terhapus ketika pengguna memilih Keluar atau sesi tab berakhir.
 
 ## Endpoint
 
