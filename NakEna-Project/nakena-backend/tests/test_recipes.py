@@ -1,6 +1,32 @@
 from tests.conftest import register_and_login
 
 
+def test_recipe_generation_uses_llm_service(client, monkeypatch):
+    prompts = []
+
+    def fake_generate_recipe(prompt):
+        prompts.append(prompt)
+        return "Nasi telur"
+
+    monkeypatch.setattr("app.api.routes.recipes.generate_recipe", fake_generate_recipe)
+
+    response = client.post(
+        "/recipes/generate",
+        json={
+            "ingredients": ["nasi", "telur"],
+            "preferences": "halal",
+            "allergies": ["kacang"],
+            "servings": 2,
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {"success": True, "recipe": "Nasi telur"}
+    assert len(prompts) == 1
+    assert "nasi, telur" in prompts[0]
+    assert "kacang" in prompts[0]
+
+
 def test_recipe_history_and_favorites_are_user_owned(client):
     headers = register_and_login(client, email="chef@example.com")
     other_headers = register_and_login(client, email="other@example.com")

@@ -3,6 +3,8 @@
   const emailKey = "nakena_user_email";
   const uploadKey = "nakena_last_upload";
   const recipeKey = "nakena_latest_recipe";
+  const script = document.querySelector('script[src="/static/frontend.js"]');
+  const apiBaseUrl = (script?.dataset.apiBase || "").replace(/\/+$/, "");
   const token = () => sessionStorage.getItem(tokenKey);
   const email = () => sessionStorage.getItem(emailKey) || "guest";
   const storageKey = (name) => `nakena_${name}_${email()}`;
@@ -13,7 +15,7 @@
     if (options.body && !(options.body instanceof FormData)) {
       headers.set("Content-Type", "application/json");
     }
-    const response = await fetch(path, { ...options, headers });
+    const response = await fetch(`${apiBaseUrl}${path}`, { ...options, headers });
     const data = response.status === 204 ? null : await response.json().catch(() => ({}));
     if (!response.ok) {
       if (response.status === 401) {
@@ -67,7 +69,7 @@
         });
         saveToken(data, userEmail);
         const next = new URLSearchParams(location.search).get("next");
-        window.location.assign(next?.startsWith("/") && !next.startsWith("//") ? next : "/");
+        window.location.assign(next?.startsWith("/") && !next.startsWith("//") ? next : "/scan/");
       } catch (error) {
         setNotice(error.message);
         if (button) button.disabled = false;
@@ -100,7 +102,7 @@
           body: JSON.stringify({ email: userEmail, password }),
         });
         saveToken(data, userEmail);
-        window.location.assign("/");
+        window.location.assign("/scan/");
       } catch (error) {
         const message = document.getElementById("globalErrorMessage");
         const alert = document.getElementById("globalErrorAlert");

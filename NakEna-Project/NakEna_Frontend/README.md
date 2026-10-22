@@ -1,23 +1,24 @@
-# NakEna FastAPI Ready
+# NakEna Frontend
 
-Template hasil Google Stitch yang sudah disiapkan untuk dilayani memakai FastAPI. Tidak menggunakan Django.
+Frontend FastAPI untuk NakEna. Tampilan berada di `templates/nakena`; API, database, dan integrasi
+Gemini disediakan oleh service `nakena-backend`.
 
 ## Instalasi
 
 ```bash
 pip install -r requirements.txt
-uvicorn app.main:app --reload
+uvicorn app.main:app --reload --port 8001
 ```
 
-Buka `http://127.0.0.1:8000/`.
+Buka `http://127.0.0.1:8001/`. Backend harus berjalan di `http://localhost:8000` dan
+`CORS_ORIGINS` pada konfigurasi backend harus memuat `http://localhost:8001`.
 
-## Jika digabung ke project FastAPI yang sudah ada
+Untuk alamat backend berbeda, atur `NAKENA_API_BASE_URL` sebelum menjalankan frontend:
 
-1. Salin `templates/nakena` ke folder `templates/nakena` project kamu.
-2. Salin gambar/aset ke folder `static/`.
-3. Ambil route dari `app/main.py` dan gabungkan ke `main.py` atau router project kamu.
-4. Jangan menimpa endpoint `/recipes/generate` milik project kamu.
-5. Ganti fungsi `analyze_scan()` dengan proses YOLOv8 yang sudah kamu buat.
+```powershell
+$env:NAKENA_API_BASE_URL = "http://localhost:8000"
+uvicorn app.main:app --reload --port 8001
+```
 
 ## Route halaman
 
@@ -34,4 +35,4 @@ Buka `http://127.0.0.1:8000/`.
 - `/profile/` profil
 - `/admin-dashboard/` admin dashboard
 
-Catatan: desain Stitch memakai Tailwind CDN dan beberapa gambar URL eksternal, sehingga tampilan lengkap memerlukan internet. Endpoint upload masih berupa placeholder dan siap diganti dengan YOLOv8.
+Catatan: desain Stitch memakai Tailwind CDN dan beberapa gambar URL eksternal, sehingga tampilan lengkap memerlukan internet. Upload foto sudah tersambung ke backend; deteksi bahan otomatis dengan YOLO belum tersedia.

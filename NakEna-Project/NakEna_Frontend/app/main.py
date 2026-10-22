@@ -1,16 +1,32 @@
+import os
+from html import escape
 from pathlib import Path
+
 from fastapi import FastAPI, Request, UploadFile, File
-from fastapi.responses import RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+INTEGRATION_STATIC_DIR = BASE_DIR.parent / "nakena-backend" / "app" / "web" / "static"
+API_BASE_URL = os.getenv("NAKENA_API_BASE_URL", "http://localhost:8000").rstrip("/")
 app = FastAPI(title="NakEna")
-app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
+app.mount("/static", StaticFiles(directory=INTEGRATION_STATIC_DIR), name="static")
 templates = Jinja2Templates(directory=BASE_DIR / "templates")
 
+
 def render(template: str, request: Request, **context):
-    return templates.TemplateResponse(f"nakena/{template}.html", {"request": request, **context})
+    response = templates.TemplateResponse(
+        request=request,
+        name=f"nakena/{template}.html",
+        context=context,
+    )
+    script = (
+        f'<script src="/static/frontend.js" data-api-base="{escape(API_BASE_URL, quote=True)}" defer></script>'
+    )
+    html = response.body.decode("utf-8").replace("</body>", f"{script}</body>")
+    return HTMLResponse(html, status_code=response.status_code)
+
 
 @app.get("/")
 def home(request: Request): return render("home", request)

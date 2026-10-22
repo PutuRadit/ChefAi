@@ -95,8 +95,7 @@
 <p class="font-body-sm text-body-sm text-green-300">Menyiapkan resep dan kompor dapurmu...</p>
 </div>
 </div>
-<form action="#" class="space-y-4" id="login-form" method="POST" onsubmit="event.preventDefault(); handleFormSubmit();">
-<!-- {% csrf_token %} -->
+<form action="#" class="space-y-4" id="login-form" method="POST">
 <div class="space-y-1.5 text-left">
 <label class="font-label-lg text-label-lg text-on-surface flex items-center justify-between" for="id_email">
 <span>Alamat Email <span class="text-primary-container">*</span></span>
@@ -104,7 +103,7 @@
 </label>
 <div class="relative flex items-center">
 <span class="material-symbols-outlined absolute left-3.5 text-on-surface-variant text-[20px] pointer-events-none">mail</span>
-<input class="w-full h-12 pl-11 pr-4 rounded-2xl bg-surface-container text-white placeholder:text-outline/70 font-body-md text-body-md focus:outline-none focus:ring-2 focus:ring-primary-container transition-all" id="id_email" name="email" placeholder="nama@email.com" type="text" value="dapur.chef@kuliner.com">
+<input class="w-full h-12 pl-11 pr-4 rounded-2xl bg-surface-container text-white placeholder:text-outline/70 font-body-md text-body-md focus:outline-none focus:ring-2 focus:ring-primary-container transition-all" id="id_email" name="email" placeholder="nama@email.com" type="email" autocomplete="email">
 </div>
 <p class="hidden font-body-sm text-body-sm text-error" id="email-error-desc">Format email tidak valid (contoh: kamu@domain.com)</p>
 </div>
@@ -119,7 +118,7 @@
 </div>
 <div class="relative flex items-center">
 <span class="material-symbols-outlined absolute left-3.5 text-on-surface-variant text-[20px] pointer-events-none">lock</span>
-<input class="w-full h-12 pl-11 pr-12 rounded-2xl bg-surface-container text-white placeholder:text-outline/70 font-body-md text-body-md focus:outline-none focus:ring-2 focus:ring-primary-container transition-all" id="id_password" name="password" placeholder="••••••••" type="password" value="rahasiaDapur123">
+<input class="w-full h-12 pl-11 pr-12 rounded-2xl bg-surface-container text-white placeholder:text-outline/70 font-body-md text-body-md focus:outline-none focus:ring-2 focus:ring-primary-container transition-all" id="id_password" name="password" placeholder="••••••••" type="password" autocomplete="current-password">
 <button aria-label="Tampilkan atau sembunyikan kata sandi" class="absolute right-3 p-1.5 rounded-lg text-on-surface-variant hover:text-white transition-colors flex items-center justify-center focus:outline-none" id="toggle-password" onclick="togglePasswordVisibility()" type="button">
 <span class="material-symbols-outlined text-[20px]" id="password-eye-icon">visibility</span>
 </button>
@@ -202,123 +201,4 @@
     }
   }
 
-  function resetFormVisuals() {
-    const emailInput = document.getElementById('id_email');
-    const passwordInput = document.getElementById('id_password');
-    const generalError = document.getElementById('general-error-box');
-    const successBox = document.getElementById('success-box');
-    const emailErrorTag = document.getElementById('email-error-tag');
-    const emailErrorDesc = document.getElementById('email-error-desc');
-    const passwordErrorDesc = document.getElementById('password-error-desc');
-    const btnText = document.getElementById('btn-text');
-    const btnSpinner = document.getElementById('btn-spinner');
-    const btnSubmit = document.getElementById('btn-submit');
-
-    if (generalError) generalError.classList.add('hidden');
-    if (successBox) successBox.classList.add('hidden');
-    if (emailErrorTag) emailErrorTag.classList.add('hidden');
-    if (emailErrorDesc) emailErrorDesc.classList.add('hidden');
-    if (passwordErrorDesc) passwordErrorDesc.classList.add('hidden');
-
-    if (emailInput) {
-      emailInput.classList.remove('ring-2', 'ring-error', 'border-error');
-    }
-    if (passwordInput) {
-      passwordInput.classList.remove('ring-2', 'ring-error', 'border-error');
-    }
-
-    if (btnText) btnText.classList.remove('hidden');
-    if (btnSpinner) btnSpinner.classList.add('hidden');
-    if (btnSubmit) {
-      btnSubmit.removeAttribute('disabled');
-      btnSubmit.classList.remove('opacity-70', 'cursor-not-allowed');
-    }
-  }
-
-  function setSimulatorState(state) {
-    resetFormVisuals();
-    const emailInput = document.getElementById('id_email');
-    const passwordInput = document.getElementById('id_password');
-    const generalError = document.getElementById('general-error-box');
-    const generalErrorText = document.getElementById('general-error-text');
-    const successBox = document.getElementById('success-box');
-    const emailErrorTag = document.getElementById('email-error-tag');
-    const emailErrorDesc = document.getElementById('email-error-desc');
-    const passwordErrorDesc = document.getElementById('password-error-desc');
-    const btnText = document.getElementById('btn-text');
-    const btnSpinner = document.getElementById('btn-spinner');
-    const btnSubmit = document.getElementById('btn-submit');
-
-    switch (state) {
-      case 'normal':
-        if (emailInput) emailInput.value = 'dapur.chef@kuliner.com';
-        if (passwordInput) passwordInput.value = 'rahasiaDapur123';
-        break;
-
-      case 'empty':
-        if (emailInput) {
-          emailInput.value = '';
-          emailInput.classList.add('ring-2', 'ring-error');
-        }
-        if (passwordInput) {
-          passwordInput.value = '';
-          passwordInput.classList.add('ring-2', 'ring-error');
-        }
-        if (generalError) {
-          generalErrorText.textContent = 'Email dan kata sandi wajib diisi sebelum mulai memasak!';
-          generalError.classList.remove('hidden');
-        }
-        if (passwordErrorDesc) passwordErrorDesc.classList.remove('hidden');
-        break;
-
-      case 'invalid-email':
-        if (emailInput) {
-          emailInput.value = 'chef-gagal-format';
-          emailInput.classList.add('ring-2', 'ring-error');
-        }
-        if (passwordInput) passwordInput.value = 'resepEnak99';
-        if (emailErrorTag) emailErrorTag.classList.remove('hidden');
-        if (emailErrorDesc) emailErrorDesc.classList.remove('hidden');
-        break;
-
-      case 'wrong-password':
-        if (emailInput) emailInput.value = 'chef.master@kuliner.com';
-        if (passwordInput) {
-          passwordInput.value = 'bumbuSalah';
-          passwordInput.classList.add('ring-2', 'ring-error');
-        }
-        if (generalError) {
-          generalErrorText.textContent = 'Kombinasi email atau kata sandi tidak cocok. Silakan coba lagi!';
-          generalError.classList.remove('hidden');
-        }
-        break;
-
-      case 'loading':
-        if (emailInput) emailInput.value = 'chef.master@kuliner.com';
-        if (passwordInput) passwordInput.value = 'rahasiaDapur123';
-        if (btnText) btnText.classList.add('hidden');
-        if (btnSpinner) {
-          btnSpinner.classList.remove('hidden');
-          btnSpinner.classList.add('flex');
-        }
-        if (btnSubmit) {
-          btnSubmit.setAttribute('disabled', 'true');
-          btnSubmit.classList.add('opacity-70', 'cursor-not-allowed');
-        }
-        break;
-
-      case 'success':
-        if (emailInput) emailInput.value = 'chef.hebat@kuliner.com';
-        if (passwordInput) passwordInput.value = 'rahasiaDapur123';
-        if (successBox) successBox.classList.remove('hidden');
-        break;
-    }
-  }
-
-  function handleFormSubmit() {
-    setSimulatorState('loading');
-    setTimeout(function() {
-      setSimulatorState('success');
-    }, 1200);
-  }
 </script></main></body></html>

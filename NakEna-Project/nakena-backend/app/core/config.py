@@ -19,7 +19,12 @@ class Settings(BaseSettings):
     gemini_api_key: SecretStr | None = None
     gemini_model: str = "gemini-3.8-flash"
 
-    cors_origins: list[str] = ["http://localhost:5173", "http://localhost:3000"]
+    cors_origins: list[str] = [
+        "http://localhost:8001",
+        "http://127.0.0.1:8001",
+        "http://localhost:5173",
+        "http://localhost:3000",
+    ]
 
     upload_dir: str = "storage/uploads"
     max_upload_size_mb: int = 5

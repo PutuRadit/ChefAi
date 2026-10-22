@@ -5,6 +5,7 @@ import tempfile
 os.environ["SECRET_KEY"] = "test-secret-key-test-secret-key-1234567890"
 os.environ["DATABASE_URL"] = "sqlite://"
 os.environ["UPLOAD_DIR"] = tempfile.mkdtemp(prefix="nakena-test-uploads-")
+os.environ["CORS_ORIGINS"] = '["http://localhost:8001","http://127.0.0.1:8001"]'
 
 import pytest  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402

@@ -1,7 +1,7 @@
 # NakEna Backend
 
-Backend FastAPI untuk NakEna (Smart Food Waste Management System). Cakupan versi ini:
-**Setup FastAPI, Authentication, User & Preference, Image Upload.**
+Backend API FastAPI untuk NakEna (Smart Food Waste Management System). Backend hanya menyediakan
+API untuk frontend, database, dan Gemini; halaman dan tampilan dijalankan oleh aplikasi frontend.
 
 Konfigurasi lokal dibaca dari `.env`. Variabel Gemini yang didukung: `GEMINI_API_KEY` dan
 `GEMINI_MODEL` (default `gemini-3.8-flash`). Jangan simpan API key asli di `.env.example` atau commit.
@@ -24,8 +24,7 @@ tests/                 # pytest
 
 PostgreSQL dijalankan langsung di komputer; Docker tidak diperlukan. Pastikan layanan PostgreSQL
 Windows berjalan dan database `nakena` tersedia, dengan user `nakena` dan password `nakena`
-sesuai URL koneksi lokal di `.env`. Backend ini juga menyajikan halaman dari folder
-`../NakEna_Frontend/templates/nakena`; jalankan server dari folder `nakena-backend` agar path tersebut ditemukan.
+sesuai URL koneksi lokal di `.env`. Jalankan backend dari folder `nakena-backend`.
 
 Di Command Prompt, dari folder `nakena-backend`:
 
@@ -35,22 +34,24 @@ python -m venv .venv
 python -m pip install -r requirements-dev.txt
 if not exist .env copy .env.example .env
 notepad .env
-uvicorn app.main:app --reload
+uvicorn app.main:app --reload --port 8000
 ```
 
 Isi `SECRET_KEY` pada `.env` dengan nilai acak minimal 32 karakter sebelum menjalankan server.
 Perintah `notepad .env` digunakan untuk memastikan URL PostgreSQL dan pengaturan lokal sesuai.
 
-Beranda web: http://localhost:8000/  
-Halaman login: http://localhost:8000/login  
+Backend API: http://localhost:8000/ (metadata JSON, bukan halaman frontend)  
 Dokumentasi interaktif API: http://localhost:8000/docs (klik **Authorize**, isi `username` dengan email).
 Tes: `pytest`
 
-Halaman web NakEna dilayani backend yang sama, tidak memerlukan server frontend terpisah. Template HTML
-dan desain frontend dipakai langsung; integrasi interaksi berada di `app/web/static/frontend.js`.
-Login memakai endpoint `POST /auth/login` yang sudah ada. Akun harus didaftarkan terlebih dahulu
-melalui `POST /auth/register` di dokumentasi API. Token login disimpan di `sessionStorage` dan
-terhapus ketika pengguna memilih Keluar atau sesi tab berakhir.
+Jalankan frontend terpisah dari folder `../NakEna_Frontend` pada port `8001`. Pastikan
+`CORS_ORIGINS` di `.env` memuat `http://localhost:8001` (sudah tercantum di `.env.example`).
+Jika alamat atau port frontend berbeda, tambahkan origin frontend tersebut. Atur
+`NAKENA_API_BASE_URL` di proses frontend bila backend tidak berjalan di `http://localhost:8000`.
+
+Login memakai endpoint `POST /auth/login`. Akun harus didaftarkan terlebih dahulu melalui
+`POST /auth/register`. Token login disimpan di `sessionStorage` dan terhapus ketika pengguna
+memilih Keluar atau sesi tab berakhir.
 
 Upload foto disimpan lewat `/uploads`, tetapi deteksi YOLO belum tersedia sehingga bahan, confidence,
 dan bounding box belum dihasilkan otomatis. Pengguna dapat memasukkan bahan secara manual dan meminta
@@ -63,6 +64,7 @@ resep melalui endpoint Gemini yang sudah ada. Riwayat resep dan favorit disimpan
 | POST | `/auth/register` | - | Daftar (email, password min. 8 karakter, full_name) |
 | POST | `/auth/login` | - | Login JSON → `access_token` (JWT) |
 | POST | `/auth/token` | - | Login form-data, khusus tombol Authorize di Swagger |
+| POST | `/recipes/generate` | - | Membuat resep dengan Gemini |
 | GET / PATCH | `/users/me` | Bearer | Lihat / ubah profil |
 | GET | `/users/me/preferences` | Bearer | Lihat preferensi |
 | PUT | `/users/me/preferences` | Bearer | Ganti seluruh preferensi |
