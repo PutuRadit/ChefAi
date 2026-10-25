@@ -1,4 +1,5 @@
 import os
+import logging
 from datetime import timedelta
 from uuid import uuid4
 
@@ -11,13 +12,16 @@ from app.core.config import settings
 from app.core.database import get_db
 from app.models import Upload, User
 from app.models.user import utcnow
+from app.schemas.detection import IngredientDetectionResponse
 from app.schemas.upload import UploadRead
+from app.services.detection import ModelUnavailableError, detect_ingredients
 from app.services.images import InvalidImageError, UnsupportedImageError, sanitize_image
 from app.services.storage import StorageBackend, get_storage
 
 router = APIRouter(prefix="/uploads", tags=["uploads"])
 
 ALLOWED_CONTENT_TYPES = {"image/jpeg", "image/png"}
+logger = logging.getLogger(__name__)
 
 
 def _get_owned_upload(db: Session, user: User, upload_id: str) -> Upload:
@@ -83,6 +87,45 @@ def upload_image(
         raise
     db.refresh(record)
     return record
+
+
+@router.post("/{upload_id}/detect", response_model=IngredientDetectionResponse)
+def detect_uploaded_image(
+    upload_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    storage: StorageBackend = Depends(get_storage),
+):
+    upload = _get_owned_upload(db, current_user, upload_id)
+    try:
+        detections = detect_ingredients(storage.read(upload.storage_key))
+    except ModelUnavailableError as exc:
+        logger.exception("YOLO model unavailable for upload %s", upload_id)
+        upload.status = "failed"
+        db.commit()
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            "Model deteksi bahan tidak tersedia. Periksa YOLO_MODEL_PATH dan instal dependensi ultralytics.",
+        ) from exc
+    except Exception as exc:
+        logger.exception("Ingredient detection failed for upload %s", upload_id)
+        upload.status = "failed"
+        db.commit()
+        raise HTTPException(
+            status.HTTP_500_INTERNAL_SERVER_ERROR,
+            "Foto gagal diproses oleh model deteksi.",
+        ) from exc
+
+    ingredients = list(dict.fromkeys(detection.name for detection in detections))
+    detection_status = "detected" if ingredients else "no_detections"
+    upload.status = detection_status
+    db.commit()
+    return IngredientDetectionResponse(
+        upload_id=upload.id,
+        status=detection_status,
+        ingredients=ingredients,
+        detections=detections,
+    )
 
 
 @router.get("", response_model=list[UploadRead])

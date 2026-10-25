@@ -16,6 +16,7 @@ INTEGRATION_SCRIPT = (
     / "frontend.js"
 )
 APPLICATION_PATHS = [
+    "/",
     "/scan/",
     "/scan/result/",
     "/recipes/",
@@ -24,6 +25,7 @@ APPLICATION_PATHS = [
     "/history/",
     "/favorites/",
     "/profile/",
+    "/admin-dashboard/",
 ]
 
 
@@ -32,8 +34,8 @@ def test_auth_page_renders_with_backend_integration(path):
     response = client.get(path)
 
     assert response.status_code == 200
-    assert 'data-api-base="http://localhost:8000"' in response.text
-    assert "/static/frontend.js" in response.text
+    assert 'data-api-base="http://127.0.0.1:8000"' in response.text
+    assert "/static/frontend.js?v=2" in response.text
 
 
 @pytest.mark.parametrize("path", APPLICATION_PATHS)
@@ -49,3 +51,19 @@ def test_successful_auth_redirects_to_application_pages_by_default():
 
     assert 'next : "/scan/"' in integration_script
     assert 'window.location.assign("/scan/")' in integration_script
+    assert "document.currentScript?.dataset.apiBase" in integration_script
+    assert "fetch(`${apiBaseUrl}${path}`" in integration_script
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "/static/frontend.js",
+        "/static/assets/mascottt.png",
+        "/static/assets/recipe-1.jpg",
+    ],
+)
+def test_frontend_serves_integration_script_and_design_assets(path):
+    response = client.get(path)
+
+    assert response.status_code == 200

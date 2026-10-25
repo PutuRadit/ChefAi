@@ -4,6 +4,7 @@
   const userNameKey = "nakena_user_name";
   const uploadKey = "nakena_last_upload";
   const recipeKey = "nakena_latest_recipe";
+  const apiBaseUrl = (document.currentScript?.dataset.apiBase || "").replace(/\/+$/, "");
   const token = () => sessionStorage.getItem(tokenKey);
   const email = () => sessionStorage.getItem(emailKey) || "guest";
   const storageKey = (name) => `nakena_${name}_${email()}`;
@@ -14,7 +15,7 @@
     if (options.body && !(options.body instanceof FormData)) {
       headers.set("Content-Type", "application/json");
     }
-    const response = await fetch(path, { ...options, headers });
+    const response = await fetch(`${apiBaseUrl}${path}`, { ...options, headers });
     const data = response.status === 204 ? null : await response.json().catch(() => ({}));
     if (!response.ok) {
       if (response.status === 401) {
@@ -192,7 +193,13 @@
       formData.append("file", file);
       try {
         const upload = await api("/uploads", { method: "POST", body: formData });
-        sessionStorage.setItem(uploadKey, JSON.stringify({ id: upload.id, filename: upload.original_filename }));
+        const detection = await api(`/uploads/${upload.id}/detect`, { method: "POST" });
+        sessionStorage.setItem(uploadKey, JSON.stringify({
+          id: upload.id,
+          filename: upload.original_filename,
+          ingredients: detection.ingredients,
+          detections: detection.detections,
+        }));
         location.assign("/scan/result/");
       } catch (error) {
         setNotice(error.message);
@@ -212,25 +219,68 @@
   }
 
   function setupDetectionResult() {
-    const upload = sessionStorage.getItem(uploadKey);
-    if (!upload || !document.getElementById("ingredientsConfirmationForm")) return;
+    const storedUpload = sessionStorage.getItem(uploadKey);
+    if (!storedUpload || !document.getElementById("ingredientsConfirmationForm")) return;
+    let upload;
+    try {
+      upload = JSON.parse(storedUpload);
+    } catch {
+      sessionStorage.removeItem(uploadKey);
+      setNotice("Data hasil deteksi tidak valid. Silakan unggah ulang foto.");
+      return;
+    }
+    if (!upload || typeof upload !== "object" || Array.isArray(upload)) {
+      sessionStorage.removeItem(uploadKey);
+      setNotice("Data hasil deteksi tidak valid. Silakan unggah ulang foto.");
+      return;
+    }
     const preview = document.querySelector("#ingredientsConfirmationForm aside img");
     const imageData = sessionStorage.getItem("nakena_preview_image");
     if (preview && imageData) preview.src = imageData;
-    document.querySelectorAll(".ingredient-item").forEach((item) => item.remove());
-    document.querySelectorAll('[title*="Cocok"]').forEach((marker) => marker.remove());
+    const ingredientList = document.getElementById("ingredientsListContainer");
+    const emptyState = document.getElementById("emptyIngredientsState");
+    const itemTemplate = ingredientList?.querySelector(".ingredient-item")?.cloneNode(true);
+    ingredientList?.replaceChildren();
+    const detectionsByName = new Map();
+    (Array.isArray(upload.detections) ? upload.detections : []).forEach((detection) => {
+      const previous = detectionsByName.get(detection.name);
+      if (!previous || detection.confidence > previous.confidence) {
+        detectionsByName.set(detection.name, detection);
+      }
+    });
+    const detections = Array.from(detectionsByName.values());
+    const ingredients = Array.isArray(upload.ingredients) ? upload.ingredients : [];
+    detections.forEach((detection, index) => {
+      if (!itemTemplate || !ingredientList) return;
+      const item = itemTemplate.cloneNode(true);
+      item.dataset.id = `detected-${index}`;
+      const name = item.querySelector(".ingredient-name");
+      const confidence = item.querySelector(".ingredient-name + span");
+      const description = item.querySelector(".min-w-0 > .text-xs.text-slate-400");
+      if (name) name.textContent = detection.name;
+      if (confidence) confidence.textContent = `${Math.round(detection.confidence * 100)}% yakin`;
+      if (description) description.textContent = "Bahan terdeteksi oleh model NakEna.";
+      ingredientList.append(item);
+    });
     const hidden = document.getElementById("detectedIngredientsInput");
-    if (hidden) hidden.value = "";
-    document.getElementById("ingredientsListContainer")?.classList.add("hidden");
-    document.getElementById("emptyIngredientsState")?.classList.remove("hidden");
-    document.getElementById("emptyIngredientsState")?.classList.add("flex");
+    if (hidden) hidden.value = ingredients.join(", ");
     const count = document.getElementById("detectedCount");
-    if (count) count.textContent = "0";
-     const message = document.querySelector("#ingredientsConfirmationForm aside .text-slate-400");
-     if (message) message.textContent = "Foto tersimpan. Tambahkan atau koreksi bahan secara manual sebelum membuat resep.";
-     const detectedBadge = document.querySelector("#ingredientsConfirmationForm aside .text-amber-400.text-xs.font-bold");
-     if (detectedBadge) detectedBadge.textContent = "0 Bahan Terdeteksi";
-
+    if (count) count.textContent = String(detections.length);
+    if (ingredientList) ingredientList.classList.toggle("hidden", detections.length === 0);
+    if (emptyState) {
+      emptyState.classList.toggle("hidden", detections.length > 0);
+      emptyState.classList.toggle("flex", detections.length === 0);
+      const emptyMessage = emptyState.querySelector("p");
+      if (emptyMessage) emptyMessage.textContent = "Model belum menemukan bahan pada foto. Tambahkan bahan secara manual untuk melanjutkan.";
+      const restoreButton = document.getElementById("restoreDefaultsBtn");
+      if (restoreButton) restoreButton.classList.add("hidden");
+    }
+    const message = document.querySelector("#ingredientsConfirmationForm aside .text-slate-400");
+    if (message) message.textContent = detections.length
+      ? `${detections.length} objek bahan terdeteksi. Periksa hasilnya sebelum membuat resep.`
+      : "Tidak ada bahan terdeteksi. Tambahkan bahan secara manual sebelum membuat resep.";
+    const detectedBadge = document.querySelector("#ingredientsConfirmationForm aside .text-amber-400.text-xs.font-bold");
+    if (detectedBadge) detectedBadge.textContent = `${detections.length} Bahan Terdeteksi`;
   }
 
   function profilePreferenceFromForm(form) {
@@ -306,8 +356,71 @@
   function setupRecipeGeneration() {
     const form = document.getElementById("ingredientsConfirmationForm");
     if (!form) return;
-    captureSubmit(form, () => {
-      location.assign("/recipes/");
+    captureSubmit(form, async () => {
+      const values = new FormData(form);
+      const ingredients = [
+        ...String(values.get("detected_ingredients") || "").split(","),
+        ...String(values.get("manual_ingredients") || "").split(","),
+        ...values.getAll("staple_ingredients").map(String),
+      ].map((item) => item.trim()).filter(Boolean);
+      const uniqueIngredients = [...new Set(ingredients)];
+      if (!uniqueIngredients.length) {
+        setNotice("Tambahkan minimal satu bahan untuk membuat resep.");
+        return;
+      }
+
+      const allergies = values.getAll("allergies")
+        .map((item) => String(item).replace(/^Bebas\s+/i, "").trim())
+        .filter((item) => item && !/^tidak ada$/i.test(item));
+      const preferences = [
+        ...values.getAll("diet").map(String),
+        `Masakan: ${String(values.get("cuisine_type") || "Rumahan")}`,
+        `Waktu memasak: ${String(values.get("cooking_time") || "15_to_30")}`,
+        `Tingkat kesulitan: ${String(values.get("difficulty") || "Sangat Mudah")}`,
+      ].join("; ");
+      const servings = Math.max(1, Math.min(20, Number(values.get("servings") || 2)));
+      const button = document.getElementById("submitFormBtn");
+      const overlay = document.getElementById("generatingOverlay");
+      if (button) button.disabled = true;
+      overlay?.classList.remove("opacity-0", "pointer-events-none");
+
+      try {
+        const result = await api("/recipes/generate", {
+          method: "POST",
+          body: JSON.stringify({
+            ingredients: uniqueIngredients,
+            preferences,
+            allergies,
+            servings,
+          }),
+        });
+        const text = String(result.recipe || "").trim();
+        if (!text) throw new Error("Gemini tidak mengembalikan teks resep.");
+        const title = (text.split("\n").find((line) => line.trim()) || "Resep NakEna")
+          .replace(/^#+\s*/, "")
+          .slice(0, 200);
+        const recipe = {
+          title,
+          text,
+          ingredients: uniqueIngredients,
+          createdAt: new Date().toISOString(),
+        };
+        const saved = await api("/recipes/history", {
+          method: "POST",
+          body: JSON.stringify({
+            title: recipe.title,
+            recipe_text: recipe.text,
+            ingredients: recipe.ingredients,
+          }),
+        });
+        recipe.id = saved.id;
+        sessionStorage.setItem(recipeKey, JSON.stringify(recipe));
+        location.assign("/recipes/");
+      } catch (error) {
+        setNotice(error.message);
+        if (button) button.disabled = false;
+        overlay?.classList.add("opacity-0", "pointer-events-none");
+      }
     });
   }
 

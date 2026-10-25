@@ -32,7 +32,7 @@ class RecipeResponse(BaseModel):
 
 class RecipeEntryCreate(BaseModel):
     title: str = Field(..., min_length=1, max_length=200)
-    recipe_text: str = Field(default="", max_length=20000)
+    recipe_text: str = Field(default="", max_length=50000)
     ingredients: list[str] = Field(default_factory=list, max_length=30)
 
 

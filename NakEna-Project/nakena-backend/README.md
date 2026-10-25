@@ -22,9 +22,8 @@ tests/                 # pytest
 
 ## Menjalankan
 
-PostgreSQL dijalankan langsung di komputer; Docker tidak diperlukan. Pastikan layanan PostgreSQL
-Windows berjalan dan database `nakena` tersedia, dengan user `nakena` dan password `nakena`
-sesuai URL koneksi lokal di `.env`. Jalankan backend dari folder `nakena-backend`.
+Jalankan backend dari folder `nakena-backend`. Pengaturan database yang aktif ada di `.env`;
+pastikan database pada `DATABASE_URL` tersedia sebelum menjalankan API.
 
 Di Command Prompt, dari folder `nakena-backend`:
 
@@ -37,6 +36,14 @@ notepad .env
 uvicorn app.main:app --reload --port 8000
 ```
 
+Jika folder proyek atau komputer berpindah dan `.venv` menunjuk ke interpreter lama, buat ulang
+virtual environment sebelum mengaktifkannya:
+
+```powershell
+python -m venv --clear .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
+```
+
 Isi `SECRET_KEY` pada `.env` dengan nilai acak minimal 32 karakter sebelum menjalankan server.
 Perintah `notepad .env` digunakan untuk memastikan URL PostgreSQL dan pengaturan lokal sesuai.
 
@@ -45,7 +52,8 @@ Dokumentasi interaktif API: http://localhost:8000/docs (klik **Authorize**, isi 
 Tes: `pytest`
 
 Jalankan frontend terpisah dari folder `../NakEna_Frontend` pada port `8001`. Pastikan
-`CORS_ORIGINS` di `.env` memuat `http://localhost:8001` (sudah tercantum di `.env.example`).
+`CORS_ORIGINS` di `.env` memuat `http://localhost:8001` dan `http://127.0.0.1:8001`
+(keduanya tercantum di `.env.example`).
 Jika alamat atau port frontend berbeda, tambahkan origin frontend tersebut. Atur
 `NAKENA_API_BASE_URL` di proses frontend bila backend tidak berjalan di `http://localhost:8000`.
 
@@ -53,9 +61,12 @@ Login memakai endpoint `POST /auth/login`. Akun harus didaftarkan terlebih dahul
 `POST /auth/register`. Token login disimpan di `sessionStorage` dan terhapus ketika pengguna
 memilih Keluar atau sesi tab berakhir.
 
-Upload foto disimpan lewat `/uploads`, tetapi deteksi YOLO belum tersedia sehingga bahan, confidence,
-dan bounding box belum dihasilkan otomatis. Pengguna dapat memasukkan bahan secara manual dan meminta
-resep melalui endpoint Gemini yang sudah ada. Riwayat resep dan favorit disimpan di database per akun.
+Model lokal `models/chefai_best.pt` mendeteksi 21 kelas bahan makanan. Konfigurasi model memakai
+`YOLO_MODEL_PATH` (default `models/chefai_best.pt`) dan `YOLO_CONFIDENCE` (default `0.25`).
+Alur frontend mengunggah foto, meminta deteksi, menampilkan hasil agar pengguna dapat mengoreksi
+bahan, lalu mengirim bahan dan preferensi ke Gemini untuk membuat resep. Riwayat resep dan favorit
+disimpan per akun. File model harus tersedia di mesin backend dan paket `ultralytics` dipasang dari
+`requirements.txt`.
 
 ## Endpoint
 
@@ -65,6 +76,7 @@ resep melalui endpoint Gemini yang sudah ada. Riwayat resep dan favorit disimpan
 | POST | `/auth/login` | - | Login JSON → `access_token` (JWT) |
 | POST | `/auth/token` | - | Login form-data, khusus tombol Authorize di Swagger |
 | POST | `/recipes/generate` | - | Membuat resep dengan Gemini |
+| POST | `/uploads/{id}/detect` | Autentikasi | Deteksi bahan dengan model YOLO lokal |
 | GET / PATCH | `/users/me` | Bearer | Lihat / ubah profil |
 | GET | `/users/me/preferences` | Bearer | Lihat preferensi |
 | PUT | `/users/me/preferences` | Bearer | Ganti seluruh preferensi |
@@ -110,6 +122,6 @@ Frontend: kirim header `Authorization: Bearer <access_token>`. Upload memakai `F
 
 ## Belum dikerjakan (di luar todo ini)
 
-Job deteksi YOLO (Celery + Redis), penghapusan otomatis foto yang lewat `expires_at`, refresh token,
-dan endpoint admin. Kolom `role`, dependency `require_admin`, dan kolom `status` pada upload sudah disiapkan.
+Penghapusan otomatis foto yang lewat `expires_at`, refresh token, dan endpoint admin. Kolom `role`,
+dependency `require_admin`, dan kolom `status` pada upload sudah disiapkan.
 Untuk menjadikan akun admin sementara: `UPDATE users SET role='admin' WHERE email='...';`

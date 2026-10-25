@@ -1,11 +1,19 @@
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic import SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
+BACKEND_ROOT = Path(__file__).resolve().parents[2]
+
+
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", env_ignore_empty=True, extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=BACKEND_ROOT / ".env",
+        env_ignore_empty=True,
+        extra="ignore",
+    )
 
     app_name: str = "NakEna API"
     debug: bool = False
@@ -18,6 +26,8 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 60
     gemini_api_key: SecretStr | None = None
     gemini_model: str = "gemini-3.8-flash"
+    yolo_model_path: Path = BACKEND_ROOT / "models" / "chefai_best.pt"
+    yolo_confidence: float = 0.25
 
     cors_origins: list[str] = [
         "http://localhost:8001",
@@ -36,6 +46,13 @@ class Settings(BaseSettings):
         if len(v) < 32:
             raise ValueError("SECRET_KEY minimal 32 karakter")
         return v
+
+    @field_validator("yolo_model_path")
+    @classmethod
+    def _resolve_yolo_model_path(cls, value: Path) -> Path:
+        if value.is_absolute():
+            return value
+        return BACKEND_ROOT / value
 
     @property
     def max_upload_size_bytes(self) -> int:
