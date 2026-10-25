@@ -4,6 +4,7 @@
   const userNameKey = "nakena_user_name";
   const uploadKey = "nakena_last_upload";
   const recipeKey = "nakena_latest_recipe";
+  const recipeNoticeKey = "nakena_recipe_notice";
   const apiBaseUrl = (document.currentScript?.dataset.apiBase || "").replace(/\/+$/, "");
   const token = () => sessionStorage.getItem(tokenKey);
   const email = () => sessionStorage.getItem(emailKey) || "guest";
@@ -135,7 +136,7 @@
   }
 
   function protectPages() {
-    const protectedPaths = ["/scan/", "/scan/result/", "/recipes/", "/history/", "/favorites/", "/profile/"];
+    const protectedPaths = ["/scan/", "/scan/result/", "/recipes/", "/history/", "/favorites/", "/profile/", "/recipes/1/guided-cooking/", "/admin-dashboard/"];
     if (protectedPaths.some((path) => location.pathname.startsWith(path)) && !token()) {
       location.replace(`/login/?next=${encodeURIComponent(location.pathname)}`);
       return false;
@@ -197,6 +198,8 @@
         sessionStorage.setItem(uploadKey, JSON.stringify({
           id: upload.id,
           filename: upload.original_filename,
+          width: upload.width,
+          height: upload.height,
           ingredients: detection.ingredients,
           detections: detection.detections,
         }));
@@ -220,7 +223,11 @@
 
   function setupDetectionResult() {
     const storedUpload = sessionStorage.getItem(uploadKey);
-    if (!storedUpload || !document.getElementById("ingredientsConfirmationForm")) return;
+    if (!document.getElementById("ingredientsConfirmationForm")) return;
+    if (!storedUpload) {
+      location.replace("/scan/");
+      return;
+    }
     let upload;
     try {
       upload = JSON.parse(storedUpload);
@@ -234,12 +241,15 @@
       setNotice("Data hasil deteksi tidak valid. Silakan unggah ulang foto.");
       return;
     }
-    const preview = document.querySelector("#ingredientsConfirmationForm aside img");
+    const preview = document.getElementById("scanPreviewImage");
     const imageData = sessionStorage.getItem("nakena_preview_image");
-    if (preview && imageData) preview.src = imageData;
+    if (preview && imageData) {
+      preview.src = imageData;
+      preview.addEventListener("load", () => renderDetectionBoxes(preview, upload), { once: true });
+    }
     const ingredientList = document.getElementById("ingredientsListContainer");
     const emptyState = document.getElementById("emptyIngredientsState");
-    const itemTemplate = ingredientList?.querySelector(".ingredient-item")?.cloneNode(true);
+    const itemTemplate = document.getElementById("ingredientItemTemplate");
     ingredientList?.replaceChildren();
     const detectionsByName = new Map();
     (Array.isArray(upload.detections) ? upload.detections : []).forEach((detection) => {
@@ -252,28 +262,30 @@
     const ingredients = Array.isArray(upload.ingredients) ? upload.ingredients : [];
     detections.forEach((detection, index) => {
       if (!itemTemplate || !ingredientList) return;
-      const item = itemTemplate.cloneNode(true);
+      const item = itemTemplate.content.firstElementChild.cloneNode(true);
       item.dataset.id = `detected-${index}`;
       const name = item.querySelector(".ingredient-name");
-      const confidence = item.querySelector(".ingredient-name + span");
-      const description = item.querySelector(".min-w-0 > .text-xs.text-slate-400");
+      const confidence = item.querySelector(".detection-confidence");
       if (name) name.textContent = detection.name;
       if (confidence) confidence.textContent = `${Math.round(detection.confidence * 100)}% yakin`;
-      if (description) description.textContent = "Bahan terdeteksi oleh model NakEna.";
       ingredientList.append(item);
     });
     const hidden = document.getElementById("detectedIngredientsInput");
     if (hidden) hidden.value = ingredients.join(", ");
     const count = document.getElementById("detectedCount");
     if (count) count.textContent = String(detections.length);
+    const scanCount = document.getElementById("scanDetectionCount");
+    if (scanCount) scanCount.textContent = String(detections.length);
+    const summary = document.getElementById("detectedIngredientSummary");
+    if (summary) summary.textContent = detections.length
+      ? `${detections.length} bahan siap diolah jadi mahakarya`
+      : "Belum ada bahan terdeteksi. Kamu bisa menambahkannya secara manual.";
     if (ingredientList) ingredientList.classList.toggle("hidden", detections.length === 0);
     if (emptyState) {
       emptyState.classList.toggle("hidden", detections.length > 0);
       emptyState.classList.toggle("flex", detections.length === 0);
       const emptyMessage = emptyState.querySelector("p");
       if (emptyMessage) emptyMessage.textContent = "Model belum menemukan bahan pada foto. Tambahkan bahan secara manual untuk melanjutkan.";
-      const restoreButton = document.getElementById("restoreDefaultsBtn");
-      if (restoreButton) restoreButton.classList.add("hidden");
     }
     const message = document.querySelector("#ingredientsConfirmationForm aside .text-slate-400");
     if (message) message.textContent = detections.length
@@ -281,6 +293,44 @@
       : "Tidak ada bahan terdeteksi. Tambahkan bahan secara manual sebelum membuat resep.";
     const detectedBadge = document.querySelector("#ingredientsConfirmationForm aside .text-amber-400.text-xs.font-bold");
     if (detectedBadge) detectedBadge.textContent = `${detections.length} Bahan Terdeteksi`;
+  }
+
+  function renderDetectionBoxes(image, upload) {
+    const overlay = document.getElementById("detectionBoxes");
+    if (!overlay) return;
+    overlay.replaceChildren();
+    const detections = Array.isArray(upload.detections) ? upload.detections : [];
+    if (!detections.length || !image.naturalWidth || !image.naturalHeight) return;
+
+    const bounds = overlay.getBoundingClientRect();
+    if (!bounds.width || !bounds.height) return;
+    const scale = Math.max(bounds.width / image.naturalWidth, bounds.height / image.naturalHeight);
+    const offsetX = (bounds.width - image.naturalWidth * scale) / 2;
+    const offsetY = (bounds.height - image.naturalHeight * scale) / 2;
+    const sourceScaleX = image.naturalWidth / Number(upload.width || image.naturalWidth);
+    const sourceScaleY = image.naturalHeight / Number(upload.height || image.naturalHeight);
+    const colors = ["#FF5E14", "#FBBF24", "#38BDF8", "#34D399"];
+
+    detections.forEach((detection, index) => {
+      if (!Array.isArray(detection.box) || detection.box.length !== 4) return;
+      const [x1, y1, x2, y2] = detection.box.map(Number);
+      if (![x1, y1, x2, y2].every(Number.isFinite)) return;
+      const left = (x1 * sourceScaleX * scale + offsetX) / bounds.width * 100;
+      const top = (y1 * sourceScaleY * scale + offsetY) / bounds.height * 100;
+      const width = (x2 - x1) * sourceScaleX * scale / bounds.width * 100;
+      const height = (y2 - y1) * sourceScaleY * scale / bounds.height * 100;
+      const color = colors[index % colors.length];
+      const box = document.createElement("div");
+      box.className = "absolute rounded-2xl border-2";
+      box.style.cssText = `left:${left}%;top:${top}%;width:${width}%;height:${height}%;border-color:${color};background:${color}22;`;
+      box.title = `${detection.name} (${Math.round(detection.confidence * 100)}%)`;
+      const label = document.createElement("span");
+      label.className = "absolute -top-3 left-1 px-2 py-0.5 rounded-full bg-[#060D1A]/90 text-white font-bold text-[10px] sm:text-xs whitespace-nowrap";
+      label.style.color = color;
+      label.textContent = `${detection.name} • ${Math.round(detection.confidence * 100)}%`;
+      box.append(label);
+      overlay.append(box);
+    });
   }
 
   function profilePreferenceFromForm(form) {
@@ -299,7 +349,9 @@
     return {
       diet: activeChips("diet-chips").join(", ") || null,
       allergies: activeChips("allergy-chips").map((value) => value.replace(/^Bebas\s+/i, "")).filter((value) => !/Tidak Ada/i.test(value)),
-      staple_ingredients: [],
+      staple_ingredients: Array.from(document.querySelectorAll("[data-staple-ingredient]"))
+        .map((chip) => chip.dataset.stapleIngredient)
+        .filter(Boolean),
       default_max_cook_minutes: cookMinutes,
       default_difficulty: difficulty,
       default_servings: portion,
@@ -309,8 +361,8 @@
 
   function setupProfile() {
     const form = document.getElementById("preferences-form");
-    if (!form || !token()) return;
-    api("/users/me/preferences").then((preferences) => {
+    if (!token()) return;
+    if (form) api("/users/me/preferences").then((preferences) => {
       document.querySelectorAll("#diet-chips .chip-toggle").forEach((chip) => {
         const name = chip.textContent.replace(/[^\p{L}\p{N}\s-]/gu, "").trim().toLowerCase();
         const active = (preferences.diet || "").toLowerCase().includes(name);
@@ -336,21 +388,85 @@
       if (radio) radio.checked = true;
       const portion = document.getElementById("portion-value");
       if (portion && preferences.default_servings) portion.textContent = preferences.default_servings;
+      renderPantryIngredients(preferences.staple_ingredients || []);
     }).catch((error) => setNotice(error.message));
 
-    const save = async () => {
-      try {
-        await api("/users/me/preferences", {
-          method: "PATCH",
-          body: JSON.stringify(profilePreferenceFromForm(form)),
-        });
-        document.getElementById("save-toast")?.classList.remove("hidden");
-      } catch (error) {
-        setNotice(error.message);
-      }
-    };
-    captureSubmit(form, save);
-    document.getElementById("btn-save-preferences")?.addEventListener("click", save, true);
+    if (form) {
+      const save = async () => {
+        try {
+          await api("/users/me/preferences", {
+            method: "PATCH",
+            body: JSON.stringify(profilePreferenceFromForm(form)),
+          });
+          document.getElementById("save-toast")?.classList.remove("hidden");
+        } catch (error) {
+          setNotice(error.message);
+        }
+      };
+      captureSubmit(form, save);
+      document.getElementById("btn-save-preferences")?.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        save();
+      }, true);
+    }
+
+    const accountForm = document.getElementById("account-form");
+    if (accountForm) {
+      const saveAccount = async () => {
+        const fullName = String(new FormData(accountForm).get("fullname") || "").trim();
+        if (!fullName) return setNotice("Nama lengkap tidak boleh kosong.");
+        try {
+          const user = await api("/users/me", {
+            method: "PATCH",
+            body: JSON.stringify({ full_name: fullName }),
+          });
+          sessionStorage.setItem(userNameKey, user.full_name);
+          document.querySelectorAll("[data-user-name]").forEach((element) => {
+            element.textContent = user.full_name;
+          });
+          setNotice("Profil berhasil diperbarui.", true);
+        } catch (error) {
+          setNotice(error.message);
+        }
+      };
+      captureSubmit(accountForm, saveAccount);
+      document.getElementById("btn-save-account")?.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        saveAccount();
+      }, true);
+    }
+
+    document.getElementById("btn-add-pantry-ingredient")?.addEventListener("click", () => {
+      const name = window.prompt("Nama bahan yang selalu tersedia di rumah:");
+      if (!name?.trim()) return;
+      const current = Array.from(document.querySelectorAll("[data-staple-ingredient]"))
+        .map((chip) => chip.dataset.stapleIngredient.toLowerCase());
+      if (current.includes(name.trim().toLowerCase())) return setNotice("Bahan tersebut sudah ada.");
+      renderPantryIngredients([...current, name.trim()]);
+    });
+  }
+
+  function renderPantryIngredients(ingredients) {
+    const list = document.getElementById("pantryIngredientsList");
+    if (!list) return;
+    list.replaceChildren();
+    ingredients.forEach((ingredient) => {
+      const chip = document.createElement("span");
+      chip.className = "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container text-on-surface font-label-md text-label-md";
+      chip.dataset.stapleIngredient = ingredient;
+      const label = document.createElement("span");
+      label.textContent = ingredient;
+      const remove = document.createElement("button");
+      remove.className = "material-symbols-outlined text-[14px] text-primary cursor-pointer hover:text-primary-container";
+      remove.type = "button";
+      remove.setAttribute("aria-label", `Hapus ${ingredient}`);
+      remove.textContent = "close";
+      remove.addEventListener("click", () => chip.remove());
+      chip.append(label, remove);
+      list.append(chip);
+    });
   }
 
   function setupRecipeGeneration() {
@@ -374,10 +490,10 @@
         .filter((item) => item && !/^tidak ada$/i.test(item));
       const preferences = [
         ...values.getAll("diet").map(String),
-        `Masakan: ${String(values.get("cuisine_type") || "Rumahan")}`,
         `Waktu memasak: ${String(values.get("cooking_time") || "15_to_30")}`,
         `Tingkat kesulitan: ${String(values.get("difficulty") || "Sangat Mudah")}`,
       ].join("; ");
+      const category = String(values.get("cuisine_type") || "Rumahan");
       const servings = Math.max(1, Math.min(20, Number(values.get("servings") || 2)));
       const button = document.getElementById("submitFormBtn");
       const overlay = document.getElementById("generatingOverlay");
@@ -392,29 +508,18 @@
             preferences,
             allergies,
             servings,
+            category,
           }),
         });
-        const text = String(result.recipe || "").trim();
-        if (!text) throw new Error("Gemini tidak mengembalikan teks resep.");
-        const title = (text.split("\n").find((line) => line.trim()) || "Resep NakEna")
-          .replace(/^#+\s*/, "")
-          .slice(0, 200);
-        const recipe = {
-          title,
-          text,
-          ingredients: uniqueIngredients,
-          createdAt: new Date().toISOString(),
-        };
-        const saved = await api("/recipes/history", {
-          method: "POST",
-          body: JSON.stringify({
-            title: recipe.title,
-            recipe_text: recipe.text,
-            ingredients: recipe.ingredients,
-          }),
-        });
-        recipe.id = saved.id;
+        const { recipes, errors } = await saveGeneratedRecipes(result, uniqueIngredients, category);
+        const recipe = { ...recipes[0], options: recipes, category };
         sessionStorage.setItem(recipeKey, JSON.stringify(recipe));
+        if (errors.length) {
+          sessionStorage.setItem(
+            recipeNoticeKey,
+            "Resep berhasil dibuat, tetapi sebagian tidak tersimpan ke riwayat. " + errors.join(" "),
+          );
+        }
         location.assign("/recipes/");
       } catch (error) {
         setNotice(error.message);
@@ -424,55 +529,210 @@
     });
   }
 
-  function setupRecipes() {
-    if (location.pathname !== "/recipes/") return;
-    const recipe = JSON.parse(sessionStorage.getItem(recipeKey) || "null");
-    if (recipe && location.pathname === "/recipes/") {
-      const main = document.querySelector("main");
-      const featured = main?.querySelector("article");
-      const title = featured?.querySelector("h2");
-      const description = featured?.querySelector("p");
-      if (title) title.textContent = recipe.title;
-      if (description) description.textContent = "Resep dibuat oleh NakEna berdasarkan bahan dan preferensi yang kamu pilih.";
-      if (featured) {
-        const details = document.createElement("pre");
-         details.className = "mt-4 whitespace-pre-wrap break-words text-sm leading-relaxed text-on-surface-variant";
-        details.textContent = recipe.text;
-         const content = Array.from(featured.querySelectorAll("div")).find((element) => element.classList.contains("lg:col-span-7"));
-         content?.append(details);
-         main?.querySelectorAll("article").forEach((article) => {
-           if (article !== featured) article.classList.add("hidden");
-         });
-         featured.querySelectorAll("button").forEach((button) => {
-           if (button.getAttribute("onclick")?.startsWith("toggleFav")) {
-             button.addEventListener("click", (event) => {
-               event.preventDefault();
-               event.stopImmediatePropagation();
-               window.toggleFav(button, recipe.title);
-             }, true);
-           }
-           if (!button.textContent.toLowerCase().includes("detail resep")) return;
-           button.addEventListener("click", (event) => {
-             event.preventDefault();
-             event.stopImmediatePropagation();
-             location.assign("/recipes/1/");
-           }, true);
-         });
+  async function saveGeneratedRecipes(result, ingredients, category) {
+    const generated = Array.isArray(result.recipes) && result.recipes.length
+      ? result.recipes
+      : [{ title: "", recipe: result.recipe }];
+    const recipes = generated.map((item, index) => {
+      const text = String(item.recipe || "").trim();
+      if (!text) throw new Error("Gemini tidak mengembalikan teks resep.");
+      const title = String(item.title || text.split("\n").find((line) => line.trim()) || "Resep NakEna")
+        .replace(/^#+\s*/, "")
+        .slice(0, 200);
+      return {
+        id: `pending-${Date.now()}-${index}`,
+        title,
+        description: String(item.description || ""),
+        text,
+        ingredients,
+        createdAt: new Date().toISOString(),
+        category,
+      };
+    });
+    const errors = [];
+    for (const recipe of recipes) {
+      try {
+        const saved = await api("/recipes/history", {
+          method: "POST",
+          body: JSON.stringify({
+            title: recipe.title,
+            recipe_text: recipe.text,
+            ingredients,
+          }),
+        });
+        recipe.id = saved.id;
+        recipe.createdAt = saved.created_at;
+      } catch (error) {
+        errors.push(error.message);
       }
     }
+    return { recipes, errors };
+  }
 
-    api("/recipes/favorites").then((favorites) => {
-      const savedTitles = new Set(favorites.map((item) => item.title));
-      document.querySelectorAll("[onclick^=\"toggleFav\"]").forEach((button) => {
-        const title = button.getAttribute("onclick")?.match(/toggleFav\(this,\s*'([^']+)'\)/)?.[1];
-        if (title && savedTitles.has(title)) {
-          const icon = button.querySelector(".bookmark-icon, .material-symbols-outlined");
-          if (icon) icon.textContent = "favorite";
+  function showRecipeNotice(main, message) {
+    if (!message) return;
+    const notice = document.createElement("div");
+    notice.className = "mx-auto mb-6 max-w-4xl rounded-xl border border-amber-400/40 bg-amber-500/10 px-5 py-4 text-sm text-amber-100";
+    notice.setAttribute("role", "status");
+    notice.textContent = message;
+    main.prepend(notice);
+  }
+
+  async function setupRecipes() {
+    if (location.pathname !== "/recipes/") return;
+    const main = document.querySelector("main");
+    if (!main) return;
+    let recipe = null;
+    try {
+      recipe = JSON.parse(sessionStorage.getItem(recipeKey) || "null");
+    } catch {
+      sessionStorage.removeItem(recipeKey);
+    }
+    const articles = Array.from(main.querySelectorAll("article"));
+    const featured = articles[0];
+    const extraGrid = articles[1]?.parentElement;
+    articles.slice(1).forEach((article) => article.remove());
+    if (extraGrid?.classList.contains("grid")) {
+      const sectionHeading = extraGrid.previousElementSibling;
+      extraGrid.remove();
+      if (sectionHeading?.querySelector("h3")) sectionHeading.remove();
+    }
+    featured?.classList.add("hidden");
+    let history = [];
+    let favorites = [];
+    let notice = sessionStorage.getItem(recipeNoticeKey) || "";
+    sessionStorage.removeItem(recipeNoticeKey);
+    try {
+      [history, favorites] = await Promise.all([
+        api("/recipes/history"),
+        api("/recipes/favorites"),
+      ]);
+    } catch (error) {
+      if (!recipe?.text && !recipe?.recipe_text) {
+        setNotice(error.message);
+        return;
+      }
+      notice = [notice, "Riwayat atau favorit belum dapat dimuat dari server."].filter(Boolean).join(" ");
+    }
+    if (!recipe?.recipe_text && !recipe?.text) {
+      recipe = (recipe?.id ? history.find((entry) => entry.id === recipe.id) : null)
+        || history[0]
+        || null;
+    } else if (recipe?.id) {
+      const savedRecipe = history.find((entry) => entry.id === recipe.id);
+      if (savedRecipe) recipe = { ...recipe, ...savedRecipe, text: savedRecipe.recipe_text };
+    }
+    if (recipe?.recipe_text && !recipe.text) recipe.text = recipe.recipe_text;
+    if (Array.isArray(recipe?.options)) {
+      recipe.options = recipe.options.map((option) => {
+        const entry = history.find((item) => item.id === option.id);
+        return entry ? { ...option, title: entry.title, text: entry.recipe_text } : option;
+      });
+    }
+
+    const favoriteTitles = new Set(favorites.map((entry) => entry.title));
+    const savedCount = document.getElementById("savedCountHeader");
+    const bottomCount = document.getElementById("savedCountBottom");
+    if (savedCount) savedCount.textContent = String(favorites.length);
+    if (bottomCount) bottomCount.textContent = String(favorites.length);
+
+    if (!recipe) {
+      main.querySelectorAll("article").forEach((article) => article.remove());
+      const empty = document.createElement("section");
+      empty.className = "mx-auto my-10 max-w-3xl rounded-3xl border border-white/10 bg-navy-card p-8 text-center shadow-xl";
+      const heading = document.createElement("h2");
+      heading.className = "text-2xl font-display font-bold text-white";
+      heading.textContent = "Belum ada resep buatanmu";
+      const text = document.createElement("p");
+      text.className = "mt-3 text-on-surface-variant";
+      text.textContent = "Pindai bahan di dapur lalu minta NakEna meracik resep sesuai bahanmu.";
+      const link = document.createElement("a");
+      link.className = "mt-6 inline-flex rounded-xl bg-primary px-5 py-3 font-bold text-white";
+      link.href = "/scan/";
+      link.textContent = "Mulai scan bahan";
+      empty.append(heading, text, link);
+      main.append(empty);
+    } else if (featured) {
+      featured.classList.remove("hidden");
+      const options = Array.isArray(recipe.options) && recipe.options.length
+        ? recipe.options
+        : [recipe];
+      if (options.length > 1) {
+        const selector = document.createElement("section");
+        selector.className = "mb-6 rounded-2xl border border-white/10 bg-navy-card p-4";
+        const heading = document.createElement("h3");
+        heading.className = "mb-3 font-display text-lg font-bold text-white";
+        heading.textContent = `Pilihan resep kategori ${recipe.category || "Rumahan"}`;
+        const list = document.createElement("div");
+        list.className = "grid grid-cols-1 gap-2 sm:grid-cols-3";
+        options.forEach((option, index) => {
+          const choice = document.createElement("button");
+          choice.type = "button";
+          choice.className = "rounded-xl border border-white/10 bg-navy-surface px-4 py-3 text-left text-sm font-semibold text-on-surface hover:border-primary";
+          choice.textContent = option.title;
+          choice.setAttribute("aria-pressed", String(option.id === recipe.id));
+          if (option.id === recipe.id) choice.classList.add("border-primary", "text-white");
+          choice.addEventListener("click", () => {
+            sessionStorage.setItem(recipeKey, JSON.stringify({
+              ...option,
+              options,
+              category: recipe.category || "Rumahan",
+            }));
+            location.reload();
+          });
+          choice.setAttribute("aria-label", `Pilihan ${index + 1}: ${option.title}`);
+          list.append(choice);
+        });
+        selector.append(heading, list);
+        const featuredContainer = featured.parentElement;
+        if (featuredContainer?.parentElement === main) {
+          main.insertBefore(selector, featuredContainer);
+        }
+      }
+      const title = featured.querySelector("h2");
+      const description = featured.querySelector("p");
+      const image = featured.querySelector("img");
+      if (title) title.textContent = recipe.title;
+      if (description) description.textContent = recipe.ingredients?.length
+        ? `Bahan: ${recipe.ingredients.join(", ")}`
+        : "Resep ini dibuat untukmu oleh NakEna.";
+      if (image) {
+        image.removeAttribute("src");
+        image.alt = `Resep ${recipe.title}`;
+      }
+      const content = Array.from(featured.querySelectorAll("div"))
+        .find((element) => element.classList.contains("lg:col-span-7"));
+      const recipeBody = Array.from(content?.children || [])
+        .find((element) => element.classList.contains("flex-col"));
+      const recipeHeading = recipeBody?.querySelector("h2");
+      const recipeDescription = recipeBody?.querySelector("p");
+      const details = document.createElement("pre");
+      details.className = "whitespace-pre-wrap break-words text-sm leading-relaxed text-on-surface-variant";
+      details.textContent = recipe.text || recipe.recipe_text || "";
+      if (recipeBody) {
+        recipeBody.replaceChildren(...[recipeHeading, recipeDescription, details].filter(Boolean));
+      }
+      featured.querySelectorAll("[onclick]").forEach((button) => {
+        const action = button.getAttribute("onclick") || "";
+        button.removeAttribute("onclick");
+        if (action.startsWith("toggleFav")) {
+          button.addEventListener("click", (event) => {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            window.toggleFav(button, recipe.title);
+          }, true);
+        } else if (button.textContent.toLowerCase().includes("detail resep")) {
+          button.addEventListener("click", (event) => {
+            event.preventDefault();
+            sessionStorage.setItem(recipeKey, JSON.stringify(recipe));
+            location.assign("/recipes/1/");
+          }, true);
         }
       });
-      const count = document.getElementById("savedCountHeader");
-      if (count) count.textContent = favorites.length;
-    }).catch(() => {});
+      const icon = featured.querySelector(".bookmark-icon");
+      if (icon && favoriteTitles.has(recipe.title)) icon.textContent = "favorite";
+    }
+    showRecipeNotice(main, notice);
 
     window.toggleFav = async (button, title) => {
       try {
@@ -485,7 +745,7 @@
             method: "POST",
             body: JSON.stringify({
               title,
-              recipe_text: recipe?.title === title ? recipe.text : "",
+              recipe_text: recipe?.title === title ? recipe.text : recipe?.recipe_text || "",
               ingredients: recipe?.title === title ? recipe.ingredients : [],
             }),
           });
@@ -494,15 +754,67 @@
         if (icon) icon.textContent = existing ? "favorite_border" : "favorite";
         const count = document.getElementById("savedCountHeader");
         if (count) count.textContent = existing ? favorites.length - 1 : favorites.length + 1;
+        const bottomCount = document.getElementById("savedCountBottom");
+        if (bottomCount) bottomCount.textContent = existing ? favorites.length - 1 : favorites.length + 1;
       } catch (error) {
         setNotice(error.message);
       }
+    };
+
+    const regenerate = async (preferences = "Buat variasi resep baru dari bahan yang sama") => {
+      const ingredients = recipe?.ingredients;
+      if (!Array.isArray(ingredients) || !ingredients.length) {
+        setNotice("Pindai bahan terlebih dahulu sebelum membuat resep.");
+        return;
+      }
+      try {
+        const result = await api("/recipes/generate", {
+          method: "POST",
+          body: JSON.stringify({
+            ingredients,
+            preferences,
+            allergies: [],
+            servings: 2,
+            category: recipe.category || "Rumahan",
+          }),
+        });
+        const { recipes, errors } = await saveGeneratedRecipes(
+          result,
+          ingredients,
+          recipe.category || "Rumahan",
+        );
+        sessionStorage.setItem(recipeKey, JSON.stringify({
+          ...recipes[0],
+          options: recipes,
+          category: recipe.category || "Rumahan",
+        }));
+        if (errors.length) {
+          sessionStorage.setItem(
+            recipeNoticeKey,
+            "Resep berhasil dibuat, tetapi sebagian tidak tersimpan ke riwayat. " + errors.join(" "),
+          );
+        }
+        location.reload();
+      } catch (error) {
+        setNotice(error.message);
+      }
+    };
+    window.triggerRegenerate = () => regenerate();
+    window.requestCustomPrompt = () => {
+      const input = document.getElementById("customPromptInput");
+      const prompt = input?.value.trim();
+      if (!prompt) return setNotice("Tuliskan permintaan masakanmu terlebih dahulu.");
+      regenerate(prompt);
     };
   }
 
   async function setupFavorites() {
     const grid = document.getElementById("recipeCardsGrid");
     if (!grid) return;
+    const template = grid.querySelector(".recipe-item");
+    grid.replaceChildren();
+    const empty = document.getElementById("emptyFavoriteState");
+    if (empty) empty.classList.add("hidden");
     let favorites;
     try {
       favorites = await api("/recipes/favorites");
@@ -510,115 +822,337 @@
       setNotice(error.message);
       return;
     }
-    const saved = new Set(favorites.map((item) => item.title));
-    const cards = Array.from(grid.querySelectorAll(".recipe-item"));
-    cards.forEach((card) => {
-      const title = card.getAttribute("data-title") || card.querySelector("h3, h4")?.textContent.trim();
-      card.classList.toggle("hidden", !saved.has(title));
-    });
-    const empty = document.getElementById("emptyFavoriteState");
     if (empty) empty.classList.toggle("hidden", favorites.length > 0);
-    if (favorites.length && cards.length) {
-      favorites.forEach((favorite) => {
-        if (cards.some((card) => (card.getAttribute("data-title") || card.querySelector("h3, h4")?.textContent.trim()) === favorite.title)) return;
-        const card = cards[0].cloneNode(true);
-        card.setAttribute("data-title", favorite.title);
-        card.setAttribute("data-entry-id", favorite.id);
-        const heading = card.querySelector("h3, h4");
-        if (heading) heading.textContent = favorite.title;
-        card.classList.remove("hidden");
-        grid.append(card);
-      });
-    }
     const badge = document.getElementById("recipeCounterBadge");
     if (badge) badge.textContent = `${favorites.length} Resep Tersimpan`;
+    const allCount = document.getElementById("count-all");
+    if (allCount) allCount.textContent = String(favorites.length);
+    grid.style.display = favorites.length ? "" : "none";
     favorites.forEach((favorite) => {
-      const card = Array.from(grid.querySelectorAll(".recipe-item")).find((item) => item.getAttribute("data-title") === favorite.title);
-      if (card) {
-        card.setAttribute("data-entry-id", favorite.id);
-        card.querySelectorAll("button").forEach((button) => {
-          if (!button.textContent.toLowerCase().includes("detail resep")) return;
-          button.addEventListener("click", (event) => {
-            event.preventDefault();
-            event.stopImmediatePropagation();
-            sessionStorage.setItem(recipeKey, JSON.stringify({
-              id: favorite.id,
-              title: favorite.title,
-              text: favorite.recipe_text,
-              ingredients: favorite.ingredients,
-            }));
-            location.assign("/recipes/1/");
-          }, true);
+      if (!template) return;
+      const card = template.cloneNode(true);
+      card.classList.remove("hidden");
+      card.dataset.title = favorite.title;
+      card.dataset.entryId = favorite.id;
+      card.dataset.category = "tersimpan";
+      card.dataset.match = "0";
+      card.dataset.rating = "0";
+      card.dataset.time = "0";
+
+      const image = card.querySelector("img");
+      if (image) {
+        image.removeAttribute("src");
+        image.alt = `Resep ${favorite.title}`;
+      }
+      const badge = card.querySelector(".absolute.top-space-sm.left-space-sm");
+      if (badge) badge.textContent = "Tersimpan";
+      const content = Array.from(card.querySelectorAll("div"))
+        .find((element) => element.classList.contains("p-space-md") && element.classList.contains("flex-col"));
+      const heading = content?.querySelector("h2, h3, h4");
+      if (content && heading) {
+        const title = document.createElement(heading.tagName.toLowerCase());
+        title.className = heading.className;
+        title.textContent = favorite.title;
+        const summary = document.createElement("p");
+        summary.className = "font-body-sm text-body-sm text-on-surface-variant";
+        summary.textContent = favorite.ingredients?.length
+          ? `Bahan: ${favorite.ingredients.join(", ")}`
+          : "Resep tersimpan di akunmu.";
+        content.replaceChildren(title, summary);
+      }
+      const buttons = Array.from(card.querySelectorAll("button"));
+      buttons.forEach((button, index) => {
+        button.removeAttribute("onclick");
+        if (index === 0) {
+          button.setAttribute("aria-label", "Hapus dari resep tersimpan");
+          button.addEventListener("click", async () => {
+            try {
+              await api(`/recipes/favorites/${favorite.id}`, { method: "DELETE" });
+              card.remove();
+              const count = grid.querySelectorAll(".recipe-item").length;
+              if (badge) badge.textContent = `${count} Resep Tersimpan`;
+              if (empty && !count) empty.classList.remove("hidden");
+            } catch (error) {
+              setNotice(error.message);
+            }
+          });
+          return;
+        }
+        button.addEventListener("click", () => {
+          sessionStorage.setItem(recipeKey, JSON.stringify({
+            id: favorite.id,
+            title: favorite.title,
+            text: favorite.recipe_text,
+            ingredients: favorite.ingredients,
+          }));
+          location.assign("/recipes/1/");
         });
-      }
+      });
+      grid.append(card);
     });
-    window.toggleFavorite = async (button, title) => {
-      const card = button?.closest(".recipe-item");
-      const entryId = card?.getAttribute("data-entry-id");
-      if (!entryId) return;
-      try {
-        await api(`/recipes/favorites/${entryId}`, { method: "DELETE" });
-        card.remove();
-        const remaining = grid.querySelectorAll(".recipe-item:not(.hidden)").length;
-        const count = document.getElementById("recipeCounterBadge");
-        if (count) count.textContent = `${remaining} Resep Tersimpan`;
-        if (!remaining) empty?.classList.remove("hidden");
-      } catch (error) {
-        setNotice(error.message);
-      }
-    };
+    window.toggleFavorite = (button) => button?.closest(".recipe-item")?.querySelector("button")?.click();
   }
 
   async function setupHistory() {
     const grid = document.getElementById("activityGrid");
     if (!grid) return;
+    const cards = Array.from(grid.querySelectorAll(".activity-card"));
+    const template = cards[0];
+    const empty = document.getElementById("emptyStateView");
+    cards.forEach((card) => card.remove());
     let history;
+    let uploads;
     try {
-      history = await api("/recipes/history");
+      [history, uploads] = await Promise.all([
+        api("/recipes/history"),
+        api("/uploads"),
+      ]);
     } catch (error) {
       setNotice(error.message);
       return;
     }
-    const cards = Array.from(grid.querySelectorAll(".activity-card"));
-    const empty = document.getElementById("emptyStateView");
-    cards.forEach((card) => card.remove());
-    history.forEach((entry) => {
-      if (!cards.length) return;
-      const card = cards[0].cloneNode(true);
+    const entries = [
+      ...history.map((entry) => ({ ...entry, kind: "recipe" })),
+      ...uploads.map((upload) => ({ ...upload, kind: "upload", title: `Scan: ${upload.original_filename}` })),
+    ].sort((left, right) => new Date(right.created_at).getTime() - new Date(left.created_at).getTime());
+    grid.style.display = entries.length ? "" : "none";
+    entries.forEach((entry) => {
+      if (!template) return;
+      const card = template.cloneNode(true);
       card.classList.remove("hidden");
       const title = card.querySelector("h2, h3, h4, [data-title]");
       if (title) title.textContent = entry.title;
       card.setAttribute("data-title", entry.title);
-      card.setAttribute("data-type", "resep");
-      card.setAttribute("data-status", "selesai");
+      card.setAttribute("data-type", entry.kind === "recipe" ? "resep" : "scan");
+      card.setAttribute("data-status", entry.kind === "upload" ? entry.status : "selesai");
       const text = card.querySelector("p");
       if (text) text.textContent = new Date(entry.created_at).toLocaleString("id-ID");
-      card.addEventListener("click", () => {
-        sessionStorage.setItem(recipeKey, JSON.stringify({
-          id: entry.id,
-          title: entry.title,
-          text: entry.recipe_text,
-          ingredients: entry.ingredients,
-        }));
-        location.assign("/recipes/1/");
+      const image = card.querySelector("img");
+      if (image) {
+        image.removeAttribute("src");
+        image.alt = entry.kind === "recipe" ? `Resep ${entry.title}` : "Foto bahan yang diunggah";
+      }
+      const badge = card.querySelector(".absolute.top-3.left-3");
+      if (badge) badge.textContent = entry.kind === "recipe" ? "Resep tersimpan" : `Scan ${entry.status}`;
+      const body = Array.from(card.querySelectorAll("div"))
+        .find((element) => element.classList.contains("p-space-md") && element.classList.contains("flex-col"));
+      const bodyTitle = body?.querySelector("h2, h3, h4");
+      if (body && bodyTitle) {
+        const dynamicTitle = document.createElement(bodyTitle.tagName.toLowerCase());
+        dynamicTitle.className = bodyTitle.className;
+        dynamicTitle.textContent = entry.title;
+        const summary = document.createElement("p");
+        summary.className = "font-body-sm text-body-sm text-on-surface-variant";
+        summary.textContent = entry.kind === "recipe"
+          ? (entry.ingredients?.length ? `Bahan: ${entry.ingredients.join(", ")}` : "Resep buatan NakEna")
+          : `Status scan: ${entry.status}`;
+        body.replaceChildren(dynamicTitle, summary);
+      }
+      card.querySelectorAll("[onclick]").forEach((button) => button.removeAttribute("onclick"));
+      card.addEventListener("click", (event) => {
+        if (event.target.closest("button")) return;
+        if (entry.kind === "recipe") {
+          sessionStorage.setItem(recipeKey, JSON.stringify({
+            id: entry.id,
+            title: entry.title,
+            text: entry.recipe_text,
+            ingredients: entry.ingredients,
+          }));
+          location.assign("/recipes/1/");
+        }
+      });
+      card.querySelectorAll("button").forEach((button) => {
+        button.textContent = entry.kind === "recipe" ? "Lihat resep" : "Scan ulang";
+        button.addEventListener("click", (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          if (entry.kind === "recipe") {
+            sessionStorage.setItem(recipeKey, JSON.stringify({
+              id: entry.id,
+              title: entry.title,
+              text: entry.recipe_text,
+              ingredients: entry.ingredients,
+            }));
+            location.assign("/recipes/1/");
+          } else {
+            location.assign("/scan/");
+          }
+        });
       });
       grid.append(card);
     });
-    if (empty) empty.classList.toggle("hidden", history.length > 0);
+    if (empty) empty.classList.toggle("hidden", entries.length > 0);
   }
 
   function setupRecipeDetail() {
     if (!location.pathname.match(/^\/recipes\/\d+\/$/)) return;
-    const recipe = JSON.parse(sessionStorage.getItem(recipeKey) || "null");
-    if (!recipe) return;
+    let recipe;
+    try {
+      recipe = JSON.parse(sessionStorage.getItem(recipeKey) || "null");
+    } catch {
+      sessionStorage.removeItem(recipeKey);
+    }
+    if (!recipe?.text && !recipe?.recipe_text) {
+      location.replace("/recipes/");
+      return;
+    }
+    if (!recipe.text) recipe.text = recipe.recipe_text;
     const main = document.querySelector("main");
     if (!main) return;
     const heading = main.querySelector("h1, h2");
     if (heading) heading.textContent = recipe.title;
+    const description = heading?.parentElement.querySelector("p");
+    if (description) {
+      description.textContent = recipe.ingredients?.length
+        ? `Bahan: ${recipe.ingredients.join(", ")}`
+        : "Resep yang dibuat khusus untukmu oleh NakEna.";
+    }
+    const checklist = document.getElementById("ingredient-checklist");
+    if (checklist) {
+      checklist.replaceChildren();
+      (recipe.ingredients || []).forEach((ingredient) => {
+        const item = document.createElement("li");
+        item.className = "flex items-center justify-between p-space-sm rounded-lg bg-surface-container-low";
+        const label = document.createElement("span");
+        label.className = "font-body-md text-body-md text-on-surface";
+        label.textContent = ingredient;
+        item.append(label);
+        checklist.append(item);
+      });
+    }
     const details = document.createElement("pre");
     details.className = "whitespace-pre-wrap break-words text-sm leading-relaxed text-on-surface-variant";
     details.textContent = recipe.text;
-    main.prepend(details);
+    description?.after(details);
+
+    const saveButton = document.getElementById("btn-save-recipe");
+    if (saveButton) saveButton.addEventListener("click", async (event) => {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      try {
+        const favorites = await api("/recipes/favorites");
+        const favorite = favorites.find((entry) => entry.title === recipe.title);
+        if (favorite) {
+          await api(`/recipes/favorites/${favorite.id}`, { method: "DELETE" });
+          setNotice("Resep dihapus dari favorit.");
+        } else {
+          await api("/recipes/favorites", {
+            method: "POST",
+            body: JSON.stringify({
+              title: recipe.title,
+              recipe_text: recipe.text,
+              ingredients: recipe.ingredients || [],
+            }),
+          });
+          setNotice("Resep disimpan ke favorit.", true);
+        }
+      } catch (error) {
+        setNotice(error.message);
+      }
+    }, true);
+    const shareButton = document.getElementById("share-btn");
+    if (shareButton) shareButton.addEventListener("click", async (event) => {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      try {
+        await navigator.clipboard.writeText(`${recipe.title}\n${location.href}`);
+        setNotice("Tautan resep berhasil disalin.", true);
+      } catch (error) {
+        setNotice(`Gagal menyalin tautan: ${error.message}`);
+      }
+    }, true);
+    main.querySelectorAll("h2").forEach((sectionTitle) => {
+      if (/Nutrisi per Porsi|Ulasan|Komentar/i.test(sectionTitle.textContent)) {
+        sectionTitle.closest("section")?.classList.add("hidden");
+      }
+    });
+  }
+
+  function setupGuidedCooking() {
+    if (!location.pathname.startsWith("/recipes/1/guided-cooking/")) return;
+    let recipe;
+    try {
+      recipe = JSON.parse(sessionStorage.getItem(recipeKey) || "null");
+    } catch {
+      sessionStorage.removeItem(recipeKey);
+    }
+    const recipeText = recipe?.text || recipe?.recipe_text || "";
+    if (!recipeText) {
+      location.replace("/recipes/");
+      return;
+    }
+    const section = recipeText.match(/(?:langkah(?:-langkah)?(?:\s+memasak)?|cara\s+(?:memasak|membuat))\s*:?\s*([\s\S]*)/i);
+    let instructionText = section ? section[1] : recipeText;
+    instructionText = instructionText.split(/\n\s*(?:tips?(?:\s+penyajian)?|waktu\s+memasak|catatan)\s*:?\s*/i)[0];
+    const instructions = instructionText.split(/\r?\n/)
+      .map((line) => line.trim().replace(/^(?:[-*•]|\d+[.)])\s*/, ""))
+      .filter((line) => line && !/^(?:langkah(?:-langkah)?(?:\s+memasak)?|cara\s+(?:memasak|membuat))\s*:?\s*$/i.test(line));
+    if (!instructions.length) instructions.push(recipeText.trim());
+
+    let current = 0;
+    const renderStep = () => {
+      const total = instructions.length;
+      const heading = document.getElementById("step-heading-text");
+      const description = document.getElementById("step-description-text");
+      const count = document.getElementById("step-count-text");
+      const modalCount = document.getElementById("modal-step-display");
+      const badge = document.getElementById("step-badge-text");
+      const progress = document.getElementById("progress-percent-text");
+      const bar = document.getElementById("progress-indicator-bar");
+      if (heading) heading.textContent = `Langkah ${current + 1}`;
+      if (description) description.textContent = instructions[current];
+      if (count) count.textContent = `Langkah ${current + 1} dari ${total}`;
+      if (modalCount) modalCount.textContent = String(current + 1);
+      if (badge) badge.textContent = `${recipe.title} • LANGKAH ${current + 1} DARI ${total}`;
+      if (progress) progress.textContent = `${Math.round(((current + 1) / total) * 100)}% Selesai`;
+      if (bar) bar.style.width = `${((current + 1) / total) * 100}%`;
+      const title = document.getElementById("recipe-title-display");
+      if (title) title.textContent = recipe.title;
+      const nextText = document.getElementById("next-btn-text");
+      if (nextText) nextText.textContent = current === total - 1 ? "Selesai Memasak" : "Langkah Berikutnya";
+      const previous = document.getElementById("prev-step-btn");
+      if (previous) previous.disabled = current === 0;
+      const checklist = document.getElementById("ingredients-checklist-container");
+      if (checklist) {
+        checklist.replaceChildren();
+        (recipe.ingredients || []).forEach((ingredient) => {
+          const label = document.createElement("label");
+          label.className = "ingredient-item flex items-center gap-space-md p-space-md rounded-xl bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm";
+          const checkbox = document.createElement("input");
+          checkbox.type = "checkbox";
+          checkbox.className = "step-ingredient-checkbox w-5 h-5 rounded accent-primary-container cursor-pointer";
+          const name = document.createElement("span");
+          name.className = "font-body-md text-body-md text-on-surface font-semibold truncate";
+          name.textContent = ingredient;
+          label.append(checkbox, name);
+          checklist.append(label);
+        });
+      }
+      const timer = document.getElementById("timer-display-string");
+      if (timer) timer.textContent = "--:--";
+      const timerButton = document.getElementById("main-timer-action-btn");
+      if (timerButton) timerButton.disabled = true;
+      const timerLabel = document.getElementById("main-timer-btn-label");
+      if (timerLabel) timerLabel.textContent = "Timer tidak tersedia untuk resep ini";
+      const estimation = document.getElementById("step-estimation-text");
+      if (estimation) estimation.textContent = "Ikuti waktu pada resep";
+    };
+    const bindNavigation = (id, direction) => {
+      document.getElementById(id)?.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        if (direction > 0 && current === instructions.length - 1) {
+          location.assign("/recipes/1/");
+          return;
+        }
+        current = Math.max(0, Math.min(instructions.length - 1, current + direction));
+        renderStep();
+      }, true);
+    };
+    bindNavigation("next-step-btn", 1);
+    bindNavigation("alert-next-btn", 1);
+    bindNavigation("prev-step-btn", -1);
+    renderStep();
   }
 
   function renderProfileAvatar(avatar, user = {}) {
@@ -644,17 +1178,61 @@
 
   async function hydrateProfile() {
     if (!token()) return;
-    const name = document.querySelector("[data-user-name]");
     const avatar = document.querySelector("[data-user-avatar]");
     // Tampilkan huruf awal segera, lalu ganti dengan data profil setelah API selesai.
     renderProfileAvatar(avatar);
     try {
       const user = await api("/users/me");
-      if (name) name.textContent = user.full_name;
+      document.querySelectorAll("[data-user-name]").forEach((element) => {
+        element.textContent = user.full_name;
+      });
+      document.querySelectorAll("[data-user-email]").forEach((element) => {
+        element.textContent = user.email;
+      });
+      const createdAt = document.getElementById("userCreatedAt");
+      if (createdAt) {
+        createdAt.textContent = new Date(user.created_at).toLocaleDateString("id-ID", {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        });
+      }
+      const fullNameInput = document.getElementById("input-fullname");
+      if (fullNameInput) fullNameInput.value = user.full_name || "";
+      const emailInput = document.getElementById("input-email");
+      if (emailInput) emailInput.value = user.email || "";
       sessionStorage.setItem(userNameKey, String(user.full_name || ""));
       renderProfileAvatar(avatar, user);
     } catch (error) {
       if (location.pathname.startsWith("/profile/")) setNotice(error.message);
+    }
+  }
+
+  async function setupAdminDashboard() {
+    if (location.pathname !== "/admin-dashboard/") return;
+    const main = document.querySelector("main");
+    if (!main) return;
+    main.classList.add("hidden");
+    try {
+      const user = await api("/users/me");
+      if (user.role !== "admin") {
+        location.replace("/scan/");
+        return;
+      }
+      main.replaceChildren();
+      const message = document.createElement("section");
+      message.className = "mx-auto my-12 max-w-3xl rounded-3xl border border-white/10 bg-surface-container-low p-8 text-center";
+      const heading = document.createElement("h1");
+      heading.className = "text-2xl font-bold text-on-surface";
+      heading.textContent = "Dashboard admin belum terhubung";
+      const detail = document.createElement("p");
+      detail.className = "mt-3 text-on-surface-variant";
+      detail.textContent = "API belum menyediakan data statistik administrasi. Data contoh tidak ditampilkan.";
+      message.append(heading, detail);
+      main.append(message);
+      main.classList.remove("hidden");
+    } catch (error) {
+      setNotice(error.message);
     }
   }
 
@@ -689,6 +1267,8 @@
     setupFavorites();
     setupHistory();
     setupRecipeDetail();
+    setupGuidedCooking();
+    setupAdminDashboard();
     hydrateProfile();
     setupLogout();
   }

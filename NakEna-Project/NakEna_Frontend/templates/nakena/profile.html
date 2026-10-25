@@ -33,30 +33,27 @@
 <!-- Avatar with edit button -->
 <div class="relative mb-space-md">
 <div class="w-28 h-28 rounded-full p-1 bg-gradient-to-tr from-primary-container via-tertiary to-primary shadow-[0_0_25px_rgba(255,94,20,0.35)]">
-<img class="w-full h-full rounded-full object-cover" data-alt="Charming friendly culinary enthusiast portrait with a crisp white chef bandana, cheerful warm expression, soft warm background lighting in a modern home kitchen" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDmmLcTFDUM-9ZqeBr8AudAE6gYspCrTlEh7yfft2rl9B5VjE_XoXWO4E5LZxfWXcSCEm3-03a7VOcNVe7mtGu4UmHMPf2c7BLvucxksiQRg1PsgwfH4VGuRtmlBb0C32LunipSkVili_avqMksm9aWVd603JPjXUWqCrGzM25C0gItRHF99K_QC924cWHfQu6ZOQowQ_jeT_XTRjv_5E6tZOvFsnxwpmnDYl07CjdCYPcqUeNh5mUtjA"/>
+<div class="w-full h-full rounded-full bg-surface-container-highest flex items-center justify-center text-3xl font-bold text-primary" data-user-avatar></div>
 </div>
-<button aria-label="Ubah foto avatar" class="absolute bottom-0 right-0 w-9 h-9 rounded-full bg-primary-container text-on-primary flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-transform" id="btn-edit-avatar" type="button">
+<button aria-label="Ubah foto avatar" class="hidden absolute bottom-0 right-0 w-9 h-9 rounded-full bg-primary-container text-on-primary flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-transform" id="btn-edit-avatar" style="display:none" type="button">
 <span class="material-symbols-outlined text-[18px]">photo_camera</span>
 </button>
 </div>
 <!-- User Names & Details -->
-<h1 class="font-headline-md text-headline-md text-on-surface mb-1">Rian Pratama</h1>
+<h1 class="font-headline-md text-headline-md text-on-surface mb-1" data-user-name></h1>
 <p class="font-body-sm text-body-sm text-on-surface-variant mb-space-sm flex items-center justify-center gap-1">
 <span class="material-symbols-outlined text-[15px]">mail</span>
-                rian.pratama@kuliner.com
+                <span data-user-email></span>
               </p>
 <!-- Level Badge -->
 <div class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-surface-container-highest text-tertiary font-label-md text-label-md shadow-sm mb-space-md">
 <span class="material-symbols-outlined text-[18px]">workspace_premium</span>
-<span>Koki Rumahan Cermat (Level 4)</span>
+<span id="userMemberBadge">Anggota NakEna</span>
 </div>
 <div class="w-full py-2 px-3 rounded-lg bg-surface-container/60 mb-space-md">
 <div class="flex justify-between items-center text-label-sm font-label-sm mb-1.5">
-<span class="text-on-surface-variant">Kemajuan Level 5</span>
-<span class="text-tertiary font-bold">780 / 1000 XP</span>
-</div>
-<div class="w-full h-2 rounded-full bg-surface-container-lowest overflow-hidden">
-<div class="h-full bg-gradient-to-r from-primary-container to-tertiary rounded-full" style="width: 78%;"></div>
+<span class="text-on-surface-variant">Terdaftar sejak</span>
+<span class="text-tertiary font-bold" id="userCreatedAt">Memuat...</span>
 </div>
 </div>
 <p class="font-body-sm text-body-sm text-on-surface-variant/80 flex items-center gap-1">
@@ -64,7 +61,7 @@
                 Bergabung sejak Januari 2025
               </p>
 <!-- Quick Edit Biodata Trigger -->
-<button class="mt-space-md w-full py-2.5 px-space-md rounded-full bg-surface-container-high hover:bg-surface-bright text-on-surface font-label-lg text-label-lg transition-all flex items-center justify-center gap-2" id="btn-open-biodata-modal" type="button">
+<button class="hidden mt-space-md w-full py-2.5 px-space-md rounded-full bg-surface-container-high hover:bg-surface-bright text-on-surface font-label-lg text-label-lg transition-all flex items-center justify-center gap-2" id="btn-open-biodata-modal" style="display:none" type="button">
 <span class="material-symbols-outlined text-[18px]">edit_note</span>
                 Edit Foto &amp; Biodata
               </button>
@@ -335,35 +332,10 @@
                 Bahan yang Selalu Ada di Rumah
               </label>
 <p class="font-body-sm text-body-sm text-on-surface-variant mb-1">Bahan dasar ini tidak perlu selalu di-scan:</p>
-<div class="flex flex-wrap gap-2">
-<span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container text-on-surface font-label-md text-label-md">
-                  🧂 Garam &amp; Gula
-                  <span class="material-symbols-outlined text-[14px] text-primary cursor-pointer hover:text-primary-container">close</span>
-</span>
-<span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container text-on-surface font-label-md text-label-md">
-                  🧅 Bawang Merah
-                  <span class="material-symbols-outlined text-[14px] text-primary cursor-pointer hover:text-primary-container">close</span>
-</span>
-<span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container text-on-surface font-label-md text-label-md">
-                  🧄 Bawang Putih
-                  <span class="material-symbols-outlined text-[14px] text-primary cursor-pointer hover:text-primary-container">close</span>
-</span>
-<span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container text-on-surface font-label-md text-label-md">
-                  🥚 Telur Ayam
-                  <span class="material-symbols-outlined text-[14px] text-primary cursor-pointer hover:text-primary-container">close</span>
-</span>
-<span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container text-on-surface font-label-md text-label-md">
-                  🌻 Minyak Goreng
-                  <span class="material-symbols-outlined text-[14px] text-primary cursor-pointer hover:text-primary-container">close</span>
-</span>
-<span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container text-on-surface font-label-md text-label-md">
-                  🥢 Kecap Manis
-                  <span class="material-symbols-outlined text-[14px] text-primary cursor-pointer hover:text-primary-container">close</span>
-</span>
-<button class="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-surface-container-high hover:bg-surface-bright text-tertiary font-label-md text-label-md transition-colors" type="button">
+<div class="flex flex-wrap gap-2" id="pantryIngredientsList"></div>
+<button class="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-surface-container-high hover:bg-surface-bright text-tertiary font-label-md text-label-md transition-colors" id="btn-add-pantry-ingredient" type="button">
 <span class="material-symbols-outlined text-[16px]">add</span> Tambah Bahan Dasar
                 </button>
-</div>
 </div>
 <!-- Submit Button Preferensi -->
 <div class="pt-space-sm flex justify-end">
@@ -390,17 +362,17 @@
 <div class="grid grid-cols-1 md:grid-cols-2 gap-space-md">
 <div class="flex flex-col gap-1.5">
 <label class="font-label-md text-label-md text-on-surface font-semibold" for="input-fullname">Nama Lengkap</label>
-<input class="w-full px-space-md py-2.5 rounded-lg bg-surface-container text-on-surface font-body-md text-body-md focus:outline-none focus:ring-2 focus:ring-primary-container transition-all" id="input-fullname" name="fullname" type="text" value="Rian Pratama"/>
+<input class="w-full px-space-md py-2.5 rounded-lg bg-surface-container text-on-surface font-body-md text-body-md focus:outline-none focus:ring-2 focus:ring-primary-container transition-all" id="input-fullname" name="fullname" type="text" value=""/>
 </div>
 <div class="flex flex-col gap-1.5">
 <label class="font-label-md text-label-md text-on-surface font-semibold" for="input-email">Alamat Email</label>
-<input class="w-full px-space-md py-2.5 rounded-lg bg-surface-container text-on-surface font-body-md text-body-md focus:outline-none focus:ring-2 focus:ring-primary-container transition-all" id="input-email" name="email" type="email" value="rian.pratama@kuliner.com"/>
+<input class="w-full px-space-md py-2.5 rounded-lg bg-surface-container text-on-surface font-body-md text-body-md focus:outline-none focus:ring-2 focus:ring-primary-container transition-all" id="input-email" name="email" type="email" value="" readonly/>
 </div>
 <div class="md:col-span-2 flex flex-col gap-1.5">
 <label class="font-label-md text-label-md text-on-surface font-semibold">Kata Sandi</label>
 <div class="flex items-center gap-space-sm">
-<input class="w-full px-space-md py-2.5 rounded-lg bg-surface-container text-on-surface-variant font-body-md text-body-md select-none tracking-widest" readonly="" type="password" value="secretpassword123"/>
-<button class="shrink-0 px-space-md py-2.5 rounded-lg bg-surface-container-highest hover:bg-surface-bright text-on-surface font-label-md text-label-md transition-colors" id="btn-change-password-modal" type="button">
+<input class="w-full px-space-md py-2.5 rounded-lg bg-surface-container text-on-surface-variant font-body-md text-body-md" readonly="" type="text" value="Kata sandi disimpan dengan aman"/>
+<button class="hidden shrink-0 px-space-md py-2.5 rounded-lg bg-surface-container-highest hover:bg-surface-bright text-on-surface font-label-md text-label-md transition-colors" id="btn-change-password-modal" style="display:none" type="button">
                     Ubah Sandi
                   </button>
 </div>
@@ -560,7 +532,7 @@
 </div>
 <div class="flex flex-col gap-1">
 <label class="font-label-sm text-label-sm text-on-surface-variant font-semibold">Nama Tampilan</label>
-<input class="w-full px-space-md py-2.5 rounded-lg bg-surface-container text-on-surface font-body-md text-body-md focus:outline-none focus:ring-2 focus:ring-primary-container" type="text" value="Rian Pratama"/>
+<input class="w-full px-space-md py-2.5 rounded-lg bg-surface-container text-on-surface font-body-md text-body-md focus:outline-none focus:ring-2 focus:ring-primary-container" type="text" value=""/>
 </div>
 <div class="flex flex-col gap-1">
 <label class="font-label-sm text-label-sm text-on-surface-variant font-semibold">Kata Sandi Baru (Opsional)</label>

@@ -31,7 +31,7 @@ def render(template_name: str) -> HTMLResponse:
     template_path = TEMPLATES_DIR / f"{template_name}.html"
     html = template_path.read_text(encoding="utf-8")
     integration_script = (
-        f'<script src="/static/frontend.js?v=2" '
+        f'<script src="/static/frontend.js?v=4" '
         f'data-api-base="{escape(API_BASE_URL, quote=True)}" defer></script>'
     )
     return HTMLResponse(html.replace("</body>", f"{integration_script}</body>"))

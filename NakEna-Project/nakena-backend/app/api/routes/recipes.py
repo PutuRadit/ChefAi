@@ -1,16 +1,26 @@
+import json
+import logging
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import ValidationError
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
+from app.core.config import settings
 from app.core.database import get_db
 from app.models import RecipeEntry, User
 from app.schemas.recipe import RecipeEntryCreate, RecipeEntryRead
 
-from app.schemas.recipe import RecipeRequest, RecipeResponse
-from app.services.llm import generate_recipe
+from app.schemas.recipe import GeneratedRecipe, RecipeRequest, RecipeResponse
+from app.services.llm import (
+    GeminiConfigurationError,
+    GeminiResponseError,
+    generate_recipe,
+)
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(
     prefix="/recipes",
@@ -135,29 +145,71 @@ Alergi pengguna:
 Jumlah porsi:
 {request.servings}
 
-Buat satu rekomendasi resep yang mudah dimasak.
+Kategori masakan yang wajib diikuti:
+{request.category}
+
+Buat tepat 3 pilihan resep yang berbeda, mudah dimasak, dan semuanya sesuai kategori tersebut.
+Jangan menggabungkan kategori lain. Beri variasi nama dan cara memasak untuk setiap pilihan.
+Balas hanya dengan JSON valid menggunakan format:
+{{"recipes":[{{"title":"Nama resep","description":"Deskripsi singkat","recipe":"Rincian bahan, langkah memasak, waktu, dan tips penyajian"}}]}}
+
 Jelaskan:
-1. Nama makanan
-2. Deskripsi singkat
-3. Bahan-bahan
-4. Langkah-langkah memasak
-5. Waktu memasak
-6. Tips penyajian
+Di dalam field recipe untuk setiap pilihan, sertakan:
+1. Bahan-bahan beserta takarannya
+2. Langkah-langkah memasak
+3. Waktu memasak
+4. Tips penyajian
 
 Pastikan resep tidak menggunakan bahan yang menyebabkan alergi pengguna.
 Gunakan bahasa Indonesia yang mudah dipahami.
 """
 
     try:
-        result = generate_recipe(prompt)
-
-        return RecipeResponse(
-            success=True,
-            recipe=result
-        )
-
-    except Exception as error:
+        result = generate_recipe(prompt).strip()
+        if result.startswith("```"):
+            result = result.removeprefix("```json").removeprefix("```").removesuffix("```").strip()
+        generated = json.loads(result)
+        recipes = [GeneratedRecipe.model_validate(item) for item in generated["recipes"]]
+        if len(recipes) != 3:
+            raise ValueError("Gemini harus mengembalikan tepat 3 pilihan resep.")
+        return RecipeResponse(success=True, recipe=recipes[0].recipe, recipes=recipes)
+    except GeminiConfigurationError as error:
+        logger.error("Gemini is not configured: %s", error)
         raise HTTPException(
-            status_code=500,
-            detail=f"Gagal membuat rekomendasi resep: {str(error)}"
-        )
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(error),
+        ) from error
+    except GeminiResponseError as error:
+        logger.error("Gemini returned an empty response: %s", error)
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Gemini mengembalikan respons kosong. Coba lagi beberapa saat.",
+        ) from error
+    except (json.JSONDecodeError, KeyError, TypeError, ValidationError, ValueError) as error:
+        logger.warning("Gemini returned invalid recipe data: %s", error)
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Gemini tidak mengembalikan 3 resep dengan format yang benar. Silakan coba lagi.",
+        ) from error
+    except Exception as error:
+        logger.exception("Gemini recipe generation failed")
+        provider_status = getattr(error, "code", None) or getattr(error, "status_code", None)
+        if provider_status == 429:
+            message = "Kuota atau batas permintaan Gemini tercapai. Coba lagi nanti atau periksa kuota di Google AI Studio."
+            error_status = status.HTTP_429_TOO_MANY_REQUESTS
+        elif provider_status in (401, 403):
+            message = "Gemini menolak akses. Periksa API key dan akses Gemini API untuk project tersebut."
+            error_status = status.HTTP_502_BAD_GATEWAY
+        elif provider_status == 404:
+            message = f"Model Gemini '{settings.gemini_model}' tidak ditemukan atau tidak tersedia untuk API key ini."
+            error_status = status.HTTP_502_BAD_GATEWAY
+        elif provider_status == 503:
+            message = "Semua model Gemini yang dicoba sedang sibuk. Tunggu sebentar lalu coba lagi."
+            error_status = status.HTTP_503_SERVICE_UNAVAILABLE
+        else:
+            message = "Gagal menghubungi Gemini. Periksa koneksi internet dan detail error pada terminal backend."
+            error_status = status.HTTP_502_BAD_GATEWAY
+        raise HTTPException(
+            status_code=error_status,
+            detail=message,
+        ) from error

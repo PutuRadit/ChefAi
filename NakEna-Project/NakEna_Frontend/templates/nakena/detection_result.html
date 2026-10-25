@@ -183,14 +183,13 @@
 <p class="font-display font-extrabold text-sm sm:text-base text-white mt-0.5">
                 "Waktunya meracik kelezatan! 🥘"
               </p>
-<span class="text-[11px] text-slate-400 mt-0.5">3 bahan siap diolah jadi mahakarya</span>
+<span class="text-[11px] text-slate-400 mt-0.5"><span id="detectedIngredientSummary">Memuat hasil deteksi...</span></span>
 </div>
 </div>
 </div>
 </section>
 <!-- MAIN TWO-COLUMN WORKSPACE -->
 <form action="/recipes/" class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start" id="ingredientsConfirmationForm" method="POST">
-<input name="csrfmiddlewaretoken" type="hidden" value="csrf_token_nakena_dark">
 <!-- LEFT COLUMN: VISUAL SCAN RESULT (5 cols) -->
 <aside class="lg:col-span-5 flex flex-col gap-5">
 <!-- Scanned Photo Card (#10223D) -->
@@ -207,35 +206,15 @@
 </div>
 <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#060D1A] border border-amber-400/30 text-[#FBBF24] text-xs font-bold">
 <span class="w-1.5 h-1.5 rounded-full bg-[#FBBF24] animate-pulse"></span>
-                3 Bahan Terdeteksi
+                <span id="scanDetectionCount">0</span> Bahan Terdeteksi
               </span>
 </div>
 <!-- Image Viewport with glowing playful tags -->
 <div class="relative w-full h-80 sm:h-96 rounded-2xl overflow-hidden bg-[#060D1A] group border border-slate-800">
-<img alt="Foto bahan di atas meja dapur" class="w-full h-full object-cover brightness-95 group-hover:scale-105 transition-transform duration-700" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCAVSm7XnFXY2G_oXt6UKXdkoRIt33PhaSYjjX8WIy51HUUOK5cCw38zeTq8Lte9W2TYOcVK9-STNgR_d96GQS_KWh4UbeEvq3qf8fk2loo_bXuCd1vXl621yrxB3l_EfR7eFi_OrUmbLWYNOSPgjCfBs4CNPNp7BggSUYTYRV1VtieQOStbDsJimfvY7nQy9Be99skobjlcxQBkSjMMF5cmQhdtrI7QSydzPy17f7EyZXSwFYWoUsXVw">
+<img alt="Foto bahan yang diunggah" class="w-full h-full object-cover brightness-95 group-hover:scale-105 transition-transform duration-700" id="scanPreviewImage">
 <!-- Subtle gradient overlay -->
 <div class="absolute inset-0 bg-gradient-to-t from-[#060D1A]/80 via-transparent to-transparent pointer-events-none"></div>
-<!-- Tag 1: Telur (96%) -->
-<div class="absolute top-[26%] left-[14%] w-28 h-28 rounded-2xl border-2 border-[#FF5E14] bg-[#FF5E14]/20 shadow-[0_0_20px_rgba(255,94,20,0.5)] transition-all duration-300 hover:scale-105 pointer-events-auto cursor-pointer flex flex-col justify-between p-1.5" title="Telur Ayam (96% Cocok)">
-<div class="self-start px-2 py-0.5 rounded-full bg-[#060D1A]/90 border border-[#FF5E14]/60 text-white font-display font-bold text-[10px] sm:text-xs flex items-center gap-1 shadow-lg">
-<span class="w-2 h-2 rounded-full bg-[#FF5E14] animate-ping"></span>
-<span>Telur • 96% Cocok</span>
-</div>
-</div>
-<!-- Tag 2: Tomat Segar (93%) -->
-<div class="absolute top-[32%] right-[12%] w-32 h-32 rounded-2xl border-2 border-[#FBBF24] bg-amber-400/20 shadow-[0_0_20px_rgba(251,191,36,0.5)] transition-all duration-300 hover:scale-105 pointer-events-auto cursor-pointer flex flex-col justify-between p-1.5" title="Tomat Segar (93% Cocok)">
-<div class="self-start px-2 py-0.5 rounded-full bg-[#060D1A]/90 border border-amber-400/60 text-[#FBBF24] font-display font-bold text-[10px] sm:text-xs flex items-center gap-1 shadow-lg">
-<span class="w-2 h-2 rounded-full bg-[#FBBF24]"></span>
-<span>Tomat Segar • 93% Cocok</span>
-</div>
-</div>
-<!-- Tag 3: Bawang Merah (89%) -->
-<div class="absolute bottom-[16%] left-[32%] w-24 h-24 rounded-2xl border-2 border-[#38BDF8] bg-sky-500/20 shadow-[0_0_20px_rgba(56,189,248,0.4)] transition-all duration-300 hover:scale-105 pointer-events-auto cursor-pointer flex flex-col justify-between p-1.5" title="Bawang Merah (89% Cocok)">
-<div class="self-start px-2 py-0.5 rounded-full bg-[#060D1A]/90 border border-sky-400/60 text-[#38BDF8] font-display font-bold text-[10px] sm:text-xs flex items-center gap-1 shadow-lg">
-<span class="w-1.5 h-1.5 rounded-full bg-[#38BDF8]"></span>
-<span>Bawang Merah • 89% Cocok</span>
-</div>
-</div>
+<div class="absolute inset-0 pointer-events-none" id="detectionBoxes"></div>
 <!-- Status Pill Overlay -->
 <div class="absolute bottom-3 right-3 px-3 py-1 rounded-xl bg-[#060D1A]/85 backdrop-blur-md border border-slate-700/60 text-xs text-slate-200 flex items-center gap-1.5 shadow-lg">
 <span class="material-symbols-outlined text-[16px] text-emerald-400">check_circle</span>
@@ -277,7 +256,7 @@
 <p class="text-xs text-slate-400">Verifikasi bahan yang terdeteksi dari fotomu</p>
 </div>
 <span class="px-3 py-1 rounded-full bg-[#060D1A] border border-amber-400/30 text-xs font-bold text-[#FBBF24]" id="ingredientCounterBadge">
-<span id="detectedCount">3</span> Bahan Aktif
+<span id="detectedCount">0</span> Bahan Aktif
               </span>
 </div>
 <!-- Empty State fallback -->
@@ -285,92 +264,30 @@
 <span class="material-symbols-outlined text-[44px] text-slate-500 mb-2">shopping_basket</span>
 <h4 class="font-display font-bold text-base text-white">Daftar Bahan Masih Kosong</h4>
 <p class="text-xs text-slate-400 max-w-xs mt-1 mb-4">
-                Kamu telah menghapus semua bahan. Ketik bahan manual di bawah atau kembalikan bahan default!
+                Belum ada bahan terdeteksi. Tambahkan bahan secara manual untuk melanjutkan.
               </p>
-<button class="px-4 py-2 rounded-xl bg-gradient-to-r from-[#FF5E14] to-[#F59E0B] text-white text-xs font-bold transition-all shadow-md hover:brightness-110" id="restoreDefaultsBtn" type="button">
-                Pulihkan Bahan Terdeteksi
-              </button>
 </div>
 <!-- Detected Ingredient Chips List -->
-<div class="space-y-2.5" id="ingredientsListContainer">
-<!-- Item 1: Telur Ayam -->
-<div class="ingredient-item flex items-center justify-between p-3.5 rounded-2xl bg-[#0B192E] border border-slate-700/60 hover:border-amber-500/40 transition-all group" data-id="item-telur">
+<div class="space-y-2.5 hidden" id="ingredientsListContainer"></div>
+<template id="ingredientItemTemplate">
+<div class="ingredient-item flex items-center justify-between p-3.5 rounded-2xl bg-[#0B192E] border border-slate-700/60 hover:border-amber-500/40 transition-all group">
 <div class="flex items-center gap-3.5 min-w-0">
 <div class="w-10 h-10 rounded-xl bg-[#FF5E14]/20 border border-[#FF5E14]/30 flex items-center justify-center text-[#FF5E14] shrink-0 font-bold">
-<span class="material-symbols-outlined text-[22px]">egg</span>
-</div>
-<div class="min-w-0">
-<div class="flex items-center gap-2 flex-wrap">
-<span class="ingredient-name font-display font-bold text-sm sm:text-base text-white truncate">Telur Ayam</span>
-<span class="px-2 py-0.5 rounded-full bg-[#FF5E14]/20 border border-[#FF5E14]/40 text-[#FF5E14] text-[11px] font-bold">
-                        96% Cocok
-                      </span>
-</div>
-<span class="text-xs text-slate-400">Protein serbaguna untuk orak-arik atau sup</span>
-</div>
-</div>
-<div class="flex items-center gap-1 shrink-0">
-<button class="edit-item-btn p-2 rounded-lg text-slate-400 hover:text-[#FBBF24] hover:bg-slate-800 transition-colors" title="Ubah Nama" type="button">
-<span class="material-symbols-outlined text-[19px]">edit</span>
-</button>
-<button class="delete-item-btn p-2 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/20 transition-colors" title="Hapus Bahan" type="button">
-<span class="material-symbols-outlined text-[19px]">delete</span>
-</button>
-</div>
-</div>
-<!-- Item 2: Tomat Segar -->
-<div class="ingredient-item flex items-center justify-between p-3.5 rounded-2xl bg-[#0B192E] border border-slate-700/60 hover:border-amber-500/40 transition-all group" data-id="item-tomat">
-<div class="flex items-center gap-3.5 min-w-0">
-<div class="w-10 h-10 rounded-xl bg-amber-400/20 border border-amber-400/30 flex items-center justify-center text-[#FBBF24] shrink-0 font-bold">
 <span class="material-symbols-outlined text-[22px]">nutrition</span>
 </div>
-<div class="min-w-0">
-<div class="flex items-center gap-2 flex-wrap">
-<span class="ingredient-name font-display font-bold text-sm sm:text-base text-white truncate">Tomat Segar</span>
-<span class="px-2 py-0.5 rounded-full bg-amber-400/20 border border-amber-400/40 text-[#FBBF24] text-[11px] font-bold">
-                        93% Cocok
-                      </span>
-</div>
-<span class="text-xs text-slate-400">Kaya vitamin C dan kesegaran rasa asam manis</span>
-</div>
+<div class="min-w-0"><div class="flex items-center gap-2 flex-wrap">
+<span class="ingredient-name font-display font-bold text-sm sm:text-base text-white truncate"></span>
+<span class="detection-confidence px-2 py-0.5 rounded-full bg-[#FF5E14]/20 border border-[#FF5E14]/40 text-[#FF5E14] text-[11px] font-bold"></span>
+</div><span class="text-xs text-slate-400">Bahan terdeteksi oleh model NakEna.</span></div>
 </div>
 <div class="flex items-center gap-1 shrink-0">
-<button class="edit-item-btn p-2 rounded-lg text-slate-400 hover:text-[#FBBF24] hover:bg-slate-800 transition-colors" title="Ubah Nama" type="button">
-<span class="material-symbols-outlined text-[19px]">edit</span>
-</button>
-<button class="delete-item-btn p-2 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/20 transition-colors" title="Hapus Bahan" type="button">
-<span class="material-symbols-outlined text-[19px]">delete</span>
-</button>
+<button class="edit-item-btn p-2 rounded-lg text-slate-400 hover:text-[#FBBF24] hover:bg-slate-800 transition-colors" title="Ubah Nama" type="button"><span class="material-symbols-outlined text-[19px]">edit</span></button>
+<button class="delete-item-btn p-2 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/20 transition-colors" title="Hapus Bahan" type="button"><span class="material-symbols-outlined text-[19px]">delete</span></button>
 </div>
 </div>
-<!-- Item 3: Bawang Merah -->
-<div class="ingredient-item flex items-center justify-between p-3.5 rounded-2xl bg-[#0B192E] border border-slate-700/60 hover:border-amber-500/40 transition-all group" data-id="item-bawang">
-<div class="flex items-center gap-3.5 min-w-0">
-<div class="w-10 h-10 rounded-xl bg-sky-400/20 border border-sky-400/30 flex items-center justify-center text-[#38BDF8] shrink-0 font-bold">
-<span class="material-symbols-outlined text-[22px]">spa</span>
-</div>
-<div class="min-w-0">
-<div class="flex items-center gap-2 flex-wrap">
-<span class="ingredient-name font-display font-bold text-sm sm:text-base text-white truncate">Bawang Merah</span>
-<span class="px-2 py-0.5 rounded-full bg-sky-400/20 border border-sky-400/40 text-[#38BDF8] text-[11px] font-bold">
-                        89% Cocok
-                      </span>
-</div>
-<span class="text-xs text-slate-400">Aroma gurih penumis utama dapur nusantara</span>
-</div>
-</div>
-<div class="flex items-center gap-1 shrink-0">
-<button class="edit-item-btn p-2 rounded-lg text-slate-400 hover:text-[#FBBF24] hover:bg-slate-800 transition-colors" title="Ubah Nama" type="button">
-<span class="material-symbols-outlined text-[19px]">edit</span>
-</button>
-<button class="delete-item-btn p-2 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/20 transition-colors" title="Hapus Bahan" type="button">
-<span class="material-symbols-outlined text-[19px]">delete</span>
-</button>
-</div>
-</div>
-</div>
+</template>
 <!-- Hidden input for Form submission -->
-<input id="detectedIngredientsInput" name="detected_ingredients" type="hidden" value="Telur Ayam, Tomat Segar, Bawang Merah">
+<input id="detectedIngredientsInput" name="detected_ingredients" type="hidden" value="">
 <!-- SECTION: TAMBAHKAN BAHAN DARI DAPUR -->
 <div class="pt-4 mt-2 border-t border-slate-800">
 <label class="block font-display font-bold text-sm text-white mb-1.5" for="manualIngredientInput">
@@ -574,7 +491,7 @@
                 Scan Ulang Foto
               </a>
 <!-- Large Glowing CTA Button -->
-<button class="w-full sm:w-auto px-7 py-3.5 rounded-2xl bg-gradient-to-r from-[#FF5E14] via-[#F59E0B] to-[#FF5E14] bg-[length:200%_auto] hover:bg-right transition-all duration-500 text-white font-display font-extrabold text-sm sm:text-base flex items-center justify-center gap-2 glow-orange hover:scale-102 active:scale-98" id="submitFormBtn" onclick="window.location.assign('/recipes/');" type="button">
+<button class="w-full sm:w-auto px-7 py-3.5 rounded-2xl bg-gradient-to-r from-[#FF5E14] via-[#F59E0B] to-[#FF5E14] bg-[length:200%_auto] hover:bg-right transition-all duration-500 text-white font-display font-extrabold text-sm sm:text-base flex items-center justify-center gap-2 glow-orange hover:scale-102 active:scale-98" id="submitFormBtn" type="submit">
 <span class="material-symbols-outlined text-[20px]">auto_awesome</span>
 <span>✨ Konfirmasi Bahan &amp; Buat Resep →</span>
 </button>
@@ -610,7 +527,7 @@
       const hiddenInput = document.getElementById('detectedIngredientsInput');
       const manualInput = document.getElementById('manualIngredientInput');
       const addManualBtn = document.getElementById('addManualBtn');
-      const restoreDefaultsBtn = document.getElementById('restoreDefaultsBtn');
+      const itemTemplate = document.getElementById('ingredientItemTemplate');
       const toast = document.getElementById('toastNotification');
       const toastMsg = document.getElementById('toastMessage');
       const generatingOverlay = document.getElementById('generatingOverlay');
@@ -682,37 +599,12 @@
         if (!nameStr || nameStr.trim() === '') return;
         const cleanName = nameStr.trim();
 
-        const itemEl = document.createElement('div');
-        itemEl.className = 'ingredient-item flex items-center justify-between p-3.5 rounded-2xl bg-[#0B192E] border border-slate-700/60 hover:border-amber-500/40 transition-all group';
-        itemEl.setAttribute('data-id', 'manual-' + Date.now());
-
-        const badgeHtml = isManual 
-          ? `<span class="px-2 py-0.5 rounded-full bg-[#FF5E14]/20 border border-[#FF5E14]/40 text-[#FF5E14] text-[11px] font-bold">Manual</span>`
-          : `<span class="px-2 py-0.5 rounded-full bg-amber-400/20 border border-amber-400/40 text-[#FBBF24] text-[11px] font-bold">92% Cocok</span>`;
-
-        itemEl.innerHTML = `
-          <div class="flex items-center gap-3.5 min-w-0">
-            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#FF5E14]/30 to-[#FBBF24]/30 border border-amber-500/30 flex items-center justify-center text-[#FBBF24] shrink-0 font-bold">
-              <span class="material-symbols-outlined text-[22px]">restaurant</span>
-            </div>
-            <div class="min-w-0">
-              <div class="flex items-center gap-2 flex-wrap">
-                <span class="ingredient-name font-display font-bold text-sm sm:text-base text-white truncate">${cleanName}</span>
-                ${badgeHtml}
-              </div>
-              <span class="text-xs text-slate-400">Bahan dapur pilihan siap masak</span>
-            </div>
-          </div>
-          <div class="flex items-center gap-1 shrink-0">
-            <button type="button" class="edit-item-btn p-2 rounded-lg text-slate-400 hover:text-[#FBBF24] hover:bg-slate-800 transition-colors" title="Ubah Nama">
-              <span class="material-symbols-outlined text-[19px]">edit</span>
-            </button>
-            <button type="button" class="delete-item-btn p-2 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/20 transition-colors" title="Hapus Bahan">
-              <span class="material-symbols-outlined text-[19px]">delete</span>
-            </button>
-          </div>
-        `;
-
+        const itemEl = itemTemplate.content.firstElementChild.cloneNode(true);
+        itemEl.dataset.id = `manual-${Date.now()}`;
+        itemEl.querySelector('.ingredient-name').textContent = cleanName;
+        const badge = itemEl.querySelector('.detection-confidence');
+        badge.textContent = isManual ? 'Manual' : '';
+        if (!isManual) badge.classList.add('hidden');
         container.appendChild(itemEl);
         refreshListState();
         showToast(`Bahan "${cleanName}" berhasil ditambahkan!`);
@@ -729,68 +621,6 @@
           addIngredient(manualInput.value, true);
           manualInput.value = '';
         }
-      });
-
-      // Restore defaults
-      restoreDefaultsBtn.addEventListener('click', () => {
-        container.innerHTML = `
-          <div class="ingredient-item flex items-center justify-between p-3.5 rounded-2xl bg-[#0B192E] border border-slate-700/60 hover:border-amber-500/40 transition-all group" data-id="item-telur">
-            <div class="flex items-center gap-3.5 min-w-0">
-              <div class="w-10 h-10 rounded-xl bg-[#FF5E14]/20 border border-[#FF5E14]/30 flex items-center justify-center text-[#FF5E14] shrink-0 font-bold">
-                <span class="material-symbols-outlined text-[22px]">egg</span>
-              </div>
-              <div class="min-w-0">
-                <div class="flex items-center gap-2 flex-wrap">
-                  <span class="ingredient-name font-display font-bold text-sm sm:text-base text-white truncate">Telur Ayam</span>
-                  <span class="px-2 py-0.5 rounded-full bg-[#FF5E14]/20 border border-[#FF5E14]/40 text-[#FF5E14] text-[11px] font-bold">96% Cocok</span>
-                </div>
-                <span class="text-xs text-slate-400">Protein serbaguna untuk orak-arik atau sup</span>
-              </div>
-            </div>
-            <div class="flex items-center gap-1 shrink-0">
-              <button class="edit-item-btn p-2 rounded-lg text-slate-400 hover:text-[#FBBF24] hover:bg-slate-800 transition-colors" title="Ubah Nama" type="button"><span class="material-symbols-outlined text-[19px]">edit</span></button>
-              <button class="delete-item-btn p-2 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/20 transition-colors" title="Hapus Bahan" type="button"><span class="material-symbols-outlined text-[19px]">delete</span></button>
-            </div>
-          </div>
-          <div class="ingredient-item flex items-center justify-between p-3.5 rounded-2xl bg-[#0B192E] border border-slate-700/60 hover:border-amber-500/40 transition-all group" data-id="item-tomat">
-            <div class="flex items-center gap-3.5 min-w-0">
-              <div class="w-10 h-10 rounded-xl bg-amber-400/20 border border-amber-400/30 flex items-center justify-center text-[#FBBF24] shrink-0 font-bold">
-                <span class="material-symbols-outlined text-[22px]">nutrition</span>
-              </div>
-              <div class="min-w-0">
-                <div class="flex items-center gap-2 flex-wrap">
-                  <span class="ingredient-name font-display font-bold text-sm sm:text-base text-white truncate">Tomat Segar</span>
-                  <span class="px-2 py-0.5 rounded-full bg-amber-400/20 border border-amber-400/40 text-[#FBBF24] text-[11px] font-bold">93% Cocok</span>
-                </div>
-                <span class="text-xs text-slate-400">Kaya vitamin C dan kesegaran rasa asam manis</span>
-              </div>
-            </div>
-            <div class="flex items-center gap-1 shrink-0">
-              <button class="edit-item-btn p-2 rounded-lg text-slate-400 hover:text-[#FBBF24] hover:bg-slate-800 transition-colors" title="Ubah Nama" type="button"><span class="material-symbols-outlined text-[19px]">edit</span></button>
-              <button class="delete-item-btn p-2 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/20 transition-colors" title="Hapus Bahan" type="button"><span class="material-symbols-outlined text-[19px]">delete</span></button>
-            </div>
-          </div>
-          <div class="ingredient-item flex items-center justify-between p-3.5 rounded-2xl bg-[#0B192E] border border-slate-700/60 hover:border-amber-500/40 transition-all group" data-id="item-bawang">
-            <div class="flex items-center gap-3.5 min-w-0">
-              <div class="w-10 h-10 rounded-xl bg-sky-400/20 border border-sky-400/30 flex items-center justify-center text-[#38BDF8] shrink-0 font-bold">
-                <span class="material-symbols-outlined text-[22px]">spa</span>
-              </div>
-              <div class="min-w-0">
-                <div class="flex items-center gap-2 flex-wrap">
-                  <span class="ingredient-name font-display font-bold text-sm sm:text-base text-white truncate">Bawang Merah</span>
-                  <span class="px-2 py-0.5 rounded-full bg-sky-400/20 border border-sky-400/40 text-[#38BDF8] text-[11px] font-bold">89% Cocok</span>
-                </div>
-                <span class="text-xs text-slate-400">Aroma gurih penumis utama dapur nusantara</span>
-              </div>
-            </div>
-            <div class="flex items-center gap-1 shrink-0">
-              <button class="edit-item-btn p-2 rounded-lg text-slate-400 hover:text-[#FBBF24] hover:bg-slate-800 transition-colors" title="Ubah Nama" type="button"><span class="material-symbols-outlined text-[19px]">edit</span></button>
-              <button class="delete-item-btn p-2 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/20 transition-colors" title="Hapus Bahan" type="button"><span class="material-symbols-outlined text-[19px]">delete</span></button>
-            </div>
-          </div>
-        `;
-        refreshListState();
-        showToast('Bahan awal berhasil dipulihkan.');
       });
 
       // Staple checkboxes logic

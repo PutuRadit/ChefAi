@@ -4,7 +4,10 @@ Backend API FastAPI untuk NakEna (Smart Food Waste Management System). Backend h
 API untuk frontend, database, dan Gemini; halaman dan tampilan dijalankan oleh aplikasi frontend.
 
 Konfigurasi lokal dibaca dari `.env`. Variabel Gemini yang didukung: `GEMINI_API_KEY` dan
-`GEMINI_MODEL` (default `gemini-3.8-flash`). Jangan simpan API key asli di `.env.example` atau commit.
+`GEMINI_MODEL` (default `gemini-3.1-flash-lite`, model hemat untuk tugas ringan). Jika model
+mengembalikan 503 (sedang sibuk) atau 404 (tidak tersedia), backend mencoba model Flash-Lite
+alternatif sebelum menggunakan `gemini-2.5-flash`. Error Gemini dicatat di terminal backend; API
+juga membedakan kegagalan kuota, akses API key, dan model yang tidak tersedia.
 
 ## Struktur
 
@@ -64,9 +67,10 @@ memilih Keluar atau sesi tab berakhir.
 Model lokal `models/chefai_best.pt` mendeteksi 21 kelas bahan makanan. Konfigurasi model memakai
 `YOLO_MODEL_PATH` (default `models/chefai_best.pt`) dan `YOLO_CONFIDENCE` (default `0.25`).
 Alur frontend mengunggah foto, meminta deteksi, menampilkan hasil agar pengguna dapat mengoreksi
-bahan, lalu mengirim bahan dan preferensi ke Gemini untuk membuat resep. Riwayat resep dan favorit
-disimpan per akun. File model harus tersedia di mesin backend dan paket `ultralytics` dipasang dari
-`requirements.txt`.
+bahan, lalu mengirim bahan, preferensi, dan kategori masakan ke Gemini untuk membuat tiga pilihan
+resep dalam kategori yang dipilih. Resep yang dibuat disimpan ke riwayat per akun; gambar resep
+belum dibuat oleh AI dan area gambar dibiarkan kosong. File model harus tersedia di mesin backend
+dan paket `ultralytics` dipasang dari `requirements.txt`.
 
 ## Endpoint
 
@@ -75,7 +79,7 @@ disimpan per akun. File model harus tersedia di mesin backend dan paket `ultraly
 | POST | `/auth/register` | - | Daftar (email, password min. 8 karakter, full_name) |
 | POST | `/auth/login` | - | Login JSON → `access_token` (JWT) |
 | POST | `/auth/token` | - | Login form-data, khusus tombol Authorize di Swagger |
-| POST | `/recipes/generate` | - | Membuat resep dengan Gemini |
+| POST | `/recipes/generate` | - | Membuat tiga pilihan resep Gemini sesuai kategori (`Rumahan`, `Tumisan`, `Kuah Hangat`) |
 | POST | `/uploads/{id}/detect` | Autentikasi | Deteksi bahan dengan model YOLO lokal |
 | GET / PATCH | `/users/me` | Bearer | Lihat / ubah profil |
 | GET | `/users/me/preferences` | Bearer | Lihat preferensi |

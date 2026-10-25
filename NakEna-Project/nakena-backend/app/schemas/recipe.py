@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -23,11 +24,22 @@ class RecipeRequest(BaseModel):
         le=20,
         description="Jumlah porsi"
     )
+    category: Literal["Rumahan", "Tumisan", "Kuah Hangat"] = Field(
+        default="Rumahan",
+        description="Kategori masakan untuk rekomendasi resep"
+    )
+
+
+class GeneratedRecipe(BaseModel):
+    title: str = Field(..., min_length=1, max_length=200)
+    description: str = Field(..., min_length=1, max_length=1000)
+    recipe: str = Field(..., min_length=1, max_length=15000)
 
 
 class RecipeResponse(BaseModel):
     success: bool
     recipe: str
+    recipes: list[GeneratedRecipe] = Field(default_factory=list)
 
 
 class RecipeEntryCreate(BaseModel):

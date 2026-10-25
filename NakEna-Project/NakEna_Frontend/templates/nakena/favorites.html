@@ -42,7 +42,7 @@
 <div class="flex flex-wrap items-center gap-space-md">
 <div class="flex items-center gap-space-sm px-space-md py-space-xs rounded-full bg-surface-container-lowest text-tertiary shadow-inner">
 <span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">menu_book</span>
-<span class="font-label-md text-label-md text-on-surface" id="recipeCounterBadge"><span class="text-tertiary font-bold">8</span> Resep Tersimpan</span>
+<span class="font-label-md text-label-md text-on-surface" id="recipeCounterBadge"><span class="text-tertiary font-bold">0</span> Resep Tersimpan</span>
 </div>
 <a class="group inline-flex items-center gap-space-sm px-space-lg py-space-xs bg-primary-container text-on-primary rounded-full font-label-lg text-label-lg shadow-[0_0_20px_rgba(255,94,20,0.45)] hover:shadow-[0_0_30px_rgba(255,94,20,0.65)] hover:scale-105 active:scale-95 transition-all" data-path="scan-bahan" href="/scan/">
 <span class="material-symbols-outlined text-[20px] transition-transform group-hover:rotate-12">bolt</span>
@@ -65,7 +65,7 @@
 <div class="w-full flex items-center gap-space-sm overflow-x-auto pb-space-sm mb-space-md no-scrollbar">
 <button class="category-pill active shrink-0 px-space-md py-space-xs rounded-full font-label-md text-label-md transition-all flex items-center gap-space-xs bg-primary-container text-on-primary shadow-[0_0_15px_rgba(255,94,20,0.35)]" onclick="setCategoryFilter('all', this)">
 <span>Semua</span>
-<span class="bg-black/20 px-2 py-0.5 rounded-full text-[10px] text-white" id="count-all">8</span>
+<span class="bg-black/20 px-2 py-0.5 rounded-full text-[10px] text-white" id="count-all">0</span>
 </button>
 <button class="category-pill shrink-0 px-space-md py-space-xs rounded-full font-label-md text-label-md transition-all flex items-center gap-space-xs bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface" onclick="setCategoryFilter('rumahan', this)">
 <span>Masakan Rumahan</span>
@@ -106,7 +106,7 @@
 </div>
 </div>
 <!-- Recipe Cards Grid (6 Main + 2 Bonus for complete 8-card favorite registry) -->
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-space-md" id="recipeCardsGrid">
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-space-md" id="recipeCardsGrid" style="display:none">
 <!-- Card 1: Nasi Goreng Rumahan Spesial -->
 <article class="recipe-item group bg-gradient-to-b from-surface-container to-surface-container-low rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 flex flex-col justify-between" data-category="rumahan kilat" data-match="98" data-rating="4.9" data-time="15" data-title="Nasi Goreng Rumahan Spesial">
 <div>
