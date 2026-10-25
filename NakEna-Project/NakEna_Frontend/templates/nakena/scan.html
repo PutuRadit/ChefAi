@@ -89,7 +89,7 @@
 </div>
 <div class="flex flex-col">
 <div class="flex items-center gap-2">
-<span class="font-display font-extrabold text-[22px] tracking-tight text-white">Chef<span class="text-[#FF5E14]">AI</span></span>
+<span class="font-display font-extrabold text-[22px] tracking-tight text-white">Nak<span class="text-[#FF5E14]">Ena</span></span>
 <span class="hidden sm:inline-flex px-2 py-0.5 rounded-full bg-[#142646] text-[#f9bd22] text-[11px] font-bold tracking-wider uppercase border border-[#f9bd22]/20">Koki Pintar</span>
 </div>
 <span class="text-[#889bbb] text-xs hidden md:inline">Solusi Masak Cerdas Dapur Anda</span>
@@ -104,22 +104,22 @@
 <!-- Step Indicator Badges -->
 <nav class="flex items-center justify-center gap-1 sm:gap-2 bg-[#0c182e]/90 border border-[#1b2d4f] px-2 sm:px-3 py-1.5 rounded-full shadow-inner">
 <!-- Step 1: Active Scan -->
-<a aria-current="page" class="px-3 sm:px-4 py-1.5 transition-all flex items-center gap-2 bg-gradient-to-r from-[#FF5E14] to-[#ea580c] text-white font-bold text-xs sm:text-sm rounded-full shadow-[0_0_20px_rgba(255,94,20,0.45)]" data-path="scan-bahan" href="/scan/">
+<div aria-current="step" aria-disabled="true" class="px-3 sm:px-4 py-1.5 flex items-center gap-2 bg-gradient-to-r from-[#FF5E14] to-[#ea580c] text-white font-bold text-xs sm:text-sm rounded-full shadow-[0_0_20px_rgba(255,94,20,0.45)]">
 <span class="w-5 h-5 rounded-full bg-white/20 text-white flex items-center justify-center text-[11px] font-extrabold shrink-0">1</span>
 <span>Scan Bahan</span>
-</a>
+</div>
 <div class="w-2 sm:w-4 h-0.5 bg-[#1f345a] shrink-0"></div>
 <!-- Step 2 -->
-<a class="px-3 sm:px-4 py-1.5 rounded-full text-xs sm:text-sm font-semibold text-[#889bbb] hover:text-white transition-all flex items-center gap-2" data-path="konfirmasi-bahan" href="#">
+<div aria-disabled="true" class="px-3 sm:px-4 py-1.5 rounded-full text-xs sm:text-sm font-semibold text-[#889bbb] flex items-center gap-2">
 <span class="w-5 h-5 rounded-full bg-[#13233f] text-[#889bbb] flex items-center justify-center text-[11px] font-bold shrink-0">2</span>
 <span>Konfirmasi</span>
-</a>
+</div>
 <div class="w-2 sm:w-4 h-0.5 bg-[#1f345a] shrink-0"></div>
 <!-- Step 3 -->
-<a class="px-3 sm:px-4 py-1.5 rounded-full text-xs sm:text-sm font-semibold text-[#889bbb] hover:text-white transition-all flex items-center gap-2" data-path="rekomendasi-resep" href="#">
+<div aria-disabled="true" class="px-3 sm:px-4 py-1.5 rounded-full text-xs sm:text-sm font-semibold text-[#889bbb] flex items-center gap-2">
 <span class="w-5 h-5 rounded-full bg-[#13233f] text-[#889bbb] flex items-center justify-center text-[11px] font-bold shrink-0">3</span>
 <span>Resep</span>
-</a>
+</div>
 </nav>
 <!-- Right Profile / Bookmark Action -->
 <div class="flex items-center gap-3 shrink-0">
@@ -127,18 +127,18 @@
 <span class="material-symbols-outlined text-[17px] text-[#f9bd22]">bookmark</span>
 <span>Tersimpan: <strong class="text-white">0</strong></span>
 </a>
-<div class="flex items-center pl-1">
-<div class="w-9 h-9 rounded-full ring-2 ring-[#FF5E14]/40 overflow-hidden shadow-md">
-<img alt="User Avatar" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida/AEtjO1WgWmn4MKvTd_AR_9Ka_OSABooFWQEgsbsZB-gglo0kSx_rx8AsenS3vsbtYw6zpDUzFArXNtk_Mk66-VysKqOZxaMnjBg2DDgcxqbni7UvkFiKUBPz1K9sjPLu8gLLT3BrqinwbIy8eldaEbuQc5bIFFUDoB6wU3dzTkpH9rtIKdghTsjvIFq4RwkRMTIcyIer2aFLW1YK34veUVRGySjoLGXBisMDtnQqgN9qA1cXfjKNn67s4nk2yAC0MIadvAk9-tmLaW6DTo0">
+<a aria-label="Buka profil" class="flex items-center pl-1 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f9bd22]" data-path="profil-pengguna" href="/profile/">
+<div class="w-9 h-9 rounded-full ring-2 ring-[#FF5E14]/40 overflow-hidden shadow-md bg-gradient-to-br from-[#FF5E14] to-[#f9bd22] text-[#060D1A] flex items-center justify-center font-extrabold text-sm" data-user-avatar>
+<span data-user-avatar-initial>U</span>
 </div>
-</div>
+</a>
 </div>
 </div>
 </header>
 <!-- Main Content Layout -->
 <main class="w-full pt-28 pb-12 flex-1 flex flex-col relative z-10">
 <div class="max-w-[1360px] w-full mx-auto px-4 sm:px-6 lg:px-8 flex-1 flex flex-col justify-center">
-<!-- Breadcrumb Bar & State Simulator Pills -->
+<!-- Breadcrumb Bar -->
 <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
 <a class="inline-flex items-center gap-2 text-[#889bbb] hover:text-[#ffb59b] transition-colors text-sm font-semibold group" data-path="beranda" href="/">
 <span class="w-8 h-8 rounded-full bg-[#10223D] border border-[#1b2d4f] flex items-center justify-center text-[#ffb59b] group-hover:scale-105 transition-transform shadow-sm">
@@ -146,26 +146,11 @@
 </span>
 <span>Kembali ke Beranda</span>
 </a>
-<!-- Interactive Mode Simulator Switcher -->
-<div class="flex items-center gap-1.5 bg-[#091528] p-1.5 rounded-full border border-[#1a2f52] shadow-lg">
-<span class="hidden md:inline pl-2 pr-1 text-[#64799b] text-[11px] font-bold uppercase tracking-wider">Simulasi Mode:</span>
-<button class="px-3.5 py-1 rounded-full text-xs font-bold bg-[#FF5E14] text-white shadow-[0_0_15px_rgba(255,94,20,0.4)] transition-all" id="btn-state-upload" onclick="switchState('upload')" type="button">
-            Normal
-          </button>
-<button class="px-3 py-1 rounded-full text-xs font-semibold text-[#889bbb] hover:text-white transition-all" id="btn-state-preview" onclick="switchState('preview')" type="button">
-            Preview Foto
-          </button>
-<button class="px-3 py-1 rounded-full text-xs font-semibold text-[#889bbb] hover:text-white transition-all" id="btn-state-loading" onclick="switchState('loading')" type="button">
-            Sedang Menganalisis
-          </button>
-</div>
+
 </div>
 <!-- Hero Title Section -->
 <div class="mb-8">
-<div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-gradient-to-r from-[#f9bd22]/15 to-[#FF5E14]/15 border border-[#f9bd22]/30 text-[#f9bd22] text-xs font-bold tracking-wider uppercase mb-3 shadow-[0_0_20px_rgba(249,189,34,0.15)]">
-<span class="material-symbols-outlined text-[16px]">sparkles</span>
-<span>MASAK JADI LEBIH SERU</span>
-</div>
+
 <h1 class="font-display font-extrabold text-3xl sm:text-4xl lg:text-5xl text-white tracking-tight leading-tight">
           Yuk, Scan Bahanmu! <span class="inline-block hover:rotate-12 transition-transform">🍳✨</span>
 </h1>
@@ -252,7 +237,7 @@
 </div>
 </div>
 <!-- ============================== -->
-<!-- STATE: PREVIEW (Simulated)     -->
+<!-- STATE: PREVIEW -->
 <!-- ============================== -->
 <div class="hidden flex-col w-full transition-all duration-300" id="state-preview">
 <div class="flex flex-col sm:flex-row gap-5 items-center">
@@ -297,7 +282,7 @@
 </div>
 </div>
 <!-- ============================== -->
-<!-- STATE: LOADING (Simulated)     -->
+<!-- STATE: LOADING -->
 <!-- ============================== -->
 <div class="hidden flex-col items-center justify-center text-center py-6 w-full transition-all duration-300" id="state-loading">
 <div class="relative w-20 h-20 mb-4 flex items-center justify-center">
@@ -325,58 +310,30 @@
 <!-- ========================================================= -->
 <div class="lg:col-span-5 flex flex-col items-center justify-center relative mt-6 lg:mt-0">
 <!-- Speech Bubble from NakEna -->
-<div class="relative mb-3 max-w-md w-full bg-gradient-to-r from-[#102444] to-[#142b52] border border-[#f9bd22]/40 rounded-2xl p-4 sm:p-5 shadow-[0_10px_30px_rgba(0,0,0,0.5)] animate-float-delay z-20">
+<div class="relative mb-4 w-full max-w-[430px] mx-auto bg-gradient-to-r from-[#102444] to-[#142b52] border border-[#f9bd22]/40 rounded-2xl p-4 sm:p-5 shadow-[0_10px_30px_rgba(0,0,0,0.5)] animate-float-delay z-20">
 <!-- Bubble Arrow pointing down -->
 <div class="absolute -bottom-2.5 left-12 w-5 h-5 bg-[#122748] border-r border-b border-[#f9bd22]/40 transform rotate-45"></div>
-<div class="flex items-start gap-3">
-<span class="text-2xl shrink-0">🍳</span>
 <div>
 <div class="flex items-center gap-2 mb-1">
 <span class="text-xs font-bold text-[#f9bd22] uppercase tracking-wider">NakEna Menyapa</span>
 <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
 </div>
 <p class="text-sm sm:text-base font-semibold text-white leading-snug">
-                  "Hai koki hebat! Cukup foto isi kulkasmu, biar aku yang racikkan resep spesial! 🍳✨"
+                  "Hai koki hebat! Cukup foto isi kulkasmu, biar aku yang racikkan resep spesial!"
                 </p>
 </div>
 </div>
-</div>
 <!-- Mascot Showcase Container -->
-<div class="relative w-full flex items-center justify-center">
+<div class="relative w-full max-w-[430px] mx-auto flex flex-col items-center justify-center">
 <!-- Radiant Mascot Glow Backing -->
-<div class="absolute w-72 h-72 sm:w-88 sm:h-88 bg-gradient-to-tr from-[#FF5E14]/25 via-[#f9bd22]/20 to-transparent rounded-full blur-2xl animate-glow pointer-events-none"></div>
-<!-- Floating Culinary Ingredient Stickers around mascot -->
-<!-- Tomato sticker -->
-<div class="absolute -top-3 left-4 sm:left-10 z-20 animate-float">
-<div class="w-12 h-12 rounded-2xl bg-[#10223D]/90 border border-rose-500/40 backdrop-blur-md flex items-center justify-center shadow-lg transform -rotate-12 hover:scale-110 transition-transform">
-<span class="text-2xl">🍅</span>
-</div>
-</div>
-<!-- Garlic sticker -->
-<div class="absolute top-1/4 -right-2 sm:right-4 z-20 animate-float-delay">
-<div class="w-11 h-11 rounded-2xl bg-[#10223D]/90 border border-amber-300/40 backdrop-blur-md flex items-center justify-center shadow-lg transform rotate-12 hover:scale-110 transition-transform">
-<span class="text-2xl">🧄</span>
-</div>
-</div>
-<!-- Chili sticker -->
-<div class="absolute bottom-16 -left-3 sm:left-6 z-20 animate-float">
-<div class="w-11 h-11 rounded-2xl bg-[#10223D]/90 border border-red-500/40 backdrop-blur-md flex items-center justify-center shadow-lg transform rotate-6 hover:scale-110 transition-transform">
-<span class="text-2xl">🌶️</span>
-</div>
-</div>
-<!-- Egg sticker -->
-<div class="absolute -bottom-2 right-8 sm:right-16 z-20 animate-float-delay">
-<div class="w-12 h-12 rounded-2xl bg-[#10223D]/90 border border-yellow-400/40 backdrop-blur-md flex items-center justify-center shadow-lg transform -rotate-6 hover:scale-110 transition-transform">
-<span class="text-2xl">🥚</span>
-</div>
-</div>
-<!-- Primary Mascot Image https://lh3.googleusercontent.com/aida-public/AB6AXuCIn8W6qye2b-A3jxMuoAiV9U2qLSRrSFUaXWLCclzGQX-cTexMVkQ5HBmB7cqcOY5LXEFGh1tf0IDOpt5W5R-_WiXtoZFIvEbhIEa4m8_cEHB_KjxKfPwiRAqpmgowK4Pt4TrXJeRkf1P5Xw5g-rYfnGhciIz1tyjZH30PzLpK0KidB3WWu1IgdsIKV64nsCS50nKtIeezZnMhhCFAd5bZj1Q01cxNd5qgXiZlGv4GBt5CcdcnmBu95uUND6u-VMaOyfM -->
-<div class="relative z-10 w-full max-w-[460px] filter drop-shadow-[0_15px_35px_rgba(255,94,20,0.3)] transition-transform duration-500 hover:scale-[1.03]">
-<img alt="NakEna Maskot Ceria dengan Wajan Lezat" class="w-full h-auto object-contain pointer-events-none select-none" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCIn8W6qye2b-A3jxMuoAiV9U2qLSRrSFUaXWLCclzGQX-cTexMVkQ5HBmB7cqcOY5LXEFGh1tf0IDOpt5W5R-_WiXtoZFIvEbhIEa4m8_cEHB_KjxKfPwiRAqpmgowK4Pt4TrXJeRkf1P5Xw5g-rYfnGhciIz1tyjZH30PzLpK0KidB3WWu1IgdsIKV64nsCS50nKtIeezZnMhhCFAd5bZj1Q01cxNd5qgXiZlGv4GBt5CcdcnmBu95uUND6u-VMaOyfM">
+<div class="absolute w-64 h-64 sm:w-80 sm:h-80 bg-gradient-to-tr from-[#FF5E14]/25 via-[#f9bd22]/20 to-transparent rounded-full blur-2xl animate-glow pointer-events-none"></div>
+<!-- Primary Mascot Image -->
+<div class="relative z-10 w-full max-w-[430px] mx-auto filter drop-shadow-[0_15px_35px_rgba(255,94,20,0.3)] transition-transform duration-500 hover:scale-[1.03]">
+<img alt="NakEna Maskot Ceria dengan Wajan Lezat" class="w-full h-auto object-contain pointer-events-none select-none" src="/static/assets/mascottt.png">
 </div>
 </div>
 <!-- Bottom floating cheer badge -->
-<div class="mt-2 inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#0a172e]/80 border border-[#1b3154] text-xs text-[#bac7e3] backdrop-blur-md shadow-md">
+<div class="mt-3 w-full max-w-[430px] mx-auto flex flex-wrap items-center justify-center text-center gap-x-2 gap-y-0.5 px-4 py-1.5 rounded-full bg-[#0a172e]/80 border border-[#1b3154] text-xs text-[#bac7e3] backdrop-blur-md shadow-md">
 <span class="text-[#f9bd22] font-bold">500+</span>
 <span>Ide Masakan Rumahan Lezat Menantimu</span>
 </div>
@@ -400,13 +357,12 @@
 </div>
 </div>
 </footer>
-<!-- Interactive State Switcher Script -->
+<!-- Scan flow script -->
 <script>
     function switchState(stateName) {
       const states = ['upload', 'preview', 'loading'];
       states.forEach(s => {
         const el = document.getElementById('state-' + s);
-        const btn = document.getElementById('btn-state-' + s);
         if (el) {
           if (s === stateName) {
             el.classList.remove('hidden');
@@ -414,13 +370,6 @@
           } else {
             el.classList.add('hidden');
             el.classList.remove('flex');
-          }
-        }
-        if (btn) {
-          if (s === stateName) {
-            btn.className = "px-3.5 py-1 rounded-full text-xs font-bold bg-[#FF5E14] text-white shadow-[0_0_15px_rgba(255,94,20,0.4)] transition-all";
-          } else {
-            btn.className = "px-3 py-1 rounded-full text-xs font-semibold text-[#889bbb] hover:text-white transition-all";
           }
         }
       });

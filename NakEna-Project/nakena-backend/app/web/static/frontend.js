@@ -1,10 +1,9 @@
 (() => {
   const tokenKey = "nakena_access_token";
   const emailKey = "nakena_user_email";
+  const userNameKey = "nakena_user_name";
   const uploadKey = "nakena_last_upload";
   const recipeKey = "nakena_latest_recipe";
-  const script = document.querySelector('script[src="/static/frontend.js"]');
-  const apiBaseUrl = (script?.dataset.apiBase || "").replace(/\/+$/, "");
   const token = () => sessionStorage.getItem(tokenKey);
   const email = () => sessionStorage.getItem(emailKey) || "guest";
   const storageKey = (name) => `nakena_${name}_${email()}`;
@@ -15,7 +14,7 @@
     if (options.body && !(options.body instanceof FormData)) {
       headers.set("Content-Type", "application/json");
     }
-    const response = await fetch(`${apiBaseUrl}${path}`, { ...options, headers });
+    const response = await fetch(path, { ...options, headers });
     const data = response.status === 204 ? null : await response.json().catch(() => ({}));
     if (!response.ok) {
       if (response.status === 401) {
@@ -69,7 +68,8 @@
         });
         saveToken(data, userEmail);
         const next = new URLSearchParams(location.search).get("next");
-        window.location.assign(next?.startsWith("/") && !next.startsWith("//") ? next : "/scan/");
+        const target = next?.startsWith("/") && !next.startsWith("//") ? next : "/scan/";
+        window.location.assign(target);
       } catch (error) {
         setNotice(error.message);
         if (button) button.disabled = false;
@@ -227,11 +227,10 @@
     const count = document.getElementById("detectedCount");
     if (count) count.textContent = "0";
      const message = document.querySelector("#ingredientsConfirmationForm aside .text-slate-400");
-     if (message) message.textContent = "Foto tersimpan. Deteksi YOLO belum tersedia di backend; tambahkan atau koreksi bahan secara manual.";
+     if (message) message.textContent = "Foto tersimpan. Tambahkan atau koreksi bahan secara manual sebelum membuat resep.";
      const detectedBadge = document.querySelector("#ingredientsConfirmationForm aside .text-amber-400.text-xs.font-bold");
      if (detectedBadge) detectedBadge.textContent = "0 Bahan Terdeteksi";
-     const statusLabel = document.querySelector("#ingredientsConfirmationForm aside .text-slate-200");
-    if (statusLabel) statusLabel.textContent = "YOLO belum terpasang";
+
   }
 
   function profilePreferenceFromForm(form) {
@@ -307,60 +306,8 @@
   function setupRecipeGeneration() {
     const form = document.getElementById("ingredientsConfirmationForm");
     if (!form) return;
-    captureSubmit(form, async () => {
-      const values = new FormData(form);
-      const ingredients = [
-        ...String(values.get("detected_ingredients") || "").split(","),
-        ...String(values.get("manual_ingredients") || "").split(","),
-        ...values.getAll("staple_ingredients").map(String),
-      ].map((item) => item.trim()).filter(Boolean);
-      const uniqueIngredients = [...new Set(ingredients)];
-      if (!uniqueIngredients.length) return setNotice("Tambahkan minimal satu bahan untuk membuat resep.");
-      const diets = values.getAll("diet").map(String);
-      const cuisine = String(values.get("cuisine_type") || "");
-      const cookTime = String(values.get("cooking_time") || "15_to_30");
-      const allergies = values.getAll("allergies").map((item) => String(item).replace(/^Bebas\s+/i, ""));
-      const preference = `${diets.join(", ")}${cuisine ? `; ${cuisine}` : ""}; waktu ${cookTime}`.trim();
-      const servings = Math.max(1, Math.min(20, Number(values.get("servings") || 2)));
-      const upload = JSON.parse(sessionStorage.getItem(uploadKey) || "null");
-      const button = document.getElementById("submitFormBtn");
-      if (button) button.disabled = true;
-      try {
-        await api("/users/me/preferences", {
-          method: "PATCH",
-          body: JSON.stringify({
-            diet: diets.join(", ") || null,
-            allergies,
-            staple_ingredients: values.getAll("staple_ingredients"),
-            default_max_cook_minutes: cookTime === "under_15" ? 15 : cookTime === "over_30" ? 60 : 30,
-            default_difficulty: /Sedang/i.test(String(values.get("difficulty") || "")) ? "medium" : "easy",
-            default_servings: servings,
-            preferred_cuisine: cuisine || null,
-          }),
-        });
-        const result = await api("/recipes/generate", {
-          method: "POST",
-          body: JSON.stringify({ ingredients: uniqueIngredients, preferences: preference, allergies, servings }),
-        });
-        const recipe = {
-          title: result.recipe.split("\n").find((line) => line.trim())?.replace(/^#+\s*/, "") || "Resep NakEna",
-          text: result.recipe,
-          ingredients: uniqueIngredients,
-          createdAt: new Date().toISOString(),
-          uploadId: upload?.id || null,
-        };
-        sessionStorage.setItem(recipeKey, JSON.stringify(recipe));
-        const saved = await api("/recipes/history", {
-          method: "POST",
-          body: JSON.stringify({ title: recipe.title, recipe_text: recipe.text, ingredients: recipe.ingredients }),
-        });
-        recipe.id = saved.id;
-        sessionStorage.setItem(recipeKey, JSON.stringify(recipe));
-        location.assign("/recipes/");
-      } catch (error) {
-        setNotice(error.message);
-        if (button) button.disabled = false;
-      }
+    captureSubmit(form, () => {
+      location.assign("/recipes/");
     });
   }
 
@@ -561,12 +508,38 @@
     main.prepend(details);
   }
 
+  function renderProfileAvatar(avatar, user = {}) {
+    if (!avatar) return;
+    const fullName = String(user.full_name || sessionStorage.getItem(userNameKey) || email() || "NakEna").trim();
+    const initial = fullName.charAt(0).toUpperCase() || "N";
+    const avatarUrl = user.profile_image_url || user.avatar_url || user.photo_url;
+    avatar.textContent = "";
+    if (avatarUrl) {
+      const image = document.createElement("img");
+      image.src = avatarUrl;
+      image.alt = "Foto profil";
+      image.className = "w-full h-full object-cover";
+      avatar.appendChild(image);
+    } else {
+      const fallback = document.createElement("span");
+      fallback.textContent = initial;
+      fallback.setAttribute("data-user-avatar-initial", "");
+      avatar.appendChild(fallback);
+    }
+    avatar.closest("a")?.setAttribute("aria-label", `Buka profil ${fullName}`);
+  }
+
   async function hydrateProfile() {
     if (!token()) return;
     const name = document.querySelector("[data-user-name]");
+    const avatar = document.querySelector("[data-user-avatar]");
+    // Tampilkan huruf awal segera, lalu ganti dengan data profil setelah API selesai.
+    renderProfileAvatar(avatar);
     try {
       const user = await api("/users/me");
       if (name) name.textContent = user.full_name;
+      sessionStorage.setItem(userNameKey, String(user.full_name || ""));
+      renderProfileAvatar(avatar, user);
     } catch (error) {
       if (location.pathname.startsWith("/profile/")) setNotice(error.message);
     }
@@ -577,6 +550,7 @@
       button.addEventListener("click", () => {
         sessionStorage.removeItem(tokenKey);
         sessionStorage.removeItem(emailKey);
+        sessionStorage.removeItem(userNameKey);
         location.assign("/");
       });
     });
@@ -584,6 +558,7 @@
       event.preventDefault();
       sessionStorage.removeItem(tokenKey);
       sessionStorage.removeItem(emailKey);
+      sessionStorage.removeItem(userNameKey);
       sessionStorage.removeItem(recipeKey);
       location.assign("/");
     });

@@ -1,71 +1,119 @@
-import os
-from html import escape
+from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, Request, UploadFile, File
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi import FastAPI, Request
+from fastapi.responses import HTMLResponse
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
 
-BASE_DIR = Path(__file__).resolve().parent.parent
-INTEGRATION_STATIC_DIR = BASE_DIR.parent / "nakena-backend" / "app" / "web" / "static"
-API_BASE_URL = os.getenv("NAKENA_API_BASE_URL", "http://localhost:8000").rstrip("/")
-app = FastAPI(title="NakEna")
-app.mount("/static", StaticFiles(directory=INTEGRATION_STATIC_DIR), name="static")
-templates = Jinja2Templates(directory=BASE_DIR / "templates")
+from app import models  # noqa: F401
+from app.api.routes import auth, recipes, uploads, users
+from app.core.config import settings
+from app.core.database import Base, engine
 
 
-def render(template: str, request: Request, **context):
-    response = templates.TemplateResponse(
-        request=request,
-        name=f"nakena/{template}.html",
-        context=context,
-    )
-    script = (
-        f'<script src="/static/frontend.js" data-api-base="{escape(API_BASE_URL, quote=True)}" defer></script>'
-    )
-    html = response.body.decode("utf-8").replace("</body>", f"{script}</body>")
-    return HTMLResponse(html, status_code=response.status_code)
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Sementara: membuat tabel otomatis saat aplikasi dijalankan.
+    # Nantinya dapat diganti menggunakan Alembic.
+    Base.metadata.create_all(bind=engine)
+    yield
 
 
-@app.get("/")
-def home(request: Request): return render("home", request)
+app = FastAPI(
+    title=settings.app_name,
+    debug=settings.debug,
+    lifespan=lifespan
+)
 
-@app.get("/login/")
-def login(request: Request): return render("login", request)
+web_dir = Path(__file__).parent / "web"
+frontend_templates_dir = web_dir / "templates"
+app.mount("/static", StaticFiles(directory=web_dir / "static"), name="static")
 
-@app.get("/register/")
-def register(request: Request): return render("register", request)
 
-@app.get("/scan/")
-def scan(request: Request): return render("scan", request)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.cors_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-@app.post("/scan/analyze/")
-async def analyze_scan(request: Request, image: UploadFile = File(...)):
-    # TODO: simpan file dan panggil model YOLOv8 milik project kamu.
-    # Untuk sementara, tampilkan halaman hasil analisis prototype.
-    return RedirectResponse(url="/scan/result/", status_code=303)
 
-@app.get("/scan/result/")
-def scan_result(request: Request): return render("detection_result", request)
+app.include_router(auth.router)
+app.include_router(users.router)
+app.include_router(uploads.router)
+app.include_router(recipes.router)
 
-@app.get("/recipes/")
-def recipes(request: Request): return render("recipes", request)
 
-@app.get("/recipes/{recipe_id}/")
-def recipe_detail(request: Request, recipe_id: int): return render("recipe_detail", request, recipe_id=recipe_id)
+def render_frontend(request: Request, template_name: str, **context):
+    html = (frontend_templates_dir / f"{template_name}.html").read_text(encoding="utf-8")
+    html = html.replace("</body>", '<script src="/static/frontend.js" defer></script></body>')
+    return HTMLResponse(html)
 
-@app.get("/recipes/{recipe_id}/guided-cooking/")
-def guided_cooking(request: Request, recipe_id: int): return render("guided_cooking", request, recipe_id=recipe_id)
 
-@app.get("/history/")
-def history(request: Request): return render("history", request)
+@app.get("/", include_in_schema=False)
+def home_page(request: Request):
+    return render_frontend(request, "home")
 
-@app.get("/favorites/")
-def favorites(request: Request): return render("favorites", request)
 
-@app.get("/profile/")
-def profile(request: Request): return render("profile", request)
+@app.get("/login", include_in_schema=False)
+@app.get("/login/", include_in_schema=False)
+def login_page(request: Request):
+    return render_frontend(request, "login")
 
-@app.get("/admin-dashboard/")
-def admin_dashboard(request: Request): return render("admin_dashboard", request)
+
+@app.get("/register", include_in_schema=False)
+@app.get("/register/", include_in_schema=False)
+def register_page(request: Request):
+    return render_frontend(request, "register")
+
+
+@app.get("/scan/", include_in_schema=False)
+def scan_page(request: Request):
+    return render_frontend(request, "scan")
+
+
+@app.get("/scan/result/", include_in_schema=False)
+def scan_result_page(request: Request):
+    return render_frontend(request, "detection_result")
+
+
+@app.get("/recipes/", include_in_schema=False)
+def recipes_page(request: Request):
+    return render_frontend(request, "recipes")
+
+
+@app.get("/recipes/{recipe_id}/", include_in_schema=False)
+def recipe_detail_page(request: Request, recipe_id: int):
+    return render_frontend(request, "recipe_detail", recipe_id=recipe_id)
+
+
+@app.get("/recipes/{recipe_id}/guided-cooking/", include_in_schema=False)
+def guided_cooking_page(request: Request, recipe_id: int):
+    return render_frontend(request, "guided_cooking", recipe_id=recipe_id)
+
+
+@app.get("/history/", include_in_schema=False)
+def history_page(request: Request):
+    return render_frontend(request, "history")
+
+
+@app.get("/favorites/", include_in_schema=False)
+def favorites_page(request: Request):
+    return render_frontend(request, "favorites")
+
+
+@app.get("/profile/", include_in_schema=False)
+def profile_page(request: Request):
+    return render_frontend(request, "profile")
+
+
+@app.get("/admin-dashboard/", include_in_schema=False)
+def admin_dashboard_page(request: Request):
+    return render_frontend(request, "admin_dashboard")
+
+
+@app.get("/health", tags=["system"])
+def health():
+    return {"status": "ok"}

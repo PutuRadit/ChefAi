@@ -1,0 +1,607 @@
+<!DOCTYPE html><html class="dark" lang="en"><head><meta charset="utf-8"><meta content="width=device-width, initial-scale=1.0" name="viewport"><meta content="web_standard" name="shell-type"><title>NakEna - Culinary Companion</title><link href="https://fonts.googleapis.com" rel="preconnect"><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"><link href="https://fonts.googleapis.com/css2?family=Epilogue:ital,wght@0,600;0,700;0,800;1,700&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "on-primary-fixed": "#380d00", "inverse-surface": "#dce2f5", "inverse-on-surface": "#29303f", "on-tertiary": "#402d00", "surface": "#0c1321", "surface-container-lowest": "#070e1b", "on-secondary-fixed": "#0e1c31", "on-error": "#690005", "surface-variant": "#2e3543", "secondary": "#bac7e3", "surface-tint": "#ffb59b", "on-tertiary-fixed-variant": "#5c4300", "on-surface-variant": "#e4beb2", "inverse-primary": "#a93800", "on-background": "#dce2f5", "surface-container": "#19202d", "primary": "#ffb59b", "primary-fixed-dim": "#ffb59b", "on-primary-fixed-variant": "#812900", "tertiary-container": "#bb8c00", "on-tertiary-fixed": "#261a00", "tertiary": "#f9bd22", "secondary-fixed-dim": "#bac7e3", "tertiary-fixed": "#ffdf9f", "on-tertiary-container": "#3b2900", "on-error-container": "#ffdad6", "primary-container": "#ff5e14", "surface-bright": "#323948", "background": "#0c1321", "on-secondary-container": "#abb9d4", "surface-container-high": "#232a38", "primary-fixed": "#ffdbcf", "tertiary-fixed-dim": "#f9bd22", "outline-variant": "#5b4138", "outline": "#aa897e", "surface-dim": "#0c1321", "secondary-container": "#3d4961", "on-secondary-fixed-variant": "#3a475e", "error": "#ffb4ab", "on-primary": "#5b1a00", "on-secondary": "#243147", "surface-container-low": "#141c29", "error-container": "#93000a", "secondary-fixed": "#d6e3ff", "on-primary-container": "#541800", "surface-container-highest": "#2e3543", "on-surface": "#dce2f5" }, "borderRadius": { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, "spacing": { "space-md": "1rem", "gutter": "1rem", "margin": "1rem", "space-sm": "0.5rem", "space-xl": "2.5rem", "space-xs": "0.25rem", "gutter-desktop": "1.5rem", "space-lg": "1.5rem", "margin-tablet": "2rem", "margin-desktop": "3rem" }, "fontFamily": { "label-sm": ["Plus Jakarta Sans"], "display-hero": ["Epilogue"], "headline-lg": ["Epilogue"], "body-lg": ["Plus Jakarta Sans"], "label-md": ["Plus Jakarta Sans"], "label-lg": ["Plus Jakarta Sans"], "body-md": ["Plus Jakarta Sans"], "body-sm": ["Plus Jakarta Sans"], "headline-sm": ["Epilogue"], "display-hero-mobile": ["Epilogue"], "headline-lg-mobile": ["Epilogue"], "headline-md": ["Epilogue"] }, "fontSize": { "label-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "700" }], "display-hero": ["52px", { "lineHeight": "60px", "letterSpacing": "-0.03em", "fontWeight": "800" }], "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }], "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }], "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "600" }], "label-lg": ["14px", { "lineHeight": "18px", "letterSpacing": "0.01em", "fontWeight": "600" }], "body-md": ["15px", { "lineHeight": "22px", "fontWeight": "400" }], "body-sm": ["13px", { "lineHeight": "18px", "fontWeight": "400" }], "headline-sm": ["18px", { "lineHeight": "24px", "fontWeight": "600" }], "display-hero-mobile": ["36px", { "lineHeight": "42px", "letterSpacing": "-0.02em", "fontWeight": "800" }], "headline-lg-mobile": ["26px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "700" }], "headline-md": ["22px", { "lineHeight": "28px", "fontWeight": "600" }] } } } };</script></head><body class="bg-surface font-body-md text-on-surface antialiased"><header class="fixed top-0 w-full z-50 bg-surface/80 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="h-20 w-full px-gutter md:px-margin-tablet lg:px-margin-desktop flex items-center justify-between"><div class="flex items-center gap-space-lg"><a class="flex items-center gap-space-sm group" data-path="recommendations" href="/"><div class="w-10 h-10 rounded-xl bg-surface-container-high flex items-center justify-center text-primary-container group-hover:scale-105 transition-transform"><span class="material-symbols-outlined text-[24px]">skillet</span></div><div class="flex flex-col"><span class="font-headline-sm text-headline-sm tracking-tight text-on-surface flex items-center gap-space-xs">NakEna<span class="material-symbols-outlined text-tertiary text-[18px]">temp_preferences_custom</span></span></div></a><nav class="hidden md:flex items-center gap-space-xs" data-active-classes="bg-primary-container text-on-primary-container font-label-md text-label-md rounded-lg"><a class="px-space-md py-space-sm rounded-lg font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="recommendations" href="#">Recommendations</a><a aria-current="page" class="px-space-md py-space-sm transition-colors bg-primary-container text-on-primary-container font-label-md text-label-md rounded-lg" data-path="recipe-detail" href="#">Recipe Detail</a><a class="px-space-md py-space-sm rounded-lg font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="guided-cooking" href="/recipes/1/guided-cooking/">Guided Cooking</a><a class="px-space-md py-space-sm rounded-lg font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="favorites" href="#">Saved Dishes</a></nav></div><div class="flex items-center gap-space-md"><div class="flex items-center gap-space-xs px-space-sm py-space-xs bg-surface-container-high rounded-full"><span class="material-symbols-outlined text-tertiary text-[18px]">favorite</span><span class="font-label-sm text-label-sm text-on-surface pr-space-xs">14</span></div><div class="flex items-center gap-space-sm pl-space-xs"><img alt="Profile" class="w-8 h-8 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida/AEtjO1WgWmn4MKvTd_AR_9Ka_OSABooFWQEgsbsZB-gglo0kSx_rx8AsenS3vsbtYw6zpDUzFArXNtk_Mk66-VysKqOZxaMnjBg2DDgcxqbni7UvkFiKUBPz1K9sjPLu8gLLT3BrqinwbIy8eldaEbuQc5bIFFUDoB6wU3dzTkpH9rtIKdghTsjvIFq4RwkRMTIcyIer2aFLW1YK34veUVRGySjoLGXBisMDtnQqgN9qA1cXfjKNn67s4nk2yAC0MIadvAk9-tmLaW6DTo0"></div></div></div></header><main class="w-full pt-20 bg-surface min-h-[calc(100vh-200px)]"><div class="flex flex-col w-full">
+<!-- Culinary Ambience Lighting Backdrop -->
+<div class="relative w-full overflow-hidden pb-space-xl">
+<!-- Dynamic Glow Spots -->
+<div class="absolute -top-32 left-1/4 w-96 h-96 bg-primary-container/10 rounded-full blur-3xl pointer-events-none"></div>
+<div class="absolute top-96 right-10 w-80 h-80 bg-tertiary/10 rounded-full blur-3xl pointer-events-none"></div>
+<div class="w-full px-gutter md:px-margin-tablet lg:px-margin-desktop max-w-[1320px] mx-auto">
+<!-- Top Action Navigation Strip -->
+<nav aria-label="Breadcrumb and quick actions" class="flex items-center justify-between py-space-md mb-space-md">
+<a class="inline-flex items-center gap-space-xs px-space-md py-space-sm rounded-full bg-surface-container hover:bg-surface-container-high text-on-surface transition-all duration-200 group" data-path="recommendations" href="#">
+<span class="material-symbols-outlined text-[18px] text-primary group-hover:-translate-x-1 transition-transform">arrow_back</span>
+<span class="font-label-md text-label-md">Kembali ke Rekomendasi</span>
+</a>
+<div class="flex items-center gap-space-sm">
+<!-- Favorite Toggle Button -->
+<button class="flex items-center justify-center w-11 h-11 rounded-full bg-surface-container hover:bg-surface-container-high text-tertiary shadow-sm transition-all duration-200 active:scale-95" id="favorite-btn" title="Simpan ke Favorit">
+<span class="material-symbols-outlined text-[22px] transition-transform" style="font-variation-settings: 'FILL' 1;">favorite</span>
+</button>
+<!-- Share Button -->
+<button class="flex items-center justify-center w-11 h-11 rounded-full bg-surface-container hover:bg-surface-container-high text-on-surface shadow-sm transition-all duration-200 active:scale-95" id="share-btn" title="Bagikan Resep">
+<span class="material-symbols-outlined text-[20px]">share</span>
+</button>
+<!-- User Chef Profile Badge -->
+<div class="hidden sm:flex items-center gap-space-xs pl-space-xs py-1 pr-space-md rounded-full bg-surface-container-low">
+<div class="w-8 h-8 rounded-full bg-primary-container text-on-primary font-headline-sm text-headline-sm flex items-center justify-center">
+              🍳
+            </div>
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface">Koki Rumahan</span>
+<span class="font-label-sm text-[10px] text-tertiary">Level 4 • Junior Sous</span>
+</div>
+</div>
+</div>
+</nav>
+<!-- HERO SHOWCASE BANNER -->
+<section class="relative rounded-xl bg-surface-container overflow-hidden shadow-xl mb-space-xl">
+<div class="grid grid-cols-1 lg:grid-cols-12 min-h-[460px]">
+<!-- Dish Visual Left/Top -->
+<div class="relative lg:col-span-7 min-h-[320px] lg:min-h-full">
+<img class="w-full h-full object-cover" data-alt="Close up cinematic shot of freshly cooked Indonesian Nasi Goreng Spesial on dark rustic ceramic plate, topped with golden crispy fried egg with running yolk, sliced red ripe tomatoes, fresh cucumber slices, sprinkle of crispy fried shallots, aromatic steam curling up, ambient warm directional studio lighting, dark navy moody background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAfRed5WPGPJoM0Nx08x4zcv5jOxG05y3_xmMplNe_eIHVf79rnjKbWdh2YWO4OWT5bKavjRrtJj2GN5TkWDBMYjwCo6zrkqGYhXFwPma5MvKgShzFr6DJkYF2LvBCPi3kjJkBYv9fzjYI9LyscpCbP8tZ0Mt7zUBxadEb37rKQxYxEIHoAjhpSXxKSHR1ffGxXTMYTVKEnzLpBR8Jrm-zfkUQHIqWCYCARFxhJcm---nL4sbxLFJNqTg">
+<div class="absolute inset-0 bg-gradient-to-t lg:bg-gradient-to-r from-surface-container via-surface-container/30 to-transparent"></div>
+<!-- Quick Floating Micro Badge -->
+<div class="absolute top-space-md left-space-md flex flex-wrap items-center gap-space-xs">
+<div class="px-space-md py-space-xs rounded-full bg-surface-container-lowest/90 backdrop-blur-md flex items-center gap-space-xs shadow-md">
+<span class="material-symbols-outlined text-tertiary text-[18px]">star</span>
+<span class="font-label-sm text-label-sm text-tertiary uppercase tracking-wider">Rekomendasi Utama</span>
+</div>
+<div class="px-space-md py-space-xs rounded-full bg-primary-container text-on-primary font-label-sm text-label-sm shadow-md flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">verified</span>
+<span>98% Cocok Bahan</span>
+</div>
+</div>
+<!-- Heat & Flavor Pill -->
+<div class="absolute bottom-space-md left-space-md hidden sm:flex items-center gap-space-xs px-space-md py-space-xs rounded-full bg-surface-container-lowest/80 backdrop-blur-md text-secondary">
+<span class="material-symbols-outlined text-primary-container text-[18px]">local_fire_department</span>
+<span class="font-label-md text-label-md">Wok Hei Sempurna • Wangi Sedap</span>
+</div>
+</div>
+<!-- Dish Context & Interactive Callouts -->
+<div class="relative lg:col-span-5 p-space-lg lg:p-space-xl flex flex-col justify-between">
+<div>
+<div class="flex items-center gap-space-xs text-tertiary mb-space-xs">
+<div class="flex items-center">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">star_half</span>
+</div>
+<span class="font-label-md text-label-md font-bold text-on-surface">4.9</span>
+<span class="font-body-sm text-body-sm text-secondary">(180+ Koki Mencoba)</span>
+</div>
+<h1 class="font-display-hero text-headline-lg lg:text-display-hero text-on-surface mb-space-sm leading-tight">
+                Nasi Goreng Rumahan Spesial
+              </h1>
+<p class="font-body-md text-body-md text-on-surface-variant mb-space-lg leading-relaxed">
+                Nasi goreng rumahan klasik dengan telur mata sapi keemasan, tomat segar, bawang merah harum, dan paduan bumbu dapur sederhana. Cita rasa gurih manis legendaris khas resep hangat dapur ibu.
+              </p>
+<!-- Metric Grid -->
+<div class="grid grid-cols-3 gap-space-xs mb-space-lg">
+<div class="bg-surface-container-low p-space-sm rounded-lg flex flex-col items-center justify-center text-center">
+<span class="material-symbols-outlined text-primary text-[22px] mb-1">timer</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">WAKTU</span>
+<span class="font-headline-sm text-headline-sm text-on-surface">15 Menit</span>
+</div>
+<div class="bg-surface-container-low p-space-sm rounded-lg flex flex-col items-center justify-center text-center">
+<span class="material-symbols-outlined text-tertiary text-[22px] mb-1">sentiment_very_satisfied</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">TINGKAT</span>
+<span class="font-headline-sm text-headline-sm text-on-surface">Sangat Mudah</span>
+</div>
+<div class="bg-surface-container-low p-space-sm rounded-lg flex flex-col items-center justify-center text-center">
+<span class="material-symbols-outlined text-secondary text-[22px] mb-1">restaurant</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">PORSI</span>
+<span class="font-headline-sm text-headline-sm text-on-surface">2 Porsi</span>
+</div>
+</div>
+</div>
+<!-- Chef Mascot Advice Floating Cloud -->
+<div class="relative bg-surface-container-high rounded-xl p-space-md mb-space-lg flex items-center gap-space-md shadow-md">
+<div class="relative w-16 h-16 shrink-0 rounded-full bg-surface-container-lowest p-1 shadow-inner overflow-hidden">
+<img alt="NakEna Mascot" class="w-full h-full object-cover rounded-full" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDGjZO9NG2MP70yEeINRPt4oZAXNIMwiy1lIbu0b-A0rfqSfw68EvSJazz5ArW3Aht3JuGBgHatvTU6LXNs_ypznUyQlJOPL2fEZBBqWiXyw5mKLGAAHHbb2mAtizwZ2GvcRdMrNJl4PKa08jN2R5tKWDg4PApw3JiHEQcQD8zp2vmbxMSiqL0y80xxPoyV1oWqJ3bz3yH31ciDGJj22fUfi0a-E2u5S7R0m_tCagEJMPrBkOHcZRIhj31-9rUleb8mJwc">
+<span class="absolute bottom-0 right-0 w-4 h-4 rounded-full bg-primary-container border-2 border-surface"></span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-1 text-tertiary font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[16px]">auto_awesome</span>
+<span>NakEna Coach Bisikkan:</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface font-medium leading-snug">
+                  “Bahanmu hampir lengkap 100%! Gunakan nasi dingin semalam agar butirannya tidak lembek saat digoreng.”
+                </p>
+</div>
+</div>
+<!-- Action Buttons -->
+<div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-space-sm">
+<a class="flex-1 inline-flex items-center justify-center gap-space-xs py-space-md px-space-lg rounded-full bg-primary-container text-on-primary font-label-lg text-label-lg hover:shadow-[0_0_24px_rgba(255,94,20,0.5)] transition-all duration-300" data-path="guided-cooking" href="/recipes/1/guided-cooking/">
+<span class="material-symbols-outlined text-[20px]">skillet</span>
+<span>Mulai Guided Cooking</span>
+</a>
+<button class="inline-flex items-center justify-center gap-space-xs py-space-md px-space-lg rounded-full bg-surface-container-high hover:bg-surface-bright text-on-surface font-label-lg text-label-lg transition-colors" id="btn-save-recipe">
+<span class="material-symbols-outlined text-tertiary text-[20px]">bookmark</span>
+<span>Simpan Resep</span>
+</button>
+</div>
+</div>
+</div>
+</section>
+<!-- TWO-COLUMN MAIN WORKSPACE -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-space-lg lg:gap-gutter-desktop items-start">
+<!-- LEFT COLUMN: Ingredients & Dietary Matrix (5 Cols) -->
+<div class="lg:col-span-5 flex flex-col gap-space-lg">
+<!-- Ingredients Card -->
+<div class="bg-surface-container rounded-xl p-space-lg shadow-md">
+<div class="flex items-center justify-between mb-space-md">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-primary text-[24px]">kitchen</span>
+<h2 class="font-headline-sm text-headline-sm text-on-surface">Daftar Bahan</h2>
+</div>
+<span class="font-label-sm text-label-sm px-space-sm py-space-xs rounded-full bg-surface-container-high text-secondary">
+                2 Porsi Makan
+              </span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mb-space-md">
+              Centang bahan yang sudah kamu siapkan di atas meja:
+            </p>
+<!-- Checklist with Match Indicators -->
+<ul class="flex flex-col gap-space-xs mb-space-lg" id="ingredient-checklist">
+<li class="flex items-center justify-between p-space-sm rounded-lg bg-surface-container-low hover:bg-surface-container-high/60 transition-colors cursor-pointer group">
+<label class="flex items-center gap-space-sm cursor-pointer select-none">
+<input checked="" class="w-5 h-5 rounded accent-primary-container cursor-pointer transition-transform group-active:scale-95" type="checkbox">
+<span class="font-body-md text-body-md text-on-surface font-medium">Nasi Putih Dingin</span>
+</label>
+<div class="flex items-center gap-space-xs">
+<span class="font-label-sm text-label-sm text-secondary">2 Piring</span>
+<span class="material-symbols-outlined text-tertiary text-[18px]" title="Tersedia di kulkas">check_circle</span>
+</div>
+</li>
+<li class="flex items-center justify-between p-space-sm rounded-lg bg-surface-container-low hover:bg-surface-container-high/60 transition-colors cursor-pointer group">
+<label class="flex items-center gap-space-sm cursor-pointer select-none">
+<input checked="" class="w-5 h-5 rounded accent-primary-container cursor-pointer transition-transform group-active:scale-95" type="checkbox">
+<span class="font-body-md text-body-md text-on-surface font-medium">Telur Ayam</span>
+</label>
+<div class="flex items-center gap-space-xs">
+<span class="font-label-sm text-label-sm text-secondary">2 Butir</span>
+<span class="material-symbols-outlined text-tertiary text-[18px]" title="Tersedia di kulkas">check_circle</span>
+</div>
+</li>
+<li class="flex items-center justify-between p-space-sm rounded-lg bg-surface-container-low hover:bg-surface-container-high/60 transition-colors cursor-pointer group">
+<label class="flex items-center gap-space-sm cursor-pointer select-none">
+<input checked="" class="w-5 h-5 rounded accent-primary-container cursor-pointer transition-transform group-active:scale-95" type="checkbox">
+<span class="font-body-md text-body-md text-on-surface font-medium">Bawang Merah</span>
+</label>
+<div class="flex items-center gap-space-xs">
+<span class="font-label-sm text-label-sm text-secondary">4 Siung</span>
+<span class="material-symbols-outlined text-tertiary text-[18px]" title="Tersedia di kulkas">check_circle</span>
+</div>
+</li>
+<li class="flex items-center justify-between p-space-sm rounded-lg bg-surface-container-low hover:bg-surface-container-high/60 transition-colors cursor-pointer group">
+<label class="flex items-center gap-space-sm cursor-pointer select-none">
+<input checked="" class="w-5 h-5 rounded accent-primary-container cursor-pointer transition-transform group-active:scale-95" type="checkbox">
+<span class="font-body-md text-body-md text-on-surface font-medium">Tomat Segar Merah</span>
+</label>
+<div class="flex items-center gap-space-xs">
+<span class="font-label-sm text-label-sm text-secondary">1 Buah</span>
+<span class="material-symbols-outlined text-tertiary text-[18px]" title="Tersedia di kulkas">check_circle</span>
+</div>
+</li>
+<li class="flex items-center justify-between p-space-sm rounded-lg bg-surface-container-low hover:bg-surface-container-high/60 transition-colors cursor-pointer group">
+<label class="flex items-center gap-space-sm cursor-pointer select-none">
+<input checked="" class="w-5 h-5 rounded accent-primary-container cursor-pointer transition-transform group-active:scale-95" type="checkbox">
+<span class="font-body-md text-body-md text-on-surface font-medium">Bawang Putih</span>
+</label>
+<div class="flex items-center gap-space-xs">
+<span class="font-label-sm text-label-sm text-secondary">2 Siung</span>
+<span class="material-symbols-outlined text-tertiary text-[18px]" title="Tersedia di kulkas">check_circle</span>
+</div>
+</li>
+<li class="flex items-center justify-between p-space-sm rounded-lg bg-surface-container-low hover:bg-surface-container-high/60 transition-colors cursor-pointer group">
+<label class="flex items-center gap-space-sm cursor-pointer select-none">
+<input checked="" class="w-5 h-5 rounded accent-primary-container cursor-pointer transition-transform group-active:scale-95" type="checkbox">
+<span class="font-body-md text-body-md text-on-surface font-medium">Kecap Manis Gurih</span>
+</label>
+<div class="flex items-center gap-space-xs">
+<span class="font-label-sm text-label-sm text-secondary">2 sdm</span>
+<span class="material-symbols-outlined text-tertiary text-[18px]" title="Tersedia di kulkas">check_circle</span>
+</div>
+</li>
+<li class="flex items-center justify-between p-space-sm rounded-lg bg-surface-container-low hover:bg-surface-container-high/60 transition-colors cursor-pointer group">
+<label class="flex items-center gap-space-sm cursor-pointer select-none">
+<input checked="" class="w-5 h-5 rounded accent-primary-container cursor-pointer transition-transform group-active:scale-95" type="checkbox">
+<span class="font-body-md text-body-md text-on-surface font-medium">Garam &amp; Merica Bubuk</span>
+</label>
+<div class="flex items-center gap-space-xs">
+<span class="font-label-sm text-label-sm text-secondary">1/2 sdt</span>
+<span class="material-symbols-outlined text-tertiary text-[18px]" title="Tersedia di kulkas">check_circle</span>
+</div>
+</li>
+<!-- Optional Missing Garnish Item -->
+<li class="flex items-center justify-between p-space-sm rounded-lg bg-surface-container-low/50 hover:bg-surface-container-high/40 transition-colors cursor-pointer group">
+<label class="flex items-center gap-space-sm cursor-pointer select-none">
+<input class="w-5 h-5 rounded accent-primary-container cursor-pointer transition-transform group-active:scale-95" type="checkbox">
+<span class="font-body-md text-body-md text-on-surface-variant line-through decoration-transparent">Daun Bawang &amp; Timun</span>
+</label>
+<div class="flex items-center gap-space-xs">
+<span class="font-label-sm text-[10px] uppercase font-bold px-space-xs py-0.5 rounded bg-primary-container/20 text-primary">Opsional Taburan</span>
+</div>
+</li>
+</ul>
+<!-- Add to Pantry/Shopping List CTA -->
+<button class="w-full py-space-sm px-space-md rounded-lg bg-surface-container-high hover:bg-surface-bright text-on-surface font-label-md text-label-md flex items-center justify-center gap-space-xs transition-colors" id="add-grocery-btn">
+<span class="material-symbols-outlined text-[18px] text-tertiary">add_shopping_cart</span>
+<span>+ Tambahkan Bahan Pelengkap ke Daftar Belanja</span>
+</button>
+</div>
+<!-- Dietary & Allergy Card -->
+<div class="bg-surface-container rounded-xl p-space-lg shadow-md">
+<div class="flex items-center gap-space-xs mb-space-sm">
+<span class="material-symbols-outlined text-tertiary text-[22px]">health_and_safety</span>
+<h2 class="font-headline-sm text-headline-sm text-on-surface">Informasi Diet &amp; Alergi</h2>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mb-space-md">
+              Pastikan sajian ini aman dan sesuai dengan gaya hidup sehat keluargamu:
+            </p>
+<div class="flex flex-wrap gap-space-xs mb-space-md">
+<span class="inline-flex items-center gap-1 px-space-md py-space-xs rounded-full bg-surface-container-low text-on-surface font-label-sm text-label-sm">
+<span class="w-2 h-2 rounded-full bg-tertiary"></span> Halal
+              </span>
+<span class="inline-flex items-center gap-1 px-space-md py-space-xs rounded-full bg-surface-container-low text-on-surface font-label-sm text-label-sm">
+<span class="w-2 h-2 rounded-full bg-secondary"></span> Bebas Kacang
+              </span>
+<span class="inline-flex items-center gap-1 px-space-md py-space-xs rounded-full bg-surface-container-low text-on-surface font-label-sm text-label-sm">
+<span class="w-2 h-2 rounded-full bg-secondary"></span> Bebas Seafood
+              </span>
+<span class="inline-flex items-center gap-1 px-space-md py-space-xs rounded-full bg-primary-container/20 text-primary font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[14px]">egg</span> Mengandung Telur
+              </span>
+</div>
+<div class="p-space-sm rounded-lg bg-surface-container-low flex items-start gap-space-xs">
+<span class="material-symbols-outlined text-primary text-[18px] mt-0.5">info</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Bisa diganti tahu/tempe jika ingin variasi vegetarian tanpa telur.</span>
+</div>
+</div>
+<!-- Nutritional Breakdown Card -->
+<div class="bg-surface-container rounded-xl p-space-lg shadow-md">
+<div class="flex items-center justify-between mb-space-sm">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-secondary text-[22px]">vital_signs</span>
+<h2 class="font-headline-sm text-headline-sm text-on-surface">Nutrisi per Porsi</h2>
+</div>
+<span class="font-label-sm text-label-sm text-tertiary font-bold">~420 Kkal</span>
+</div>
+<div class="grid grid-cols-3 gap-space-xs pt-space-xs">
+<div class="p-space-sm rounded-lg bg-surface-container-low text-center">
+<span class="font-body-sm text-body-sm text-secondary">Protein</span>
+<p class="font-headline-sm text-headline-sm text-on-surface mt-1">14g</p>
+<div class="w-full bg-surface-container h-1 rounded-full mt-2 overflow-hidden">
+<div class="bg-primary h-full w-[65%]"></div>
+</div>
+</div>
+<div class="p-space-sm rounded-lg bg-surface-container-low text-center">
+<span class="font-body-sm text-body-sm text-secondary">Karbo</span>
+<p class="font-headline-sm text-headline-sm text-on-surface mt-1">58g</p>
+<div class="w-full bg-surface-container h-1 rounded-full mt-2 overflow-hidden">
+<div class="bg-tertiary h-full w-[80%]"></div>
+</div>
+</div>
+<div class="p-space-sm rounded-lg bg-surface-container-low text-center">
+<span class="font-body-sm text-body-sm text-secondary">Lemak Sehat</span>
+<p class="font-headline-sm text-headline-sm text-on-surface mt-1">12g</p>
+<div class="w-full bg-surface-container h-1 rounded-full mt-2 overflow-hidden">
+<div class="bg-secondary h-full w-[45%]"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- RIGHT COLUMN: Step Preview & Guided CTA & Reviews (7 Cols) -->
+<div class="lg:col-span-7 flex flex-col gap-space-lg">
+<!-- Cooking Steps Timeline Preview -->
+<div class="bg-surface-container rounded-xl p-space-lg shadow-md">
+<div class="flex items-center justify-between mb-space-md">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-primary-container text-[24px]">format_list_numbered</span>
+<h2 class="font-headline-sm text-headline-sm text-on-surface">Pratinjau Langkah Memasak</h2>
+</div>
+<span class="font-label-sm text-label-sm text-secondary">Total 7 Langkah Cepat</span>
+</div>
+<!-- Steps List with Visual Timeline Indicators -->
+<div class="relative flex flex-col gap-space-md before:absolute before:left-4 before:top-4 before:bottom-4 before:w-[2px] before:bg-surface-container-high">
+<!-- Step 1 -->
+<div class="relative flex items-start gap-space-md">
+<div class="w-8 h-8 rounded-full bg-primary-container text-on-primary font-headline-sm text-headline-sm flex items-center justify-center shrink-0 z-10 shadow-sm">
+                  1
+                </div>
+<div class="flex-1 bg-surface-container-low p-space-md rounded-lg">
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-1">Persiapan Bahan Iris</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">Kupas dan iris tipis bawang merah serta bawang putih. Potong tomat segar menjadi dadu kecil atau juring tipis agar sari rasanya mudah keluar.</p>
+</div>
+</div>
+<!-- Step 2 -->
+<div class="relative flex items-start gap-space-md">
+<div class="w-8 h-8 rounded-full bg-surface-container-high text-on-surface font-headline-sm text-headline-sm flex items-center justify-center shrink-0 z-10">
+                  2
+                </div>
+<div class="flex-1 bg-surface-container-low p-space-md rounded-lg">
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-1">Goreng Telur Orak-Arik</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">Panaskan 1 sendok makan minyak goreng di wajan. Masukkan telur, buat orak-arik setengah matang yang lembut, lalu sisihkan di pinggir wajan.</p>
+</div>
+</div>
+<!-- Step 3 -->
+<div class="relative flex items-start gap-space-md">
+<div class="w-8 h-8 rounded-full bg-surface-container-high text-on-surface font-headline-sm text-headline-sm flex items-center justify-center shrink-0 z-10">
+                  3
+                </div>
+<div class="flex-1 bg-surface-container-low p-space-md rounded-lg">
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-1">Tumis Bumbu Harum</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">Masukkan irisan bawang merah dan bawang putih ke dalam sisa minyak panas. Tumis hingga harum semerbak dan warnanya berubah keemasan.</p>
+</div>
+</div>
+<!-- Step 4 -->
+<div class="relative flex items-start gap-space-md">
+<div class="w-8 h-8 rounded-full bg-surface-container-high text-on-surface font-headline-sm text-headline-sm flex items-center justify-center shrink-0 z-10">
+                  4
+                </div>
+<div class="flex-1 bg-surface-container-low p-space-md rounded-lg">
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-1">Masukkan Nasi Dingin</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">Tuangkan nasi putih dingin. Gunakan spatula untuk menekan gumpalan nasi dengan lembut hingga terurai merata bersama tumisan bawang dan telur.</p>
+</div>
+</div>
+<!-- Step 5 -->
+<div class="relative flex items-start gap-space-md">
+<div class="w-8 h-8 rounded-full bg-surface-container-high text-on-surface font-headline-sm text-headline-sm flex items-center justify-center shrink-0 z-10">
+                  5
+                </div>
+<div class="flex-1 bg-surface-container-low p-space-md rounded-lg">
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-1">Bumbui dengan Kecap Manis</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">Tuang kecap manis di pinggiran wajan agar terkaramelisasi sedikit harum, tambahkan garam serta lada bubuk secukupnya. Aduk merata sampai butir nasi cokelat keemasan.</p>
+</div>
+</div>
+<!-- Step 6 -->
+<div class="relative flex items-start gap-space-md">
+<div class="w-8 h-8 rounded-full bg-surface-container-high text-on-surface font-headline-sm text-headline-sm flex items-center justify-center shrink-0 z-10">
+                  6
+                </div>
+<div class="flex-1 bg-surface-container-low p-space-md rounded-lg">
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-1">Masukkan Potongan Tomat</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">Masukkan potongan tomat segar. Besarkan api kompor sebentar dan aduk cepat selama 1 menit agar aroma asap khas wajan meresap.</p>
+</div>
+</div>
+<!-- Step 7 -->
+<div class="relative flex items-start gap-space-md">
+<div class="w-8 h-8 rounded-full bg-tertiary-container text-on-tertiary-container font-headline-sm text-headline-sm flex items-center justify-center shrink-0 z-10">
+                  7
+                </div>
+<div class="flex-1 bg-surface-container-low p-space-md rounded-lg">
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-1">Sajikan Hangat &amp; Nikmati!</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">Angkat dan sajikan di atas piring porselen kesayanganmu. Taburi bawang goreng renyah dan hias dengan potongan mentimun segar!</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Big Cinematic CTA Banner: Live Cooking Assistant -->
+<div class="relative rounded-xl bg-gradient-to-br from-surface-container to-surface-container-high p-space-lg overflow-hidden shadow-lg">
+<div class="absolute -right-8 -bottom-8 w-44 h-44 bg-primary-container/20 rounded-full blur-2xl pointer-events-none"></div>
+<div class="flex flex-col md:flex-row items-center gap-space-lg relative z-10">
+<div class="relative w-28 h-28 shrink-0 rounded-2xl bg-surface-container-lowest p-2 shadow-lg overflow-hidden flex items-center justify-center">
+<img alt="Mascot NakEna Ceria" class="w-full h-full object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDGjZO9NG2MP70yEeINRPt4oZAXNIMwiy1lIbu0b-A0rfqSfw68EvSJazz5ArW3Aht3JuGBgHatvTU6LXNs_ypznUyQlJOPL2fEZBBqWiXyw5mKLGAAHHbb2mAtizwZ2GvcRdMrNJl4PKa08jN2R5tKWDg4PApw3JiHEQcQD8zp2vmbxMSiqL0y80xxPoyV1oWqJ3bz3yH31ciDGJj22fUfi0a-E2u5S7R0m_tCagEJMPrBkOHcZRIhj31-9rUleb8mJwc">
+</div>
+<div class="flex-1 text-center md:text-left">
+<span class="inline-flex items-center gap-1 font-label-sm text-label-sm uppercase tracking-wider text-tertiary font-bold mb-1">
+<span class="material-symbols-outlined text-[16px]">mic</span> Pendampingan Suara &amp; Timer
+                </span>
+<h3 class="font-headline-lg text-headline-md lg:text-headline-lg text-on-surface mb-space-xs">
+                  Siap Masak Didampingi NakEna?
+                </h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant mb-space-md">
+                  Aktifkan Mode Interaktif Layar Penuh! NakEna akan memandu langkah demi langkah tanpa kamu perlu menyentuh layar dengan tangan yang kotor.
+                </p>
+<a class="inline-flex items-center justify-center gap-space-xs py-space-md px-space-xl rounded-full bg-primary-container text-on-primary font-label-lg text-label-lg hover:shadow-[0_0_28px_rgba(255,94,20,0.6)] transition-all duration-300" data-path="guided-cooking" href="/recipes/1/guided-cooking/">
+<span>Mulai Guided Cooking Sekarang</span>
+<span class="material-symbols-outlined text-[20px]">arrow_forward</span>
+</a>
+</div>
+</div>
+</div>
+<!-- Reviews & Community Cooking Log -->
+<div class="bg-surface-container rounded-xl p-space-lg shadow-md">
+<div class="flex items-center justify-between mb-space-md">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-tertiary text-[24px]">reviews</span>
+<h2 class="font-headline-sm text-headline-sm text-on-surface">Ulasan &amp; Rating Komunitas</h2>
+</div>
+<div class="flex items-center gap-1 font-label-md text-label-md text-primary">
+<span class="material-symbols-outlined text-[18px]">thumb_up</span>
+<span>99% Merekomendasikan</span>
+</div>
+</div>
+<!-- Review Input Form -->
+<form class="bg-surface-container-low p-space-md rounded-lg mb-space-lg" id="recipe-review-form" onsubmit="event.preventDefault(); addReview();">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-space-xs mb-space-sm">
+<span class="font-label-md text-label-md text-on-surface">Beri Penilaianmu:</span>
+<div class="flex items-center gap-1 text-tertiary" id="rating-stars">
+<button class="star-btn hover:scale-125 transition-transform" data-val="1" type="button">
+<span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 1;">star</span>
+</button>
+<button class="star-btn hover:scale-125 transition-transform" data-val="2" type="button">
+<span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 1;">star</span>
+</button>
+<button class="star-btn hover:scale-125 transition-transform" data-val="3" type="button">
+<span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 1;">star</span>
+</button>
+<button class="star-btn hover:scale-125 transition-transform" data-val="4" type="button">
+<span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 1;">star</span>
+</button>
+<button class="star-btn hover:scale-125 transition-transform" data-val="5" type="button">
+<span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 1;">star</span>
+</button>
+</div>
+</div>
+<div class="mb-space-sm">
+<textarea class="w-full bg-surface-container-lowest text-on-surface placeholder:text-secondary/60 rounded-lg p-space-sm font-body-sm text-body-sm focus:outline-none focus:ring-1 focus:ring-primary-container resize-none" id="review-comment" placeholder="Bagikan pengalaman memasakmu... apakah rasa kecapnya pas? ada kreasi bumbu tambahan?" rows="2"></textarea>
+</div>
+<div class="flex justify-end">
+<button class="py-space-xs px-space-lg rounded-full bg-primary-container text-on-primary font-label-md text-label-md hover:bg-primary-container/90 transition-colors" type="submit">
+                  Kirim Ulasan
+                </button>
+</div>
+</form>
+<!-- Testimonials List -->
+<div class="flex flex-col gap-space-md" id="reviews-list">
+<!-- Review 1 -->
+<div class="p-space-md rounded-lg bg-surface-container-low flex items-start gap-space-md">
+<div class="w-10 h-10 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center font-bold shrink-0">
+                  RP
+                </div>
+<div class="flex-1">
+<div class="flex items-center justify-between mb-1">
+<span class="font-label-md text-label-md text-on-surface font-semibold">Rian Pratama</span>
+<span class="font-label-sm text-label-sm text-secondary">2 jam yang lalu</span>
+</div>
+<div class="flex items-center text-tertiary mb-space-xs">
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 1;">star</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+                    Mantap banget! Tips pakai nasi dingin beneran bikin nasinya gak benyek dan berbutir cantik. Tomatnya bikin seger dan balance sama gurih kecapnya. Anak-anak langsung habis sepiring!
+                  </p>
+</div>
+</div>
+<!-- Review 2 -->
+<div class="p-space-md rounded-lg bg-surface-container-low flex items-start gap-space-md">
+<div class="w-10 h-10 rounded-full bg-tertiary-container text-on-tertiary-container flex items-center justify-center font-bold shrink-0">
+                  SM
+                </div>
+<div class="flex-1">
+<div class="flex items-center justify-between mb-1">
+<span class="font-label-md text-label-md text-on-surface font-semibold">Siti Maesaroh</span>
+<span class="font-label-sm text-label-sm text-secondary">Kemarin</span>
+</div>
+<div class="flex items-center text-tertiary mb-space-xs">
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 1;">star</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+                    Sangat praktis untuk sarapan sebelum ngantor. Waktu memasak sesuai perkiraan NakEna persis 15 menit. Panduan suaranya ngebantu banget pas tangan belepotan margarin.
+                  </p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Interactive JavaScript logic for toggles and micro-interactions -->
+<script>
+    // Favorite Button Interaction
+    const favBtn = document.getElementById('favorite-btn');
+    const saveRecipeBtn = document.getElementById('btn-save-recipe');
+    let isFavorited = true;
+
+    function toggleFavorite() {
+      isFavorited = !isFavorited;
+      const icon = favBtn.querySelector('span');
+      if (isFavorited) {
+        favBtn.classList.add('text-tertiary');
+        favBtn.classList.remove('text-secondary');
+        icon.style.fontVariationSettings = "'FILL' 1";
+        if (saveRecipeBtn) saveRecipeBtn.innerHTML = '<span class="material-symbols-outlined text-tertiary text-[20px]">bookmark</span><span>Tersimpan di Favorit</span>';
+      } else {
+        favBtn.classList.remove('text-tertiary');
+        favBtn.classList.add('text-secondary');
+        icon.style.fontVariationSettings = "'FILL' 0";
+        if (saveRecipeBtn) saveRecipeBtn.innerHTML = '<span class="material-symbols-outlined text-[20px]">bookmark_border</span><span>Simpan Resep</span>';
+      }
+    }
+
+    if (favBtn) favBtn.addEventListener('click', toggleFavorite);
+    if (saveRecipeBtn) saveRecipeBtn.addEventListener('click', toggleFavorite);
+
+    // Share Recipe Notification Simulation
+    const shareBtn = document.getElementById('share-btn');
+    if (shareBtn) {
+      shareBtn.addEventListener('click', () => {
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(window.location.href);
+          alert('Tautan resep "Nasi Goreng Rumahan Spesial" berhasil disalin!');
+        } else {
+          alert('Bagikan resep NakEna ke teman memasakmu!');
+        }
+      });
+    }
+
+    // Grocery List Addition Button Toast
+    const addGroceryBtn = document.getElementById('add-grocery-btn');
+    if (addGroceryBtn) {
+      addGroceryBtn.addEventListener('click', () => {
+        addGroceryBtn.innerHTML = '<span class="material-symbols-outlined text-[18px] text-tertiary">check</span><span>Bahan Tambahan Masuk ke Daftar Belanja!</span>';
+        addGroceryBtn.classList.add('bg-surface-bright');
+        setTimeout(() => {
+          addGroceryBtn.innerHTML = '<span class="material-symbols-outlined text-[18px] text-tertiary">add_shopping_cart</span><span>+ Tambahkan Bahan Pelengkap ke Daftar Belanja</span>';
+          addGroceryBtn.classList.remove('bg-surface-bright');
+        }, 2500);
+      });
+    }
+
+    // Dynamic Review Form Submission
+    let selectedRating = 5;
+    const starButtons = document.querySelectorAll('.star-btn');
+    starButtons.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        selectedRating = parseInt(btn.getAttribute('data-val'));
+        starButtons.forEach((s, idx) => {
+          const span = s.querySelector('span');
+          if (idx < selectedRating) {
+            span.style.fontVariationSettings = "'FILL' 1";
+          } else {
+            span.style.fontVariationSettings = "'FILL' 0";
+          }
+        });
+      });
+    });
+
+    function addReview() {
+      const commentInput = document.getElementById('review-comment');
+      const text = commentInput.value.trim();
+      if (!text) return;
+
+      const list = document.getElementById('reviews-list');
+      const newReview = document.createElement('div');
+      newReview.className = "p-space-md rounded-lg bg-surface-container-low flex items-start gap-space-md animate-fade-in";
+      
+      let starsHtml = '';
+      for (let i = 0; i < 5; i++) {
+        starsHtml += `<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' ${i < selectedRating ? '1' : '0'};">star</span>`;
+      }
+
+      newReview.innerHTML = `
+        <div class="w-10 h-10 rounded-full bg-primary-container text-on-primary flex items-center justify-center font-bold shrink-0">
+          KM
+        </div>
+        <div class="flex-1">
+          <div class="flex items-center justify-between mb-1">
+            <span class="font-label-md text-label-md text-on-surface font-semibold">Kamu (Koki Hebat)</span>
+            <span class="font-label-sm text-label-sm text-secondary">Baru saja</span>
+          </div>
+          <div class="flex items-center text-tertiary mb-space-xs">
+            ${starsHtml}
+          </div>
+          <p class="font-body-sm text-body-sm text-on-surface-variant">
+            ${text}
+          </p>
+        </div>
+      `;
+
+      list.prepend(newReview);
+      commentInput.value = '';
+    }
+  </script>
+</div></main><footer class="w-full bg-surface-container-lowest mt-space-xl"><div class="w-full px-gutter md:px-margin-tablet lg:px-margin-desktop py-space-xl flex flex-col md:flex-row items-center justify-between gap-space-lg"><div class="flex items-center gap-space-sm text-on-surface-variant font-body-sm text-body-sm"><span class="material-symbols-outlined text-primary-container text-[20px]">outdoor_grill</span><span>Crafted with warm culinary curiosity by NakEna © 2025. Bon appétit!</span></div><div class="flex flex-wrap items-center gap-space-lg"><a class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors" data-path="recommendations" href="#">Taste Matrix</a><a class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors" data-path="guided-cooking" href="#">Live Kitchen AI</a><a class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors" data-path="favorites" href="#">Cookbook Vault</a></div></div></footer></body></html>
