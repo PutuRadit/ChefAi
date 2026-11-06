@@ -1,0 +1,9 @@
+/* Styles extracted from login.html. */
+
+@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}
+
+.prociono-description {
+  font-family: 'Prociono', serif !important;
+  font-size: 18px;
+  line-height: 28px;
+}

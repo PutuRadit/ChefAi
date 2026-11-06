@@ -1,0 +1,40 @@
+/* Styles extracted from home.html. */
+
+    body {
+      background-color: #060d1a;
+      color: #f1f5f9;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      overflow-x: hidden;
+    }
+    
+    .font-fun {
+      font-family: 'Fredoka', cursive, sans-serif;
+    }
+
+    /* Subtle background celestial particles/bokeh effect */
+    .bg-sparkles {
+      background-image: 
+        radial-gradient(2px 2px at 20px 30px, #fbbf24, rgba(0,0,0,0)),
+        radial-gradient(3px 3px at 80px 120px, #ff5e14, rgba(0,0,0,0)),
+        radial-gradient(2px 2px at 200px 90px, #ffffff, rgba(0,0,0,0)),
+        radial-gradient(3px 3px at 300px 240px, #f59e0b, rgba(0,0,0,0)),
+        radial-gradient(2px 2px at 450px 180px, #ffffff, rgba(0,0,0,0)),
+        radial-gradient(3px 3px at 600px 320px, #ff944d, rgba(0,0,0,0));
+      background-repeat: repeat;
+      background-size: 700px 500px;
+    }
+
+    /* Soft floating ambient animation */
+    @keyframes gentleFloat {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-10px) rotate(1deg); }
+    }
+    .animate-float {
+      animation: gentleFloat 5s ease-in-out infinite;
+    }
+
+    /* Golden Cloud Ripple Shapes */
+    .golden-cloud {
+      filter: drop-shadow(0 0 18px rgba(251, 191, 36, 0.35));
+    }
+  

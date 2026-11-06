@@ -9,74 +9,9 @@
 <!-- Tailwind CSS CDN with forms and container-queries -->
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <!-- Tailwind Configuration -->
-<script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            brand: {
-              dark: '#060d1a',
-              navy: '#0b192e',
-              card: '#10223d',
-              accent: '#ff5e14',
-              accentHover: '#e04e0b',
-              gold: '#fbbf24',
-              goldHover: '#f59e0b',
-            }
-          },
-          fontFamily: {
-            heading: ['Fredoka', 'sans-serif'],
-            sans: ['Plus Jakarta Sans', 'sans-serif'],
-          },
-          boxShadow: {
-            'glow-orange': '0 0 40px -10px rgba(255, 94, 20, 0.45)',
-            'glow-gold': '0 0 40px -10px rgba(251, 191, 36, 0.35)',
-            'card': '0 12px 30px -10px rgba(2, 8, 20, 0.6)',
-          }
-        }
-      }
-    }
-  </script>
+<script src="/static/js/pages/home.config.js"></script>
 <!-- Custom CSS for specialized visual elements and animations -->
-<style data-purpose="custom-decorations">
-    body {
-      background-color: #060d1a;
-      color: #f1f5f9;
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      overflow-x: hidden;
-    }
-    
-    .font-fun {
-      font-family: 'Fredoka', cursive, sans-serif;
-    }
-
-    /* Subtle background celestial particles/bokeh effect */
-    .bg-sparkles {
-      background-image: 
-        radial-gradient(2px 2px at 20px 30px, #fbbf24, rgba(0,0,0,0)),
-        radial-gradient(3px 3px at 80px 120px, #ff5e14, rgba(0,0,0,0)),
-        radial-gradient(2px 2px at 200px 90px, #ffffff, rgba(0,0,0,0)),
-        radial-gradient(3px 3px at 300px 240px, #f59e0b, rgba(0,0,0,0)),
-        radial-gradient(2px 2px at 450px 180px, #ffffff, rgba(0,0,0,0)),
-        radial-gradient(3px 3px at 600px 320px, #ff944d, rgba(0,0,0,0));
-      background-repeat: repeat;
-      background-size: 700px 500px;
-    }
-
-    /* Soft floating ambient animation */
-    @keyframes gentleFloat {
-      0%, 100% { transform: translateY(0px) rotate(0deg); }
-      50% { transform: translateY(-10px) rotate(1deg); }
-    }
-    .animate-float {
-      animation: gentleFloat 5s ease-in-out infinite;
-    }
-
-    /* Golden Cloud Ripple Shapes */
-    .golden-cloud {
-      filter: drop-shadow(0 0 18px rgba(251, 191, 36, 0.35));
-    }
-  </style>
+<link rel="stylesheet" href="/static/css/pages/home.css">
 </head>
 <body class="bg-[#060d1a] text-slate-100 antialiased selection:bg-orange-500 selection:text-white">
 <!-- BEGIN: MainHeader -->
@@ -489,17 +424,7 @@ Daftar
 </footer>
 <!-- END: MainFooter -->
 <!-- Interactivity Scripts -->
-<script data-purpose="navbar-scroll">
-    // Add glass background shade on navbar scroll
-    window.addEventListener('scroll', () => {
-      const header = document.querySelector('header');
-      if (window.scrollY > 20) {
-        header.classList.add('bg-[#060d1a]/95', 'shadow-lg');
-      } else {
-        header.classList.remove('bg-[#060d1a]/95', 'shadow-lg');
-      }
-    });
-  </script>
+<script src="/static/js/pages/home.js" defer></script>
 
 
 </body></html>

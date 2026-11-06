@@ -10,7 +10,7 @@ from app.core.config import settings
 def _build_engine():
     url = settings.database_url
     if url.startswith("sqlite"):
-        # Dipakai untuk testing saja; production memakai PostgreSQL.
+        # SQLite dipakai untuk pengembangan lokal dan testing; production disarankan PostgreSQL.
         kwargs: dict = {"connect_args": {"check_same_thread": False}}
         if ":memory:" in url or url in ("sqlite://", "sqlite:///"):
             kwargs["poolclass"] = StaticPool

@@ -1,0 +1,35 @@
+/* Styles extracted from recipes.html. */
+
+    @layer base {
+      html, body {
+        margin: 0;
+        padding: 0;
+        background-color: #060D1A;
+        color: #e2e8f0;
+      }
+    }
+    .glow-orange {
+      box-shadow: 0 0 35px -5px rgba(255, 94, 20, 0.45);
+    }
+    .glow-border {
+      border: 1px solid rgba(255, 120, 45, 0.35);
+    }
+    .glow-subtle {
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.45);
+    }
+    .ember {
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      background: #ffaa40;
+      border-radius: 50%;
+      filter: blur(1px);
+      animation: floatUp 7s infinite linear;
+      opacity: 0.6;
+    }
+    @keyframes floatUp {
+      0% { transform: translateY(100%) scale(0.6); opacity: 0; }
+      30% { opacity: 0.8; }
+      100% { transform: translateY(-80px) scale(1.2); opacity: 0; }
+    }
+  

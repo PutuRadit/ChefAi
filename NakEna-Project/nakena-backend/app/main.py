@@ -1,9 +1,15 @@
+"""FastAPI application entry point for the NakEna API.
+
+The frontend is served independently by ../NakEna_Frontend on port 8001.
+This service exposes JSON endpoints only.
+"""
+
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app import models  # noqa: F401
+from app import models  # noqa: F401 - register SQLAlchemy models
 from app.api.routes import auth, recipes, uploads, users
 from app.core.config import settings
 from app.core.database import Base, engine

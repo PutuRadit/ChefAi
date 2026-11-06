@@ -1,0 +1,20 @@
+/* Styles extracted from register.html. */
+
+@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}
+
+.terms-box {
+  border: 1px solid rgba(167, 139, 125, .65);
+  transition: background-color .2s ease, border-color .2s ease, transform .2s ease;
+}
+#id_terms:checked + .terms-box {
+  background-color: #f97316;
+  border-color: #f97316;
+}
+#id_terms:checked + .terms-box .terms-checkmark {
+  opacity: 1;
+  transform: scale(1);
+}
+#id_terms:focus-visible + .terms-box {
+  outline: 2px solid #ffb95f;
+  outline-offset: 3px;
+}

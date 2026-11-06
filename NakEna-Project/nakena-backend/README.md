@@ -1,131 +1,77 @@
-# NakEna Backend
+# NakEna Backend API
 
-Backend API FastAPI untuk NakEna (Smart Food Waste Management System). Backend hanya menyediakan
-API untuk frontend, database, dan Gemini; halaman dan tampilan dijalankan oleh aplikasi frontend.
-
-Konfigurasi lokal dibaca dari `.env`. Variabel Gemini yang didukung: `GEMINI_API_KEY` dan
-`GEMINI_MODEL` (default `gemini-3.1-flash-lite`, model hemat untuk tugas ringan). Jika model
-mengembalikan 503 (sedang sibuk) atau 404 (tidak tersedia), backend mencoba model Flash-Lite
-alternatif sebelum menggunakan `gemini-2.5-flash`. Error Gemini dicatat di terminal backend; API
-juga membedakan kegagalan kuota, akses API key, dan model yang tidak tersedia.
+Backend ini hanya menangani REST API, autentikasi, database, upload gambar, deteksi YOLO, dan generasi resep Gemini. HTML, CSS, dan JavaScript website berada di folder terpisah `../NakEna_Frontend`.
 
 ## Struktur
 
-```
-app/
-  main.py              # entry point FastAPI, CORS, router, /health
-  core/                # config (.env), database (SQLAlchemy), security (bcrypt + JWT)
-  models/              # User, UserPreference, Upload
-  schemas/             # request/response Pydantic
-  api/deps.py          # get_current_user, require_admin
-  api/routes/          # auth.py, users.py, uploads.py
-  services/            # images.py (validasi foto), storage.py (penyimpanan file)
-tests/                 # pytest
-```
-
-## Menjalankan
-
-Jalankan backend dari folder `nakena-backend`. Pengaturan database yang aktif ada di `.env`;
-pastikan database pada `DATABASE_URL` tersedia sebelum menjalankan API.
-
-Di Command Prompt, dari folder `nakena-backend`:
-
-```cmd
-python -m venv .venv
-.venv\Scripts\activate
-python -m pip install -r requirements-dev.txt
-if not exist .env copy .env.example .env
-notepad .env
-uvicorn app.main:app --reload --port 8000
+```text
+nakena-backend/
+├── app/
+│   ├── api/routes/       # auth, users, uploads, recipes
+│   ├── core/             # config, database, security
+│   ├── models/           # model SQLAlchemy
+│   ├── schemas/          # request/response Pydantic
+│   ├── services/         # YOLO, Gemini, image validation, storage
+│   └── main.py           # API entry point (JSON only)
+├── models/chefai_best.pt # bobot YOLO
+├── storage/              # lokasi file upload runtime
+├── tests/
+├── .env.example
+└── requirements.txt
 ```
 
-Jika folder proyek atau komputer berpindah dan `.venv` menunjuk ke interpreter lama, buat ulang
-virtual environment sebelum mengaktifkannya:
+## Menyiapkan backend (Windows PowerShell)
 
 ```powershell
-python -m venv --clear .venv
+cd .\nakena-backend
+python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
+Copy-Item .env.example .env
+notepad .env
 ```
 
-Isi `SECRET_KEY` pada `.env` dengan nilai acak minimal 32 karakter sebelum menjalankan server.
-Perintah `notepad .env` digunakan untuk memastikan URL PostgreSQL dan pengaturan lokal sesuai.
+Isi `SECRET_KEY` dengan string acak minimal 32 karakter dan `GEMINI_API_KEY` dengan API key milikmu. Konfigurasi lokal contoh memakai SQLite (`sqlite:///./nakena.db`). Model YOLO harus tersedia di `models/chefai_best.pt`.
 
-Backend API: http://localhost:8000/ (metadata JSON, bukan halaman frontend)  
-Dokumentasi interaktif API: http://localhost:8000/docs (klik **Authorize**, isi `username` dengan email).
-Tes: `pytest`
+Jalankan server:
 
-Jalankan frontend terpisah dari folder `../NakEna_Frontend` pada port `8001`. Pastikan
-`CORS_ORIGINS` di `.env` memuat `http://localhost:8001` dan `http://127.0.0.1:8001`
-(keduanya tercantum di `.env.example`).
-Jika alamat atau port frontend berbeda, tambahkan origin frontend tersebut. Atur
-`NAKENA_API_BASE_URL` di proses frontend bila backend tidak berjalan di `http://localhost:8000`.
-
-Login memakai endpoint `POST /auth/login`. Akun harus didaftarkan terlebih dahulu melalui
-`POST /auth/register`. Token login disimpan di `sessionStorage` dan terhapus ketika pengguna
-memilih Keluar atau sesi tab berakhir.
-
-Model lokal `models/chefai_best.pt` mendeteksi 21 kelas bahan makanan. Konfigurasi model memakai
-`YOLO_MODEL_PATH` (default `models/chefai_best.pt`) dan `YOLO_CONFIDENCE` (default `0.25`).
-Alur frontend mengunggah foto, meminta deteksi, menampilkan hasil agar pengguna dapat mengoreksi
-bahan, lalu mengirim bahan, preferensi, dan kategori masakan ke Gemini untuk membuat tiga pilihan
-resep dalam kategori yang dipilih. Resep yang dibuat disimpan ke riwayat per akun; gambar resep
-belum dibuat oleh AI dan area gambar dibiarkan kosong. File model harus tersedia di mesin backend
-dan paket `ultralytics` dipasang dari `requirements.txt`.
-
-## Endpoint
-
-| Method | Path | Auth | Fungsi |
-|---|---|---|---|
-| POST | `/auth/register` | - | Daftar (email, password min. 8 karakter, full_name) |
-| POST | `/auth/login` | - | Login JSON → `access_token` (JWT) |
-| POST | `/auth/token` | - | Login form-data, khusus tombol Authorize di Swagger |
-| POST | `/recipes/generate` | - | Membuat tiga pilihan resep Gemini sesuai kategori (`Rumahan`, `Tumisan`, `Kuah Hangat`) |
-| POST | `/uploads/{id}/detect` | Autentikasi | Deteksi bahan dengan model YOLO lokal |
-| GET / PATCH | `/users/me` | Bearer | Lihat / ubah profil |
-| GET | `/users/me/preferences` | Bearer | Lihat preferensi |
-| PUT | `/users/me/preferences` | Bearer | Ganti seluruh preferensi |
-| PATCH | `/users/me/preferences` | Bearer | Ubah sebagian preferensi |
-| POST | `/uploads` | Bearer | Upload foto bahan (multipart, field `file`) |
-| GET | `/uploads`, `/uploads/{id}` | Bearer | Daftar / detail upload milik sendiri |
-| DELETE | `/uploads/{id}` | Bearer | Hapus foto sendiri |
-| POST / GET | `/recipes/history` | Bearer | Simpan / lihat riwayat resep |
-| POST / GET | `/recipes/favorites` | Bearer | Simpan / lihat resep favorit |
-| DELETE | `/recipes/favorites/{id}` | Bearer | Hapus resep dari favorit |
-| GET | `/health` | - | Cek server |
-
-Contoh:
-
-```bash
-curl -X POST localhost:8000/auth/register -H 'Content-Type: application/json' \
-  -d '{"email":"budi@example.com","password":"rahasia123","full_name":"Budi"}'
-
-TOKEN=$(curl -s -X POST localhost:8000/auth/login -H 'Content-Type: application/json' \
-  -d '{"email":"budi@example.com","password":"rahasia123"}' | python -c "import sys,json;print(json.load(sys.stdin)['access_token'])")
-
-curl -X PUT localhost:8000/users/me/preferences -H "Authorization: Bearer $TOKEN" \
-  -H 'Content-Type: application/json' \
-  -d '{"diet":"halal","allergies":["kacang","udang"],"staple_ingredients":["garam","minyak"],"default_servings":2}'
-
-curl -X POST localhost:8000/uploads -H "Authorization: Bearer $TOKEN" -F "file=@foto_kulkas.jpg"
+```powershell
+.\.venv\Scripts\python.exe -m uvicorn app.main:app --reload --port 8000
 ```
 
-Frontend: kirim header `Authorization: Bearer <access_token>`. Upload memakai `FormData` dengan field bernama `file`.
+API: `http://127.0.0.1:8000`  
+Dokumentasi: `http://127.0.0.1:8000/docs`  
+Health check: `http://127.0.0.1:8000/health`
 
-## Keputusan desain
+## Menjalankan frontend
 
-- **Preferensi** menyimpan profil tetap (diet, alergi, staple ingredients) dan default untuk popup
-  (waktu masak, kesulitan `easy|medium|hard`, porsi, cuisine). Teks dinormalisasi ke huruf kecil dan
-  daftar dihapus duplikatnya supaya pencocokan alergi di Recipe Engine konsisten.
-- **Upload** memeriksa isi file (bukan hanya header), hanya JPEG/PNG, maksimal `MAX_UPLOAD_SIZE_MB`.
-  Foto disimpan ulang tanpa metadata EXIF (lokasi GPS terhapus, orientasi sudah diluruskan).
-  `expires_at` diisi sesuai retensi 30 hari di laporan perancangan.
-- **Storage** lewat antarmuka `StorageBackend`; sekarang disk lokal, bisa diganti S3/MinIO tanpa mengubah endpoint.
-- Upload milik user lain dijawab 404 (bukan 403).
-- Tabel dibuat otomatis saat startup (`create_all`); ganti ke Alembic saat skema mulai stabil.
-- Untuk produksi di belakang Nginx, set juga `client_max_body_size` sesuai batas upload.
+Buka terminal kedua dari root project:
 
-## Belum dikerjakan (di luar todo ini)
+```powershell
+cd .\NakEna_Frontend
+$env:NAKENA_API_BASE_URL = "http://127.0.0.1:8000"
+..\nakena-backend\.venv\Scripts\python.exe -m uvicorn app.main:app --reload --port 8001
+```
 
-Penghapusan otomatis foto yang lewat `expires_at`, refresh token, dan endpoint admin. Kolom `role`,
-dependency `require_admin`, dan kolom `status` pada upload sudah disiapkan.
-Untuk menjadikan akun admin sementara: `UPDATE users SET role='admin' WHERE email='...';`
+Frontend: `http://127.0.0.1:8001`. `CORS_ORIGINS` pada `.env` backend harus memuat `http://localhost:8001` dan `http://127.0.0.1:8001`. Keduanya sudah dicantumkan pada `.env.example`.
+
+## Catatan keamanan
+
+- File `.env` tidak disertakan dalam arsip dan tidak boleh di-commit.
+- Jangan membagikan API key Gemini atau `SECRET_KEY`. Jika key pernah terbagikan, rotasi/ganti key tersebut.
+- Database lokal `nakena.db`, virtual environment, cache, dan foto upload tidak disertakan.
+- File `models/chefai_best.pt` dipertahankan karena dibutuhkan backend untuk deteksi YOLO.
+
+## Endpoint utama
+
+| Method | Endpoint | Fungsi |
+|---|---|---|
+| POST | `/auth/register` | Registrasi pengguna |
+| POST | `/auth/login` | Login dan penerbitan JWT |
+| GET/PATCH | `/users/me` | Baca/perbarui profil |
+| GET/PUT/PATCH | `/users/me/preferences` | Preferensi pengguna |
+| POST | `/uploads` | Upload foto |
+| POST | `/uploads/{id}/detect` | Deteksi bahan dengan YOLO |
+| GET/DELETE | `/uploads` dan `/uploads/{id}` | Daftar/detail/hapus upload |
+| POST | `/recipes/generate` | Generate tiga opsi resep dengan Gemini |
+| GET/POST | `/recipes/history` | Riwayat resep |
+| GET/POST/DELETE | `/recipes/favorites` | Resep favorit |

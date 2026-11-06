@@ -1,2 +1,25 @@
-
+# Python
 __pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Virtual environments
+.venv/
+venv/
+
+# Local secrets and runtime data
+.env
+.env.*.local
+!*.env.example
+*.db
+*.sqlite3
+
+# User uploads and generated files
+*/storage/uploads/*
+!*/storage/uploads/.gitkeep
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

@@ -1,0 +1,21 @@
+/* Styles extracted from detection_result.html. */
+
+    @layer base {
+      html, body {
+        margin: 0;
+        padding: 0;
+        background-color: #060D1A;
+      }
+      body { overscroll-behavior: none; }
+      main > :first-child { margin-top: 0 !important; }
+      main > :last-child { margin-bottom: 0 !important; }
+    }
+    ::-webkit-scrollbar { display: none; }
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: 0 0 24px -2px rgba(255, 94, 20, 0.45); }
+      50% { box-shadow: 0 0 40px 4px rgba(255, 94, 20, 0.7); }
+    }
+    .glow-orange {
+      animation: pulseGlow 3s infinite ease-in-out;
+    }
+  

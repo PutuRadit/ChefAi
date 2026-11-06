@@ -4,67 +4,9 @@
 <meta content="web_standard" name="shell-type">
 <title>NakEna - Scan Bahan di Dapurmu</title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Epilogue:wght@600;700;800;900&amp;family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
-<style>
-    @layer base {
-      html, body {
-        margin: 0;
-        padding: 0;
-        background-color: #060D1A;
-        color: #dce2f5;
-        font-family: 'Plus Jakarta Sans', sans-serif;
-      }
-      body {
-        overscroll-behavior: none;
-      }
-    }
-    ::-webkit-scrollbar {
-      display: none;
-    }
-    @keyframes float-slow {
-      0%, 100% { transform: translateY(0px) rotate(0deg); }
-      50% { transform: translateY(-12px) rotate(2deg); }
-    }
-    @keyframes pulse-glow {
-      0%, 100% { opacity: 0.45; transform: scale(1); }
-      50% { opacity: 0.75; transform: scale(1.06); }
-    }
-    .animate-float {
-      animation: float-slow 6s ease-in-out infinite;
-    }
-    .animate-float-delay {
-      animation: float-slow 7s ease-in-out 1.5s infinite;
-    }
-    .animate-glow {
-      animation: pulse-glow 5s ease-in-out infinite;
-    }
-  </style>
+<link rel="stylesheet" href="/static/css/pages/scan.css">
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<script id="tailwind-config">
-    tailwind.config = {
-      darkMode: "class",
-      theme: {
-        extend: {
-          colors: {
-            "background": "#060D1A",
-            "surface": "#081324",
-            "surface-card": "#10223D",
-            "primary": "#ffb59b",
-            "primary-container": "#FF5E14",
-            "on-primary-container": "#FFFFFF",
-            "secondary": "#bac7e3",
-            "tertiary": "#f9bd22",
-            "on-surface": "#dce2f5",
-            "on-surface-variant": "#93a3c3",
-            "outline-glow": "#FF5E14"
-          },
-          fontFamily: {
-            "display": ["Epilogue", "sans-serif"],
-            "body": ["Plus Jakarta Sans", "sans-serif"]
-          }
-        }
-      }
-    }
-  </script>
+<script id="tailwind-config" src="/static/js/pages/scan.config.js"></script>
 </head>
 <body class="bg-[#060D1A] min-h-screen flex flex-col justify-between selection:bg-[#FF5E14] selection:text-white relative overflow-x-hidden">
 <!-- Ambient Cinematic Glows & Bokeh Lights -->
@@ -357,47 +299,5 @@
 </div>
 </footer>
 <!-- Scan flow script -->
-<script>
-    function switchState(stateName) {
-      const states = ['upload', 'preview', 'loading'];
-      states.forEach(s => {
-        const el = document.getElementById('state-' + s);
-        if (el) {
-          if (s === stateName) {
-            el.classList.remove('hidden');
-            el.classList.add('flex');
-          } else {
-            el.classList.add('hidden');
-            el.classList.remove('flex');
-          }
-        }
-      });
-    }
-
-    function handleFileSelect(event) {
-      if (event.target.files && event.target.files[0]) {
-        switchState('preview');
-      }
-    }
-
-    // Drag-and-drop feedback
-    const dropzone = document.getElementById('dropzone');
-    if (dropzone) {
-      ['dragenter', 'dragover'].forEach(eventName => {
-        dropzone.addEventListener(eventName, (e) => {
-          e.preventDefault();
-          dropzone.classList.add('border-[#FF5E14]', 'bg-[#102444]');
-        }, false);
-      });
-      ['dragleave', 'drop'].forEach(eventName => {
-        dropzone.addEventListener(eventName, (e) => {
-          e.preventDefault();
-          dropzone.classList.remove('border-[#FF5E14]', 'bg-[#102444]');
-          if (eventName === 'drop' && e.dataTransfer.files.length > 0) {
-            switchState('preview');
-          }
-        }, false);
-      });
-    }
-  </script>
+<script src="/static/js/pages/scan.js" defer></script>
 </body></html>

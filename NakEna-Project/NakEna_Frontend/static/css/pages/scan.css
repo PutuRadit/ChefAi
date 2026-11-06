@@ -1,0 +1,35 @@
+/* Styles extracted from scan.html. */
+
+    @layer base {
+      html, body {
+        margin: 0;
+        padding: 0;
+        background-color: #060D1A;
+        color: #dce2f5;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+      }
+      body {
+        overscroll-behavior: none;
+      }
+    }
+    ::-webkit-scrollbar {
+      display: none;
+    }
+    @keyframes float-slow {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-12px) rotate(2deg); }
+    }
+    @keyframes pulse-glow {
+      0%, 100% { opacity: 0.45; transform: scale(1); }
+      50% { opacity: 0.75; transform: scale(1.06); }
+    }
+    .animate-float {
+      animation: float-slow 6s ease-in-out infinite;
+    }
+    .animate-float-delay {
+      animation: float-slow 7s ease-in-out 1.5s infinite;
+    }
+    .animate-glow {
+      animation: pulse-glow 5s ease-in-out infinite;
+    }
+  

@@ -4,8 +4,11 @@
   const userNameKey = "nakena_user_name";
   const uploadKey = "nakena_last_upload";
   const recipeKey = "nakena_latest_recipe";
+<<<<<<< HEAD
+=======
   const recipeNoticeKey = "nakena_recipe_notice";
   const apiBaseUrl = (document.currentScript?.dataset.apiBase || "").replace(/\/+$/, "");
+>>>>>>> c6797e0ed6af32ad66239f59a65a718d8ff2d82b
   const token = () => sessionStorage.getItem(tokenKey);
   const email = () => sessionStorage.getItem(emailKey) || "guest";
   const storageKey = (name) => `nakena_${name}_${email()}`;
@@ -16,7 +19,7 @@
     if (options.body && !(options.body instanceof FormData)) {
       headers.set("Content-Type", "application/json");
     }
-    const response = await fetch(`${apiBaseUrl}${path}`, { ...options, headers });
+    const response = await fetch(path, { ...options, headers });
     const data = response.status === 204 ? null : await response.json().catch(() => ({}));
     if (!response.ok) {
       if (response.status === 401) {
@@ -273,6 +276,14 @@
     const hidden = document.getElementById("detectedIngredientsInput");
     if (hidden) hidden.value = ingredients.join(", ");
     const count = document.getElementById("detectedCount");
+<<<<<<< HEAD
+    if (count) count.textContent = "0";
+     const message = document.querySelector("#ingredientsConfirmationForm aside .text-slate-400");
+     if (message) message.textContent = "Foto tersimpan. Tambahkan atau koreksi bahan secara manual sebelum membuat resep.";
+     const detectedBadge = document.querySelector("#ingredientsConfirmationForm aside .text-amber-400.text-xs.font-bold");
+     if (detectedBadge) detectedBadge.textContent = "0 Bahan Terdeteksi";
+
+=======
     if (count) count.textContent = String(detections.length);
     const scanCount = document.getElementById("scanDetectionCount");
     if (scanCount) scanCount.textContent = String(detections.length);
@@ -331,6 +342,7 @@
       box.append(label);
       overlay.append(box);
     });
+>>>>>>> c6797e0ed6af32ad66239f59a65a718d8ff2d82b
   }
 
   function profilePreferenceFromForm(form) {
@@ -472,6 +484,10 @@
   function setupRecipeGeneration() {
     const form = document.getElementById("ingredientsConfirmationForm");
     if (!form) return;
+<<<<<<< HEAD
+    captureSubmit(form, () => {
+      location.assign("/recipes/");
+=======
     captureSubmit(form, async () => {
       const values = new FormData(form);
       const ingredients = [
@@ -526,6 +542,7 @@
         if (button) button.disabled = false;
         overlay?.classList.add("opacity-0", "pointer-events-none");
       }
+>>>>>>> c6797e0ed6af32ad66239f59a65a718d8ff2d82b
     });
   }
 
@@ -1176,13 +1193,41 @@
     avatar.closest("a")?.setAttribute("aria-label", `Buka profil ${fullName}`);
   }
 
+  function renderProfileAvatar(avatar, user = {}) {
+    if (!avatar) return;
+    const fullName = String(user.full_name || sessionStorage.getItem(userNameKey) || email() || "NakEna").trim();
+    const initial = fullName.charAt(0).toUpperCase() || "N";
+    const avatarUrl = user.profile_image_url || user.avatar_url || user.photo_url;
+    avatar.textContent = "";
+    if (avatarUrl) {
+      const image = document.createElement("img");
+      image.src = avatarUrl;
+      image.alt = "Foto profil";
+      image.className = "w-full h-full object-cover";
+      avatar.appendChild(image);
+    } else {
+      const fallback = document.createElement("span");
+      fallback.textContent = initial;
+      fallback.setAttribute("data-user-avatar-initial", "");
+      avatar.appendChild(fallback);
+    }
+    avatar.closest("a")?.setAttribute("aria-label", `Buka profil ${fullName}`);
+  }
+
   async function hydrateProfile() {
     if (!token()) return;
+<<<<<<< HEAD
+    const name = document.querySelector("[data-user-name]");
+=======
+>>>>>>> c6797e0ed6af32ad66239f59a65a718d8ff2d82b
     const avatar = document.querySelector("[data-user-avatar]");
     // Tampilkan huruf awal segera, lalu ganti dengan data profil setelah API selesai.
     renderProfileAvatar(avatar);
     try {
       const user = await api("/users/me");
+<<<<<<< HEAD
+      if (name) name.textContent = user.full_name;
+=======
       document.querySelectorAll("[data-user-name]").forEach((element) => {
         element.textContent = user.full_name;
       });
@@ -1201,6 +1246,7 @@
       if (fullNameInput) fullNameInput.value = user.full_name || "";
       const emailInput = document.getElementById("input-email");
       if (emailInput) emailInput.value = user.email || "";
+>>>>>>> c6797e0ed6af32ad66239f59a65a718d8ff2d82b
       sessionStorage.setItem(userNameKey, String(user.full_name || ""));
       renderProfileAvatar(avatar, user);
     } catch (error) {
