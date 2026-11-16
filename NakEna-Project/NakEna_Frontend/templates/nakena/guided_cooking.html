@@ -1,312 +1,75 @@
-<!DOCTYPE html><html class="dark" lang="en"><head><meta charset="utf-8"><meta content="width=device-width, initial-scale=1.0" name="viewport"><meta content="web_standard" name="shell-type"><title>NakEna - Culinary Companion</title><link href="https://fonts.googleapis.com" rel="preconnect"><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"><link href="https://fonts.googleapis.com/css2?family=Epilogue:ital,wght@0,600;0,700;0,800;1,700&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"><link rel="stylesheet" href="/static/css/pages/guided_cooking.css"><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config" src="/static/js/pages/guided_cooking.config.js"></script></head><body class="bg-surface font-body-md text-on-surface antialiased"><header class="fixed top-0 w-full z-50 bg-surface/80 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="h-20 w-full px-gutter md:px-margin-tablet lg:px-margin-desktop flex items-center justify-between"><div class="flex items-center gap-space-lg"><a class="flex items-center gap-space-sm group" data-path="recommendations" href="/"><div class="w-10 h-10 rounded-xl bg-surface-container-high flex items-center justify-center text-primary-container group-hover:scale-105 transition-transform"><span class="material-symbols-outlined text-[24px]">skillet</span></div><div class="flex flex-col"><span class="font-headline-sm text-headline-sm tracking-tight text-on-surface flex items-center gap-space-xs">NakEna<span class="material-symbols-outlined text-tertiary text-[18px]">temp_preferences_custom</span></span></div></a><nav class="hidden md:flex items-center gap-space-xs" data-active-classes="bg-primary-container text-on-primary-container font-label-md text-label-md rounded-lg"><a class="px-space-md py-space-sm rounded-lg font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="recommendations" href="#">Recommendations</a><a class="px-space-md py-space-sm rounded-lg font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="recipe-detail" href="#">Recipe Detail</a><a aria-current="page" class="px-space-md py-space-sm transition-colors bg-primary-container text-on-primary-container font-label-md text-label-md rounded-lg" data-path="guided-cooking" href="/recipes/1/guided-cooking/">Guided Cooking</a><a class="px-space-md py-space-sm rounded-lg font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="favorites" href="#">Saved Dishes</a></nav></div><div class="flex items-center gap-space-md"><div class="flex items-center gap-space-xs px-space-sm py-space-xs bg-surface-container-high rounded-full"><span class="material-symbols-outlined text-tertiary text-[18px]">favorite</span><span class="font-label-sm text-label-sm text-on-surface pr-space-xs">14</span></div><div class="flex items-center gap-space-sm pl-space-xs"><img alt="Profile" class="w-8 h-8 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida/AEtjO1WgWmn4MKvTd_AR_9Ka_OSABooFWQEgsbsZB-gglo0kSx_rx8AsenS3vsbtYw6zpDUzFArXNtk_Mk66-VysKqOZxaMnjBg2DDgcxqbni7UvkFiKUBPz1K9sjPLu8gLLT3BrqinwbIy8eldaEbuQc5bIFFUDoB6wU3dzTkpH9rtIKdghTsjvIFq4RwkRMTIcyIer2aFLW1YK34veUVRGySjoLGXBisMDtnQqgN9qA1cXfjKNn67s4nk2yAC0MIadvAk9-tmLaW6DTo0"></div></div></div></header><main class="w-full pt-20 bg-surface min-h-[calc(100vh-200px)]"><div class="flex flex-col w-full relative">
-<!-- Culinary Ambience Lighting & Background Gradients -->
-<div class="absolute -top-12 left-1/4 w-96 h-96 bg-primary-container/10 rounded-full blur-3xl pointer-events-none -z-10"></div>
-<div class="absolute top-1/3 -right-20 w-80 h-80 bg-tertiary/10 rounded-full blur-3xl pointer-events-none -z-10"></div>
-<!-- CSRF and Template Anchor (Django Compatible) -->
-<!-- Top Navigation & Stage HUD -->
-<div class="w-full px-gutter md:px-margin-tablet lg:px-margin-desktop py-space-md flex flex-col gap-space-md border-none">
-<div class="flex flex-wrap items-center justify-between gap-space-md">
-<div class="flex items-center gap-space-sm">
-<a class="flex items-center gap-space-xs px-space-md py-space-sm rounded-full bg-surface-container-high hover:bg-surface-bright text-secondary hover:text-on-surface transition-all text-label-md font-label-md shadow-sm" data-path="recipe-detail" href="/recipes/1/">
-<span class="material-symbols-outlined text-[18px]">arrow_back</span>
-<span>Kembali ke Detail Resep</span>
-</a>
-<span class="text-outline-variant font-label-sm">•</span>
-<div class="flex items-center gap-space-xs text-primary font-label-md text-label-md">
-<span class="material-symbols-outlined text-[18px] text-tertiary">restaurant_menu</span>
-<span id="recipe-title-display">Nasi Goreng Rumahan Spesial</span>
-</div>
-</div>
-<!-- Controls Right: Audio, Quick Timer, Exit -->
-<div class="flex items-center gap-space-sm">
-<button class="flex items-center gap-space-xs px-space-md py-space-sm rounded-full bg-surface-container-high hover:bg-surface-bright text-on-surface text-label-md font-label-md transition-colors shadow-sm" id="toggle-voice-btn" title="Suara Panduan">
-<span class="material-symbols-outlined text-tertiary text-[18px]" id="voice-icon">volume_up</span>
-<span id="voice-text">Suara: ON</span>
-</button>
-<button class="flex items-center gap-space-xs px-space-md py-space-sm rounded-full bg-surface-container-high hover:bg-surface-bright text-on-surface text-label-md font-label-md transition-colors shadow-sm" id="toggle-top-timer-btn">
-<span class="material-symbols-outlined text-primary-container text-[18px]">timer</span>
-<span id="top-timer-badge">03:00</span>
-</button>
-<button class="flex items-center gap-space-xs px-space-md py-space-sm rounded-full bg-error-container/40 hover:bg-error-container text-error font-label-md text-label-md transition-colors shadow-sm" id="trigger-exit-modal-btn">
-<span class="material-symbols-outlined text-[18px]">close</span>
-<span>Keluar Masak</span>
-</button>
-</div>
-</div>
-<!-- Cooking Linear Progress Bar -->
-<div class="flex flex-col gap-space-xs">
-<div class="flex items-center justify-between text-label-sm font-label-sm">
-<span class="text-tertiary tracking-wide uppercase flex items-center gap-space-xs">
-<span class="inline-block w-2 h-2 rounded-full bg-primary-container animate-ping"></span>
-<span id="step-count-text">Langkah 1 dari 7</span>
-</span>
-<span class="text-secondary font-label-sm" id="progress-percent-text">15% Selesai</span>
-</div>
-<div class="w-full h-2.5 rounded-full bg-surface-container-lowest overflow-hidden shadow-inner">
-<div class="h-full bg-gradient-to-r from-primary-container via-tertiary to-primary transition-all duration-500 rounded-full" id="progress-indicator-bar" style="width: 15%;"></div>
-</div>
-</div>
-</div>
-<!-- Main View Area (Large screen interactive step center card + Mascot sidecard) -->
-<section class="w-full px-gutter md:px-margin-tablet lg:px-margin-desktop py-space-md flex-1">
-<div class="grid grid-cols-1 lg:grid-cols-12 gap-space-lg items-start">
-<!-- Primary Cooking Command Card (1m readability optimization) -->
-<div class="lg:col-span-8 flex flex-col gap-space-lg bg-surface-container-low rounded-xl p-space-lg md:p-space-xl shadow-xl relative overflow-hidden">
-<!-- Subtle Card Decorative Radial Saffron Glow -->
-<div class="absolute -top-24 -right-24 w-60 h-60 bg-tertiary/10 rounded-full blur-2xl pointer-events-none"></div>
-<!-- Step Supertitle -->
-<div class="flex flex-wrap items-center justify-between gap-space-sm">
-<div class="inline-flex items-center gap-space-xs px-space-sm py-space-xs bg-surface-container-high text-tertiary rounded-lg font-label-sm text-label-sm tracking-wider uppercase">
-<span class="material-symbols-outlined text-[16px]">skillet</span>
-<span id="step-badge-text">LANGKAH 1 DARI 7 • PERSIAPAN BAHAN</span>
-</div>
-<div class="inline-flex items-center gap-space-xs text-secondary font-label-sm text-label-sm bg-surface-container px-space-sm py-space-xs rounded-lg">
-<span class="material-symbols-outlined text-primary text-[16px]">schedule</span>
-<span id="step-estimation-text">Estimasi: 3 Menit</span>
-</div>
-</div>
-<!-- Step Main Heading -->
-<div class="flex flex-col gap-space-xs">
-<h1 class="font-headline-lg text-headline-lg md:text-[34px] md:leading-[42px] font-bold text-on-surface" id="step-heading-text">
-            Siapkan &amp; Iris Bahan Dapur
-          </h1>
-<p class="font-body-lg text-body-lg text-secondary leading-relaxed pt-space-xs" id="step-description-text">
-            Iris tipis bawang merah dan bawang putih. Potong tomat segar menjadi dadu kecil. Kocok lepas 2 butir telur ayam dalam mangkuk kecil, dan pastikan nasi putih sudah dalam keadaan dingin agar tidak lembek saat digoreng.
-          </p>
-</div>
-<!-- Integrated Timer Control Block -->
-<div class="flex flex-wrap items-center justify-between gap-space-md p-space-md bg-surface-container rounded-xl shadow-inner">
-<div class="flex items-center gap-space-md">
-<div class="w-12 h-12 rounded-full bg-surface-container-highest flex items-center justify-center text-primary-container shadow-sm">
-<span class="material-symbols-outlined text-[28px]" id="step-timer-icon">timelapse</span>
-</div>
-<div class="flex flex-col">
-<span class="text-label-sm font-label-sm text-secondary uppercase tracking-wider">Countdown Timer</span>
-<span class="font-display-hero text-headline-lg md:text-display-hero text-on-surface tracking-tight" id="timer-display-string">03:00</span>
-</div>
-</div>
-<div class="flex items-center gap-space-sm">
-<button class="px-space-lg py-space-sm rounded-full bg-primary-container hover:bg-on-primary-fixed-variant text-on-primary-container hover:text-primary font-label-lg text-label-lg transition-all shadow-md flex items-center gap-space-xs" id="main-timer-action-btn">
-<span class="material-symbols-outlined text-[20px]" id="main-timer-btn-icon">play_arrow</span>
-<span id="main-timer-btn-label">Mulai Timer 03:00</span>
-</button>
-<button class="p-space-sm rounded-full bg-surface-container-high hover:bg-surface-bright text-secondary hover:text-on-surface transition-colors" id="reset-timer-btn" title="Reset Waktu">
-<span class="material-symbols-outlined text-[20px]">restart_alt</span>
-</button>
-</div>
-</div>
-<!-- Ingredients Checklist for this Step -->
-<div class="flex flex-col gap-space-md pt-space-xs">
-<div class="flex items-center justify-between">
-<span class="font-headline-sm text-headline-sm text-on-surface flex items-center gap-space-xs">
-<span class="material-symbols-outlined text-tertiary text-[20px]">checklist</span>
-              Checklist Bahan untuk Langkah Ini
-            </span>
-<span class="text-label-sm font-label-sm text-on-surface-variant" id="checked-counter">0/4 Siap</span>
-</div>
-<div class="grid grid-cols-1 md:grid-cols-2 gap-space-sm" id="ingredients-checklist-container">
-<!-- Item 1 -->
-<label class="ingredient-item flex items-center gap-space-md p-space-md rounded-xl bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
-<input type="checkbox" class="step-ingredient-checkbox w-5 h-5 rounded accent-primary-container cursor-pointer">
-<div class="flex flex-col min-w-0">
-<span class="font-body-md text-body-md text-on-surface font-semibold truncate">4 Siung Bawang Merah</span>
-<span class="text-label-sm font-label-sm text-secondary">diiris tipis</span>
-</div>
-</label>
-<!-- Item 2 -->
-<label class="ingredient-item flex items-center gap-space-md p-space-md rounded-xl bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
-<input class="step-ingredient-checkbox w-5 h-5 rounded accent-primary-container cursor-pointer" type="checkbox">
-<div class="flex flex-col min-w-0">
-<span class="font-body-md text-body-md text-on-surface font-semibold truncate">1 Buah Tomat Segar</span>
-<span class="text-label-sm font-label-sm text-secondary">dipotong dadu kecil</span>
-</div>
-</label>
-<!-- Item 3 -->
-<label class="ingredient-item flex items-center gap-space-md p-space-md rounded-xl bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
-<input class="step-ingredient-checkbox w-5 h-5 rounded accent-primary-container cursor-pointer" type="checkbox">
-<div class="flex flex-col min-w-0">
-<span class="font-body-md text-body-md text-on-surface font-semibold truncate">2 Butir Telur Ayam</span>
-<span class="text-label-sm font-label-sm text-secondary">dikocok lepas</span>
-</div>
-</label>
-<!-- Item 4 -->
-<label class="ingredient-item flex items-center gap-space-md p-space-md rounded-xl bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm">
-<input class="step-ingredient-checkbox w-5 h-5 rounded accent-primary-container cursor-pointer" type="checkbox">
-<div class="flex flex-col min-w-0">
-<span class="font-body-md text-body-md text-on-surface font-semibold truncate">2 Piring Nasi Dingin</span>
-<span class="text-label-sm font-label-sm text-secondary">pisahkan butirannya</span>
-</div>
-</label>
-</div>
-</div>
-<!-- Next Action Prompt Banner -->
-<div class="hidden items-center justify-between p-space-md rounded-xl bg-tertiary-container/20 text-tertiary shadow-sm transition-all" id="step-completion-alert">
-<div class="flex items-center gap-space-sm">
-<span class="material-symbols-outlined text-[24px]">task_alt</span>
-<span class="font-body-md text-body-md font-semibold">Semua bahan langkah ini sudah siap! Lanjutkan ke penggorengan.</span>
-</div>
-<button class="px-space-md py-space-xs rounded-full bg-primary-container text-on-primary-container font-label-sm text-label-sm font-bold shadow hover:bg-primary transition-colors" id="alert-next-btn">
-            Lanjut Sekarang
-          </button>
-</div>
-</div>
-<!-- Mascot Companion & Pro Tips Column -->
-<div class="lg:col-span-4 flex flex-col gap-space-lg">
-<!-- Mascot Interactive Card -->
-<div class="w-full bg-surface-container-low rounded-xl p-space-lg flex flex-col items-center relative overflow-hidden shadow-xl">
-<!-- Food sticker badge badge -->
-<div class="w-full flex items-center justify-between mb-space-sm">
-<span class="px-space-sm py-space-xs rounded-full bg-surface-container-high text-tertiary font-label-sm text-label-sm flex items-center gap-space-xs">
-<span class="material-symbols-outlined text-[14px]">smart_toy</span>
-              NakEna Companion
-            </span>
-<div class="flex items-center gap-space-xs text-primary-container">
-<span class="material-symbols-outlined text-[16px]">local_fire_department</span>
-<span class="text-label-sm font-label-sm">Semangat Masak!</span>
-</div>
-</div>
-<!-- Mascot Artwork Container -->
-<div class="w-full relative flex items-center justify-center my-space-xs group">
-<div class="absolute inset-0 bg-gradient-to-t from-primary-container/20 to-transparent rounded-full filter blur-xl scale-90"></div>
-<!-- The joyful anime mascot holding spatula wok with culinary ingredients -->
-<img alt="Mascot NakEna Ceria" class="relative z-10 w-full max-w-[260px] md:max-w-[290px] h-auto object-contain drop-shadow-[0_12px_24px_rgba(255,94,20,0.25)] transition-transform duration-300 hover:scale-105" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDGjZO9NG2MP70yEeINRPt4oZAXNIMwiy1lIbu0b-A0rfqSfw68EvSJazz5ArW3Aht3JuGBgHatvTU6LXNs_ypznUyQlJOPL2fEZBBqWiXyw5mKLGAAHHbb2mAtizwZ2GvcRdMrNJl4PKa08jN2R5tKWDg4PApw3JiHEQcQD8zp2vmbxMSiqL0y80xxPoyV1oWqJ3bz3yH31ciDGJj22fUfi0a-E2u5S7R0m_tCagEJMPrBkOHcZRIhj31-9rUleb8mJwc">
-</div>
-<!-- Mascot Dialogue Bubble -->
-<div class="w-full mt-space-sm bg-surface-container p-space-md rounded-xl relative shadow-md">
-<div class="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-surface-container rotate-45"></div>
-<p class="relative z-10 font-body-md text-body-md text-on-surface text-center italic leading-relaxed" id="mascot-quote-text">
-              “Pelan-pelan ya chef, kamu sudah hebat! Pastikan nasinya tidak menggumpal biar hasilnya mawur dan lezat! 🍳✨”
-            </p>
-</div>
-<!-- Pro Tip Card Below Speech -->
-<div class="w-full mt-space-md p-space-md bg-surface-container-high rounded-xl flex items-start gap-space-sm shadow-sm">
-<span class="material-symbols-outlined text-tertiary text-[22px] flex-shrink-0">lightbulb</span>
-<div class="flex flex-col">
-<span class="font-label-md text-label-md text-on-surface font-semibold">Tips Koki Cilik</span>
-<p class="font-body-sm text-body-sm text-secondary pt-space-xs leading-normal" id="mascot-tip-text">
-                Gunakan pisau yang tajam agar mata tidak perih saat mengiris bawang merah.
-              </p>
-</div>
-</div>
-</div>
-<!-- Quick Voice / Ambient Helper Note -->
-<div class="w-full bg-surface-container-low rounded-xl p-space-md flex items-center justify-between text-secondary shadow-sm">
-<div class="flex items-center gap-space-sm">
-<span class="material-symbols-outlined text-primary text-[20px]">mic</span>
-<span class="text-body-sm font-body-sm">Katakan: “Chef, lanjut” untuk navigasi suara bebas genggam.</span>
-</div>
-</div>
-</div>
-</div>
-</section>
-<!-- Sticky Bottom Action & Navigation Bar -->
-<section class="sticky bottom-0 w-full z-40 bg-surface/90 backdrop-blur-xl py-space-md px-gutter md:px-margin-tablet lg:px-margin-desktop shadow-[0_-8px_24px_rgba(0,0,0,0.4)]">
-<div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-space-md">
-<!-- Previous Step Button (Disabled on step 1) -->
-<button class="flex items-center gap-space-xs px-space-lg py-space-sm rounded-full bg-surface-container-high text-on-surface-variant opacity-40 cursor-not-allowed font-label-lg text-label-lg transition-all" disabled="" id="prev-step-btn">
-<span class="material-symbols-outlined text-[18px]">arrow_back</span>
-<span>Langkah Sebelumnya</span>
-</button>
-<!-- Center Quick Timer Utility -->
-<button class="flex items-center gap-space-xs px-space-lg py-space-sm rounded-full bg-surface-container-high hover:bg-surface-bright text-on-surface font-label-lg text-label-lg transition-colors shadow-sm" id="bottom-quick-timer-btn">
-<span class="material-symbols-outlined text-tertiary text-[20px]">alarm</span>
-<span>Buka Timer Cepat (+1 Menit)</span>
-</button>
-<!-- Primary Action: Next Step (Flame Glow) -->
-<button class="flex items-center gap-space-xs px-space-xl py-space-sm rounded-full bg-primary-container text-on-primary-container font-label-lg text-label-lg font-bold shadow-[0_0_20px_rgba(255,94,20,0.45)] hover:scale-105 active:scale-95 transition-all" id="next-step-btn">
-<span id="next-btn-text">Tandai Selesai &amp; Lanjut</span>
-<span class="material-symbols-outlined text-[20px]">arrow_forward</span>
-</button>
-</div>
-</section>
-<!-- Simulator States Panel (Requirement for testing all 5 interactive states) -->
-<section class="w-full px-gutter md:px-margin-tablet lg:px-margin-desktop py-space-lg">
-<div class="w-full bg-surface-container-lowest rounded-xl p-space-md shadow-md flex flex-col gap-space-sm">
-<div class="flex items-center justify-between flex-wrap gap-space-xs">
-<span class="font-label-sm text-label-sm uppercase tracking-wider text-secondary flex items-center gap-space-xs">
-<span class="material-symbols-outlined text-primary text-[16px]">tune</span>
-          Interactive Simulator States Switcher (Pratinjau State Lengkap)
-        </span>
-<span class="text-on-surface-variant font-label-sm text-label-sm">Klik untuk menguji setiap kondisi</span>
-</div>
-<div class="flex flex-wrap gap-space-xs">
-<button class="px-space-md py-space-xs rounded-lg bg-surface-container-high hover:bg-primary-container hover:text-on-primary-container text-on-surface text-label-sm font-label-sm transition-colors" onclick="setCookingSimulatorState(1)">
-          1. Normal / Step Berjalan
-        </button>
-<button class="px-space-md py-space-xs rounded-lg bg-surface-container-high hover:bg-primary-container hover:text-on-primary-container text-on-surface text-label-sm font-label-sm transition-colors" onclick="setCookingSimulatorState(2)">
-          2. Timer Aktif (02:45)
-        </button>
-<button class="px-space-md py-space-xs rounded-lg bg-surface-container-high hover:bg-primary-container hover:text-on-primary-container text-on-surface text-label-sm font-label-sm transition-colors" onclick="setCookingSimulatorState(3)">
-          3. Step Checklist Selesai
-        </button>
-<button class="px-space-md py-space-xs rounded-lg bg-surface-container-high hover:bg-primary-container hover:text-on-primary-container text-on-surface text-label-sm font-label-sm transition-colors" onclick="setCookingSimulatorState(4)">
-          4. Langkah Terakhir &amp; Masakan Jadi! (Perayaan)
-        </button>
-<button class="px-space-md py-space-xs rounded-lg bg-surface-container-high hover:bg-primary-container hover:text-on-primary-container text-on-surface text-label-sm font-label-sm transition-colors" onclick="setCookingSimulatorState(5)">
-          5. Modal Konfirmasi Keluar Masak
-        </button>
-</div>
-</div>
-</section>
-<!-- State 4: Final Celebration Overlay (Hidden by default, triggered on Step 7 or Simulator State 4) -->
-<div class="hidden fixed inset-0 z-50 bg-surface/95 backdrop-blur-2xl flex items-center justify-center p-gutter overflow-y-auto" id="celebration-overlay">
-<div class="w-full max-w-2xl bg-surface-container rounded-xl p-space-lg md:p-space-xl flex flex-col items-center text-center relative overflow-hidden shadow-2xl">
-<!-- Festive ambient aura -->
-<div class="absolute -top-20 left-1/2 -translate-x-1/2 w-80 h-80 bg-primary-container/20 rounded-full blur-3xl pointer-events-none"></div>
-<div class="absolute -bottom-20 right-10 w-60 h-60 bg-tertiary/20 rounded-full blur-3xl pointer-events-none"></div>
-<!-- Mascot Celebration Presentation -->
-<div class="relative w-64 h-64 md:w-80 md:h-80 flex items-center justify-center my-space-xs">
-<img alt="NakEna Merayakan Hidangan" class="w-full h-full object-contain drop-shadow-[0_16px_32px_rgba(255,94,20,0.4)] animate-bounce" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDGjZO9NG2MP70yEeINRPt4oZAXNIMwiy1lIbu0b-A0rfqSfw68EvSJazz5ArW3Aht3JuGBgHatvTU6LXNs_ypznUyQlJOPL2fEZBBqWiXyw5mKLGAAHHbb2mAtizwZ2GvcRdMrNJl4PKa08jN2R5tKWDg4PApw3JiHEQcQD8zp2vmbxMSiqL0y80xxPoyV1oWqJ3bz3yH31ciDGJj22fUfi0a-E2u5S7R0m_tCagEJMPrBkOHcZRIhj31-9rUleb8mJwc" style="animation-duration: 2.5s;">
-</div>
-<!-- Title & Celebratory Subtext -->
-<div class="flex flex-col gap-space-xs mt-space-md">
-<span class="inline-block px-space-md py-space-xs rounded-full bg-tertiary-container/30 text-tertiary font-label-md text-label-md uppercase tracking-wider mx-auto">
-          Misi Memasak Selesai! 🌟
-        </span>
-<h2 class="font-headline-lg text-headline-lg md:text-[36px] font-bold text-on-surface tracking-tight">
-          Hore! Masakanmu Sudah Siap! 🥘🎉
-        </h2>
-<p class="font-body-md text-body-md text-secondary max-w-lg mx-auto">
-          Aroma sedap Nasi Goreng Rumahan Spesial buatanmu sudah siap dinikmati bersama keluarga! Kamu memasak seperti koki bintang lima hari ini!
-        </p>
-</div>
-<!-- Action Buttons for Post-Cooking -->
-<div class="w-full flex flex-col sm:flex-row items-center justify-center gap-space-sm mt-space-lg pt-space-xs">
-<button class="w-full sm:w-auto px-space-lg py-space-sm rounded-full bg-primary-container text-on-primary-container font-label-lg text-label-lg font-bold shadow-[0_0_20px_rgba(255,94,20,0.45)] hover:scale-105 transition-all" onclick="alert('Resep berhasil dicatat ke riwayat memasak NakEna!')">
-          Simpan ke Riwayat Masak
-        </button>
-<button class="w-full sm:w-auto px-space-lg py-space-sm rounded-full bg-surface-container-high hover:bg-surface-bright text-on-surface font-label-lg text-label-lg transition-colors shadow-sm" onclick="alert('Fitur unggah foto hidangan dibuka!')">
-          Beri Rating &amp; Foto Hidangan
-        </button>
-<button class="w-full sm:w-auto px-space-lg py-space-sm rounded-full bg-surface-container-highest hover:bg-surface-bright text-secondary hover:text-on-surface font-label-lg text-label-lg transition-colors" onclick="closeCelebrationOverlay()">
-          Kembali ke Rekomendasi
-        </button>
-</div>
-</div>
-</div>
-<!-- State 5: Exit Confirmation Modal -->
-<div class="hidden fixed inset-0 z-50 bg-surface/80 backdrop-blur-md flex items-center justify-center p-gutter" id="exit-modal-overlay">
-<div class="w-full max-w-md bg-surface-container rounded-xl p-space-lg flex flex-col gap-space-md shadow-2xl relative">
-<div class="w-12 h-12 rounded-full bg-error-container/40 text-error flex items-center justify-center">
-<span class="material-symbols-outlined text-[28px]">logout</span>
-</div>
-<div class="flex flex-col gap-space-xs">
-<h3 class="font-headline-sm text-headline-sm text-on-surface font-bold">Yakin Ingin Keluar dari Mode Masak?</h3>
-<p class="font-body-md text-body-md text-secondary">
-          Progres memasakmu saat ini di langkah <span id="modal-step-display">1</span> akan tetap tersimpan di riwayat aktivitas sementara.
-        </p>
-</div>
-<div class="flex items-center justify-end gap-space-sm pt-space-sm">
-<button class="px-space-md py-space-sm rounded-full bg-surface-container-high hover:bg-surface-bright text-on-surface font-label-md text-label-md transition-colors" id="cancel-exit-btn">
-          Lanjutkan Memasak
-        </button>
-<a class="px-space-lg py-space-sm rounded-full bg-error text-on-error font-label-md text-label-md font-bold transition-all hover:opacity-90" data-path="recipe-detail" href="#">
-          Ya, Keluar
-        </a>
-</div>
-</div>
-</div>
-</div>
-<!-- Vanilla Interactive State & Cooking Flow Script -->
-<script src="/static/js/pages/guided_cooking.js" defer></script></main><footer class="w-full bg-surface-container-lowest mt-space-xl"><div class="w-full px-gutter md:px-margin-tablet lg:px-margin-desktop py-space-xl flex flex-col md:flex-row items-center justify-between gap-space-lg"><div class="flex items-center gap-space-sm text-on-surface-variant font-body-sm text-body-sm"><span class="material-symbols-outlined text-primary-container text-[20px]">outdoor_grill</span><span>Crafted with warm culinary curiosity by NakEna © 2025. Bon appétit!</span></div><div class="flex flex-wrap items-center gap-space-lg"><a class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors" data-path="recommendations" href="#">Taste Matrix</a><a class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors" data-path="guided-cooking" href="#">Live Kitchen AI</a><a class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors" data-path="favorites" href="#">Cookbook Vault</a></div></div></footer></body></html>
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Panduan memasak — NakEna</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/pages/guided_cooking.css?v=2">
+  <script src="/static/js/pages/guided_cooking.js?v=2" defer></script>
+</head>
+<body class="guided-cooking-page">
+  <a class="gc-skip" href="#cooking-main">Langsung ke panduan</a>
+  <header class="gc-header">
+    <div class="gc-header-inner">
+      <a class="gc-brand" href="/" aria-label="NakEna, beranda">
+        <span class="brand-mark" aria-hidden="true"><svg width="25" height="25" fill="currentColor" viewBox="0 0 24 24"><path d="M12.005 3a5.002 5.002 0 0 0-4.773 3.518A4.498 4.498 0 0 0 4.5 11c0 2.2 1.584 4.029 3.666 4.417.112.548.339 1.053.666 1.483V19a2 2 0 0 0 2 2h6.336a2 2 0 0 0 2-2v-2.1c.327-.43.554-.935.666-1.483A4.502 4.502 0 0 0 19.5 11a4.498 4.498 0 0 0-2.732-4.482A5.002 5.002 0 0 0 12.005 3z"/></svg></span>
+        <span class="brand-name">Nak<span>Ena</span></span>
+      </a>
+      <span class="gc-mode"><span aria-hidden="true"></span>Mode memasak</span>
+      <nav class="gc-header-actions" aria-label="Navigasi utama">
+        <a class="gc-nav-link" href="/recipes/">Rekomendasi</a>
+        <a class="gc-profile" href="/profile/" data-path="profil-pengguna" aria-label="Buka profil"><span data-user-avatar>N</span></a>
+      </nav>
+    </div>
+  </header>
+  <main id="cooking-main" class="gc-main" aria-busy="true">
+    <div id="cooking-loading" class="gc-loading" role="status">Menyiapkan panduan memasak…</div>
+    <noscript>Aktifkan JavaScript untuk membuka panduan memasak.</noscript>
+    <div id="cooking-workspace" hidden>
+      <div class="gc-topline">
+        <a class="gc-back" href="/recipes/1/"><svg class="gc-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5m7-7-7 7 7 7"/></svg>Detail resep</a>
+        <button id="trigger-exit-modal-btn" class="gc-text-button" type="button">Keluar dari panduan</button>
+      </div>
+      <div class="gc-title-row">
+        <div><p class="gc-eyebrow">PANDUAN MEMASAK</p><h1 id="recipe-title-display"></h1><div class="gc-recipe-meta"><span id="recipe-step-total"></span><span id="recipe-total-time" hidden></span></div></div>
+        <button id="toggle-voice-btn" class="gc-button gc-button-secondary gc-read-button" type="button" hidden><svg class="gc-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m11 4-6 5H2v6h3l6 5V4Zm4 4a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/></svg><span id="voice-text">Bacakan langkah</span></button>
+      </div>
+      <section class="gc-progress" aria-label="Progres memasak">
+        <div class="gc-progress-labels"><span id="step-count-text"></span><span id="progress-percent-text"></span></div>
+        <div id="cooking-progress" class="gc-progress-track" role="progressbar" aria-label="Langkah selesai" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div id="progress-indicator-bar"></div></div>
+      </section>
+      <div id="cooking-empty" class="gc-card gc-empty" hidden><h2>Langkah memasak belum tersedia</h2><p>Resep ini belum memiliki instruksi yang dapat dipisahkan.</p><a class="gc-button gc-button-primary" href="/recipes/1/">Kembali ke detail resep</a></div>
+      <div id="cooking-grid" class="gc-grid">
+        <div class="gc-primary-column">
+          <section class="gc-card gc-step-card" aria-labelledby="step-heading-text">
+            <div class="gc-step-top"><span class="gc-step-badge" id="step-badge-text"></span><span class="gc-step-done" id="step-completed-label" hidden>Sudah selesai</span></div>
+            <div id="cooking-instruction" tabindex="-1"><h2 id="step-heading-text"></h2><p id="step-description-text" class="gc-instruction"></p></div>
+            <div class="gc-step-navigation">
+              <button class="gc-button gc-button-secondary" id="prev-step-btn" type="button" disabled><svg class="gc-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5m7-7-7 7 7 7"/></svg><span>Sebelumnya</span></button>
+              <button class="gc-button gc-button-primary" id="next-step-btn" type="button"><span id="next-btn-text">Selesai &amp; lanjut</span><svg class="gc-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-7-7 7 7-7 7"/></svg></button>
+            </div>
+          </section>
+          <section class="gc-card gc-timer-card" aria-labelledby="timer-heading">
+            <div class="gc-section-title"><div class="gc-section-heading"><svg class="gc-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="14" r="8"/><path d="M12 10v4l2 2M9 2h6m-3 0v4m6 1 2-2"/></svg><h2 id="timer-heading">Timer</h2></div><span id="timer-status" class="gc-muted" role="status">Atur sesuai kebutuhan</span></div>
+            <div class="gc-timer-controls">
+              <output id="timer-display-string" class="gc-timer-display" aria-label="Sisa waktu">01:00</output>
+              <div class="gc-timer-settings"><label for="timer-minutes-input">Menit</label><input id="timer-minutes-input" type="number" min="0.1" max="360" step="any" value="1" inputmode="decimal" aria-describedby="timer-error"><span id="timer-error" class="gc-field-error" role="status" hidden>Masukkan waktu antara 0,1 dan 360 menit.</span></div>
+              <div class="gc-timer-actions"><button id="main-timer-action-btn" class="gc-button gc-button-primary" type="button">Mulai</button><button id="reset-timer-btn" class="gc-icon-button" type="button" aria-label="Reset timer"><svg class="gc-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10a9 9 0 1 1 2.5 8M3 4v6h6"/></svg></button><button id="bottom-quick-timer-btn" class="gc-button gc-button-secondary" type="button">+1 menit</button></div>
+            </div>
+          </section>
+          <section id="cooking-ingredients" class="gc-card gc-ingredients-card" aria-labelledby="ingredients-heading"><div class="gc-section-title"><div class="gc-section-heading"><svg class="gc-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 6 2 2 4-4m3 2h9M3 13l2 2 4-4m3 2h9M3 20l2 2 4-4m3 2h9"/></svg><h2 id="ingredients-heading">Bahan resep</h2></div><span id="checked-counter" class="gc-muted" role="status"></span></div><div id="ingredients-checklist-container"></div></section>
+        </div>
+        <aside class="gc-side-column">
+          <nav class="gc-card gc-outline-card" aria-labelledby="step-outline-heading"><div class="gc-section-title"><h2 id="step-outline-heading">Urutan memasak</h2><span id="outline-step-count" class="gc-muted"></span></div><ol id="cooking-step-list" class="gc-step-list"></ol></nav>
+          <section id="cooking-tips" class="gc-card gc-tips-card" aria-labelledby="tips-heading" hidden><img class="gc-mascot" src="/static/assets/mascot-chef.png" width="120" height="100" alt="" loading="lazy"><div class="gc-section-heading"><svg class="gc-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6m-5 3h4M8 14a7 7 0 1 1 8 0c-1 .8-1 2-1 2H9s0-1.2-1-2Z"/></svg><h2 id="tips-heading">Tips resep</h2></div><div id="mascot-tip-text"></div></section>
+        </aside>
+      </div>
+    </div>
+  </main>
+  <dialog id="exit-modal-overlay" class="gc-dialog" aria-labelledby="exit-dialog-title"><div class="gc-dialog-content"><p class="gc-eyebrow">PANDUAN MEMASAK</p><h2 id="exit-dialog-title">Keluar dari panduan?</h2><p>Kamu sedang di langkah <span id="modal-step-display">1</span>. Kembali ke detail resep?</p><div class="gc-dialog-actions"><button id="cancel-exit-btn" class="gc-button gc-button-secondary" type="button">Lanjut memasak</button><a class="gc-button gc-button-primary" href="/recipes/1/">Keluar</a></div></div></dialog>
+  <dialog id="celebration-overlay" class="gc-dialog gc-finish-dialog" aria-labelledby="finish-dialog-title"><div class="gc-dialog-content"><span class="gc-finish-icon" aria-hidden="true"><svg class="gc-icon" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></svg></span><p class="gc-eyebrow">SEMUA LANGKAH SELESAI</p><h2 id="finish-dialog-title">Siap disajikan.</h2><p id="finished-recipe-title"></p><div class="gc-dialog-actions"><a class="gc-button gc-button-secondary" href="/recipes/1/">Detail resep</a><a class="gc-button gc-button-primary" href="/recipes/">Lihat resep lainnya</a></div><button id="restart-cooking-btn" class="gc-text-button" type="button">Ulangi dari awal</button></div></dialog>
+</body>
+</html>

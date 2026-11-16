@@ -26,6 +26,7 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 60
     gemini_api_key: SecretStr | None = None
     gemini_model: str = "gemini-3.1-flash-lite"
+    unsplash_access_key: SecretStr | None = None
     yolo_model_path: Path = BACKEND_ROOT / "models" / "chefai_best.pt"
     yolo_confidence: float = 0.25
 

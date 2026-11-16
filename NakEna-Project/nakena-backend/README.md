@@ -69,9 +69,23 @@ Frontend: `http://127.0.0.1:8001`. `CORS_ORIGINS` pada `.env` backend harus memu
 | POST | `/auth/login` | Login dan penerbitan JWT |
 | GET/PATCH | `/users/me` | Baca/perbarui profil |
 | GET/PUT/PATCH | `/users/me/preferences` | Preferensi pengguna |
-| POST | `/uploads` | Upload foto |
+| POST | `/uploads` | Upload foto akun (tersimpan di storage dan database) |\n| POST | `/uploads/guest/detect` | Deteksi foto Guest tanpa menyimpan file atau record |
 | POST | `/uploads/{id}/detect` | Deteksi bahan dengan YOLO |
 | GET/DELETE | `/uploads` dan `/uploads/{id}` | Daftar/detail/hapus upload |
 | POST | `/recipes/generate` | Generate tiga opsi resep dengan Gemini |
 | GET/POST | `/recipes/history` | Riwayat resep |
 | GET/POST/DELETE | `/recipes/favorites` | Resep favorit |
+
+
+## Endpoint Guest tanpa penyimpanan
+
+`POST /uploads/guest/detect` menerima foto JPEG/PNG dan langsung menjalankan YOLO tanpa autentikasi. Endpoint ini:
+- memvalidasi tipe dan ukuran foto;
+- memproses foto dari memori request;
+- tidak menulis foto ke folder storage;
+- tidak membuat record `Upload` di database;
+- mengembalikan nama bahan, confidence, dan bounding box.
+
+Endpoint `/recipes/generate` juga tidak menyimpan resep. Frontend Guest tidak memanggil endpoint `/recipes/history`, `/recipes/favorites`, atau `/users/me/preferences`.
+
+**Catatan deployment:** endpoint Guest bersifat publik dan menjalankan inferensi YOLO. Sebelum deployment publik, tambahkan rate limiting dan batas konkurensi agar endpoint tidak disalahgunakan.

@@ -1,3 +1,27 @@
 /* Styles extracted from recipe_detail.html. */
 
 @layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}
+
+/* Dynamic recipe preview, matching the actual guided cooking instructions. */
+.recipe-preview-card[hidden], .recipe-preview-empty[hidden] { display: none !important; }
+.recipe-preview-header { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 22px; }
+.recipe-preview-header h2 { display: flex; align-items: center; gap: 9px; margin: 0; color: #f1f5fb; font: 700 17px/1.5 'Plus Jakarta Sans', system-ui, sans-serif; }
+.recipe-preview-header svg { width: 22px; height: 22px; flex: 0 0 auto; color: #ff9d59; }
+#recipe-step-preview-count { flex: 0 0 auto; color: #a5bad2; font: 500 11px/1.6 'Plus Jakarta Sans', system-ui, sans-serif; }
+.recipe-step-preview { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 18px; }
+.recipe-step-preview > li { position: relative; display: flex; align-items: flex-start; gap: 14px; }
+.recipe-step-preview > li:not(:last-child)::after { content: ''; position: absolute; top: 39px; left: 16px; bottom: -10px; width: 1px; background: #88a5c42b; }
+.recipe-preview-number { display: grid; place-items: center; width: 34px; height: 34px; flex: 0 0 auto; border: 1px solid #ec954b4d; border-radius: 10px; background: #e17c2215; color: #ffc18f; font: 700 11px/1 'Plus Jakarta Sans', system-ui, sans-serif; font-variant-numeric: tabular-nums; }
+.recipe-preview-body { min-width: 0; flex: 1; padding: 1px 0 13px; border-bottom: 1px solid #a2bfd617; }
+.recipe-step-preview > li:last-child .recipe-preview-body { padding-bottom: 0; border-bottom: 0; }
+.recipe-preview-body h3 { margin: 0 0 6px; color: #edf4fc; font: 700 13px/1.5 'Plus Jakarta Sans', system-ui, sans-serif; }
+.recipe-preview-body p { margin: 0; color: #c2d0e2; font: 400 14px/1.85 'Plus Jakarta Sans', system-ui, sans-serif; white-space: pre-line; overflow-wrap: anywhere; }
+.recipe-preview-empty { color: #a5bad2; font: 400 13px/1.8 'Plus Jakarta Sans', system-ui, sans-serif; }
+#recipe-coach-tip { white-space: pre-line; }
+@media (max-width: 540px) {
+ .recipe-preview-header { align-items: flex-start; gap: 10px; }
+ .recipe-preview-header h2 { font-size: 15px; }
+ .recipe-preview-header svg { width: 19px; height: 19px; }
+ .recipe-step-preview > li { gap: 11px; }
+ .recipe-preview-body p { font-size: 13px; }
+}

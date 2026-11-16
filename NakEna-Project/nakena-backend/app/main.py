@@ -10,7 +10,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app import models  # noqa: F401 - register SQLAlchemy models
-from app.api.routes import auth, recipes, uploads, users
+from app.api.routes import auth, recipe_images, recipes, uploads, users
 from app.core.config import settings
 from app.core.database import Base, engine
 
@@ -27,9 +27,17 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Keep the bundled frontend reachable when an older .env overrides the
+# default origin list. Retain any other origins configured by the project.
+frontend_origins = (
+    "http://127.0.0.1:8001",
+    "http://localhost:8001",
+)
+cors_origins = list(dict.fromkeys([*settings.cors_origins, *frontend_origins]))
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins,
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -39,6 +47,7 @@ app.include_router(auth.router)
 app.include_router(users.router)
 app.include_router(uploads.router)
 app.include_router(recipes.router)
+app.include_router(recipe_images.router)
 
 
 @app.get("/", tags=["system"])

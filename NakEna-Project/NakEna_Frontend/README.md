@@ -47,3 +47,14 @@ Buka `http://127.0.0.1:8001/`. Jika menggunakan virtual environment terpisah unt
 - Komunikasi ke backend: `static/js/api.js`
 
 Frontend memanggil API melalui `NAKENA_API_BASE_URL`. Jangan menaruh API key Gemini atau secret backend di frontend.
+
+
+## Mode Guest
+
+Pengunjung dapat menekan **Mulai Sekarang** di halaman utama untuk langsung masuk ke `/scan/` tanpa login. Jika tidak ada access token, frontend berjalan sebagai Guest.
+
+- Scan mengirim foto ke `POST /uploads/guest/detect`, bukan endpoint upload akun.
+- Hasil deteksi dan resep disimpan sementara di `sessionStorage` agar pengguna dapat melanjutkan ke konfirmasi bahan, rekomendasi, detail resep, dan Guided Cooking.
+- Guest tidak mengirim data ke endpoint riwayat, favorit, atau preferensi.
+- Riwayat, Favorit, dan Profil menampilkan penjelasan tentang batasan mode Guest.
+- `sessionStorage` akan dibersihkan browser saat sesi tab berakhir; tidak digunakan sebagai penyimpanan permanen.

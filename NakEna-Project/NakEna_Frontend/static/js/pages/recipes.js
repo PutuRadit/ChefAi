@@ -1,3 +1,27 @@
+const recipeIconShapes = {"check_circle":[["circle",{"cx":"12","cy":"12","r":"9"}],["path",{"d":"m8 12 3 3 5-6"}]],"bookmark_added":[["path",{"d":"M6 3h12v19l-6-4-6 4V3ZM9 10h6m-3-3v6"}]],"bookmark_remove":[["path",{"d":"M6 3h12v19l-6-4-6 4V3ZM9 10h6"}]],"skillet":[["path",{"d":"M15.5 8.5 22 2M17 7l2 2"}],["circle",{"cx":"9.5","cy":"14.5","r":"7.5"}],["path",{"d":"M6 14a4 4 0 0 1 4-3"}]],"auto_awesome":[["path",{"d":"m12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5L12 3ZM3 2v4M1 4h4m15 14v4m-2-2h4"}]],"info":[["circle",{"cx":"12","cy":"12","r":"9"}],["path",{"d":"M12 11v6M12 7h.01"}]],"smart_toy":[["rect",{"x":"4","y":"7","width":"16","height":"14","rx":"3"}],["path",{"d":"M12 3v4M10 3h4M1 12v5m22-5v5M8 12h.01M16 12h.01M8 17h8"}]],"progress_activity":[["path",{"d":"M21 12a9 9 0 1 1-9-9"}]],"favorite":[["path",{"d":"M20.8 4.6a5.5 5.5 0 0 0-7.8 0l-1 1-1-1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"}]],"favorite_border":[["path",{"d":"M20.8 4.6a5.5 5.5 0 0 0-7.8 0l-1 1-1-1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"}]],"bookmark":[["path",{"d":"M6 3h12v19l-6-4-6 4V3Z"}]],"bookmark_border":[["path",{"d":"M6 3h12v19l-6-4-6 4V3Z"}]]};
+
+function setRecipeIcon(icon, name) {
+  if (!icon || icon.localName !== 'svg') return false;
+  const nodes = (recipeIconShapes[name] || recipeIconShapes.info).map(([tag, attributes]) => {
+    const node = document.createElementNS('http://www.w3.org/2000/svg', tag);
+    Object.entries(attributes).forEach(([key, value]) => node.setAttribute(key, value));
+    return node;
+  });
+  icon.replaceChildren(...nodes);
+  icon.dataset.recipeIcon = name;
+  icon.setAttribute('fill', ['favorite', 'bookmark'].includes(name) ? 'currentColor' : 'none');
+  return true;
+}
+
+function setRecipeSavedIcon(icon, saved) {
+  if (!icon) return;
+  const bookmark = (icon.dataset.recipeIcon || '').startsWith('bookmark');
+  setRecipeIcon(icon, bookmark ? (saved ? 'bookmark' : 'bookmark_border') : (saved ? 'favorite' : 'favorite_border'));
+  icon.classList.toggle('is-saved', saved);
+  icon.closest('button')?.setAttribute('aria-pressed', String(saved));
+}
+window.NakEnaRecipeIcons = { set: setRecipeIcon, setSaved: setRecipeSavedIcon };
+
 const recipesData = {
       'nasi-goreng': {
         title: 'Nasi Goreng Rumahan Spesial',
@@ -57,7 +81,7 @@ const recipesData = {
       if (!toast) return;
 
       msg.innerText = message;
-      icn.innerText = icon;
+      setRecipeIcon(icn, icon);
       toast.classList.remove('translate-y-24', 'opacity-0');
       toast.classList.add('translate-y-0', 'opacity-100');
 
@@ -68,22 +92,20 @@ const recipesData = {
     }
 
     function toggleFav(btn, recipeTitle) {
-      const icon = btn.querySelector('.bookmark-icon') || btn.querySelector('.material-symbols-outlined');
+      const icon = btn.querySelector('.bookmark-icon, [data-recipe-icon]');
       const idx = savedRecipes.indexOf(recipeTitle);
 
       if (idx === -1) {
         savedRecipes.push(recipeTitle);
         if (icon) {
-          icon.innerText = 'favorite';
-          icon.style.fontVariationSettings = "'FILL' 1";
+          setRecipeSavedIcon(icon, true);
           icon.classList.add('text-primary');
         }
         showToast(`'${recipeTitle}' disimpan ke resep favorit!`, 'bookmark_added');
       } else {
         savedRecipes.splice(idx, 1);
         if (icon) {
-          icon.innerText = 'favorite_border';
-          icon.style.fontVariationSettings = "'FILL' 0";
+          setRecipeSavedIcon(icon, false);
           icon.classList.remove('text-primary');
         }
         showToast(`'${recipeTitle}' dihapus dari favorit.`, 'bookmark_remove');
@@ -127,7 +149,16 @@ const recipesData = {
       const btn = document.getElementById('btnRegenerate');
       if (!btn) return;
       const originalText = btn.innerHTML;
-      btn.innerHTML = `<span class="material-symbols-outlined text-[18px] animate-spin">progress_activity</span> Meracik...`;
+      const spinner = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      spinner.setAttribute('class', 'recipe-icon recipe-icon--18 recipe-icon--spinning');
+      spinner.setAttribute('viewBox', '0 0 24 24');
+      spinner.setAttribute('stroke', 'currentColor');
+      spinner.setAttribute('stroke-width', '1.8');
+      spinner.setAttribute('stroke-linecap', 'round');
+      spinner.setAttribute('aria-hidden', 'true');
+      spinner.setAttribute('focusable', 'false');
+      setRecipeIcon(spinner, 'progress_activity');
+      btn.replaceChildren(spinner, document.createTextNode(' Meracik...'));
       btn.disabled = true;
 
       setTimeout(() => {

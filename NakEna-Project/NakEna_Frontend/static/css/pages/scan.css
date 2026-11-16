@@ -33,3 +33,24 @@
       animation: pulse-glow 5s ease-in-out infinite;
     }
   
+
+/* Local SVG icons render without loading an icon font. */
+.scan-icon {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  flex-shrink: 0;
+  vertical-align: -.125em;
+  overflow: visible;
+}
+.scan-icon--15 { font-size: 15px; }
+.scan-icon--16 { font-size: 16px; }
+.scan-icon--17 { font-size: 17px; }
+.scan-icon--18 { font-size: 18px; }
+.scan-icon--22 { font-size: 22px; }
+.scan-icon--24 { font-size: 24px; }
+.scan-icon--32 { font-size: 32px; }
+.scan-icon--42 { font-size: 42px; }
+@media (min-width: 640px) {
+  .scan-icon--sm-48 { font-size: 48px; }
+}

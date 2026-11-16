@@ -142,3 +142,37 @@ def test_uploads_are_private_and_deletable(client):
 
     assert client.delete(f"/uploads/{upload_id}", headers=a).status_code == 204
     assert client.get(f"/uploads/{upload_id}", headers=a).status_code == 404
+
+
+
+def test_guest_detection_works_without_login_and_returns_no_persistent_upload(client, monkeypatch):
+    detections = [
+        IngredientDetection(
+            name="Tomat",
+            confidence=0.93,
+            box=[1.0, 2.0, 30.0, 40.0],
+        )
+    ]
+    monkeypatch.setattr(
+        "app.api.routes.uploads.detect_ingredients",
+        lambda image_data: detections,
+    )
+
+    response = client.post(
+        "/uploads/guest/detect",
+        files={"file": ("foto.jpg", make_image(), "image/jpeg")},
+    )
+
+    assert response.status_code == 200, response.text
+    assert response.json()["upload_id"] == "guest"
+    assert response.json()["ingredients"] == ["Tomat"]
+    # Endpoint Guest tidak membuka daftar upload akun dan tidak membuat sesi akun.
+    assert client.get("/uploads").status_code == 401
+
+
+def test_guest_detection_rejects_invalid_image_without_login(client):
+    response = client.post(
+        "/uploads/guest/detect",
+        files={"file": ("foto.jpg", b"bukan gambar", "image/jpeg")},
+    )
+    assert response.status_code == 400

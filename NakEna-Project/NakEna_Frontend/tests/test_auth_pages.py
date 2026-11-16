@@ -92,8 +92,8 @@ def test_extracted_css_and_javascript_are_served():
 
 def test_api_integration_script_is_loaded_from_frontend_static():
     response = client.get("/login/")
-    assert '/static/js/api.js?v=1' in response.text
-    script_response = client.get('/static/js/api.js?v=1')
+    assert '/static/js/api.js?v=3' in response.text
+    script_response = client.get('/static/js/api.js?v=3')
     assert script_response.status_code == 200
     assert 'data-api-base' in response.text
 
@@ -107,3 +107,26 @@ def test_no_unresolved_git_conflict_markers_remain():
 
 def test_legacy_duplicate_template_directory_is_not_present():
     assert not (TEMPLATES_DIR.parent.parent / "app" / "web").exists()
+
+
+
+def test_home_start_now_buttons_open_scan_without_login():
+    response = client.get("/")
+    assert response.status_code == 200
+    assert response.text.count('href="/scan/"') >= 2
+
+
+def test_guest_mode_frontend_does_not_write_recipe_history():
+    script = (STATIC_DIR / "js" / "api.js").read_text(encoding="utf-8")
+    assert '"/uploads/guest/detect"' in script
+    assert "if (isGuest()) return { recipes, errors: [] };" in script
+    assert "Riwayat Guest tidak disimpan" in script
+
+
+def test_guest_scan_keeps_scan_ui_and_does_not_inject_guest_notice():
+    script = (STATIC_DIR / "js" / "api.js").read_text(encoding="utf-8")
+    assert 'if (!form) return;' in script
+    assert 'Kamu sedang menggunakan NakEna sebagai Guest' in script  # Profile-only message remains available.
+    assert 'Mode Guest aktif — foto dan hasil resep hanya digunakan sementara' not in script
+    assert 'login.textContent = "Masuk"' in script
+    assert 'register.textContent = "Daftar"' in script

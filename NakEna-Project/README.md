@@ -22,3 +22,14 @@ Arsip ini sengaja tidak menyertakan `.env`, database lokal, virtual environment,
 - Integrasi REST API berada di `NakEna_Frontend/static/js/api.js` dan menggunakan `NAKENA_API_BASE_URL`.
 - Backend tidak lagi menyajikan halaman HTML atau aset frontend; backend hanya menyediakan endpoint JSON.
 - Salinan template lama, file frontend backend yang duplikat, dan penanda konflik Git sudah dibersihkan.
+
+
+## Mode Guest (tanpa login)
+
+- Tombol **Mulai Sekarang** pada halaman utama langsung membuka halaman Scan Bahan.
+- Pengunjung tanpa token login otomatis menggunakan profil **Guest**.
+- Deteksi Guest memakai `POST /uploads/guest/detect`. Foto diproses di memori backend dan tidak dibuatkan file upload atau record database.
+- Generate resep tetap memakai endpoint Gemini, tetapi resep Guest tidak dikirim ke endpoint riwayat.
+- Detail resep dan Guided Cooking memakai `sessionStorage` hanya selama sesi tab aktif. Data sesi ini hilang ketika tab ditutup.
+- Halaman Riwayat, Favorit, dan Profil menampilkan informasi bahwa fitur penyimpanan akun membutuhkan login.
+- Pengguna yang sudah login tetap menggunakan alur akun seperti sebelumnya.

@@ -1,360 +1,327 @@
-// Recipe Steps Data Model
-  const RECIPE_STEPS = [
-    {
-      step: 1,
-      total: 7,
-      badge: "LANGKAH 1 DARI 7 • PERSIAPAN BAHAN",
-      title: "Siapkan & Iris Bahan Dapur",
-      desc: "Iris tipis bawang merah dan bawang putih. Potong tomat segar menjadi dadu kecil. Kocok lepas 2 butir telur ayam dalam mangkuk kecil, dan pastikan nasi putih sudah dalam keadaan dingin agar tidak lembek saat digoreng.",
-      estimation: "Estimasi: 3 Menit",
-      seconds: 180,
-      mascotQuote: "Pelan-pelan ya chef, kamu sudah hebat! Pastikan nasinya tidak menggumpal biar hasilnya mawur dan lezat! 🍳✨",
-      tip: "Gunakan pisau yang tajam agar mata tidak perih saat mengiris bawang merah.",
-      ingredients: [
-        { name: "4 Siung Bawang Merah", note: "diiris tipis" },
-        { name: "1 Buah Tomat Segar", note: "dipotong dadu kecil" },
-        { name: "2 Butir Telur Ayam", note: "dikocok lepas" },
-        { name: "2 Piring Nasi Dingin", note: "pisahkan butirannya" }
-      ]
-    },
-    {
-      step: 2,
-      total: 7,
-      badge: "LANGKAH 2 DARI 7 • MENUMIS AROMA",
-      title: "Tumis Bumbu Iris Hingga Harum",
-      desc: "Panaskan 2 sendok makan minyak goreng di atas wajan dengan api sedang. Masukkan irisan bawang merah dan bawang putih, aduk perlahan hingga warnanya keemasan dan aroma sedap keluar.",
-      estimation: "Estimasi: 2 Menit",
-      seconds: 120,
-      mascotQuote: "Wangi bumbunya mulai tercium enak nih! Jangan sampai gosong ya, api sedang saja! 🔥",
-      tip: "Minyak yang cukup panas akan mengunci rasa manis alami dari bawang.",
-      ingredients: [
-        { name: "2 sdm Minyak Sayur", note: "untuk menumis" },
-        { name: "Irisan Bawang Merah & Putih", note: "dari langkah 1" }
-      ]
-    },
-    {
-      step: 3,
-      total: 7,
-      badge: "LANGKAH 3 DARI 7 • ORAK-ARIK TELUR",
-      title: "Orak-Arik Telur di Sisi Wajan",
-      desc: "Geser bumbu ke tepi wajan, tuang telur kocok di sisi tengah yang panas. Diamkan sejenak 10 detik lalu orak-arik hingga berbutir lembut dan matang merata.",
-      estimation: "Estimasi: 1.5 Menit",
-      seconds: 90,
-      mascotQuote: "Orak-arik cepat biar telurnya lembut dan menyatu sempurna dengan nasi nantinya! 🥚",
-      tip: "Jangan biarkan telur terlalu kering agar tekstur nasi goreng tetap moist.",
-      ingredients: [
-        { name: "2 Butir Telur Kocok", note: "siap tuang" }
-      ]
-    },
-    {
-      step: 4,
-      total: 7,
-      badge: "LANGKAH 4 DARI 7 • MEMASUKKAN NASI",
-      title: "Masukkan Nasi & Aduk Cepat",
-      desc: "Masukkan nasi dingin ke dalam wajan. Besarkan sedikit api kompor, gunakan spatula untuk menekan gumpalan nasi dan campurkan dengan telur serta bumbu secara merata.",
-      estimation: "Estimasi: 3 Menit",
-      seconds: 180,
-      mascotQuote: "Gunakan spatula dengan mantap! Goyang wajannya seperti koki profesional! 🥄💨",
-      tip: "Gunakan teknik menekan dengan punggung spatula agar nasi tidak hancur.",
-      ingredients: [
-        { name: "2 Piring Nasi Dingin", note: "sudah diurai" }
-      ]
-    },
-    {
-      step: 5,
-      total: 7,
-      badge: "LANGKAH 5 DARI 7 • PEMBUMBUMAN RASA",
-      title: "Bumbui Kecap Manis & Rempah",
-      desc: "Tuang kecap manis di pinggiran wajan panas agar terkaramelisasi. Tambahkan garam, merica bubuk, dan sedikit kaldu jamur. Aduk cepat hingga warna nasi cokelat mengilap.",
-      estimation: "Estimasi: 2 Menit",
-      seconds: 120,
-      mascotQuote: "Kecap manis yang kena panas wajan bakal ngasih aroma smoky yang gurih banget! 🍯",
-      tip: "Menuangkan kecap di pinggir wajan dinamakan teknik 'wok hei' rumahan.",
-      ingredients: [
-        { name: "2 sdm Kecap Manis", note: "tuang melingkar" },
-        { name: "1/2 sdt Garam & Merica", note: "sesuai selera" },
-        { name: "1/2 sdt Kaldu Jamur", note: "opsional" }
-      ]
-    },
-    {
-      step: 6,
-      total: 7,
-      badge: "LANGKAH 6 DARI 7 • SENTUHAN SEGAR",
-      title: "Tambahkan Potongan Tomat & Daun Bawang",
-      desc: "Masukkan dadu tomat segar dan irisan daun bawang di menit terakhir. Aduk rata selama 30 detik agar tomat tetap segar dan juicy saat disantap.",
-      estimation: "Estimasi: 1 Menit",
-      seconds: 60,
-      mascotQuote: "Warna merah tomat dan hijau daun bawang bikin piring kita ceria dan menggugah selera! 🍅🌱",
-      tip: "Tomat jangan dimasak terlalu lama agar tidak mengeluarkan air berlebih.",
-      ingredients: [
-        { name: "1 Buah Dadu Tomat", note: "langkah 1" },
-        { name: "1 Batang Daun Bawang", note: "diiris halus" }
-      ]
-    },
-    {
-      step: 7,
-      total: 7,
-      badge: "LANGKAH 7 DARI 7 • PENYAJIAN AKHIR",
-      title: "Plating & Taburan Bawang Goreng",
-      desc: "Matikan kompor. Angkat dan sajikan nasi goreng hangat di atas piring saji. Beri taburan bawang merah goreng renyah dan hiasi dengan irisan mentimun.",
-      estimation: "Estimasi: 1 Menit",
-      seconds: 60,
-      mascotQuote: "Selesaaai! Baunya harum banget, siap memanjakan lidah keluarga tercinta! 🥳❤️",
-      tip: "Sajikan selagi panas berasap untuk cita rasa maksimal.",
-      ingredients: [
-        { name: "Taburan Bawang Goreng", note: "secukupnya" },
-        { name: "Irisan Mentimun / Kerupuk", note: "pelengkap" }
-      ]
+(() => {
+  "use strict";
+  const byId = (id) => document.getElementById(id);
+  const formatTime = (seconds) => `${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
+
+  // Only prefill one explicit duration. Ranges and multiple durations stay manual.
+  function durationForStep(text) {
+    if (/\d\s*(?:[-–—]|sampai|hingga)\s*\d/i.test(text) || /\d+\s*\/\s*\d+\s*(?:jam|menit|detik)\b/i.test(text)) return null;
+    const durations = [...text.matchAll(/(^|[^\d.,])(\d+(?:[.,]\d+)?)\s*(jam|menit|detik)\b/gi)];
+    if (durations.length !== 1) return null;
+    const value = Number(durations[0][2].replace(",", "."));
+    const unit = durations[0][3].toLowerCase();
+    const seconds = Math.round(value * (unit === "jam" ? 3600 : unit === "menit" ? 60 : 1));
+    return seconds >= 6 && seconds <= 21600 ? seconds : null;
+  }
+
+  function checkIcon() {
+    const icon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    icon.setAttribute("class", "gc-icon");
+    icon.setAttribute("viewBox", "0 0 24 24");
+    icon.setAttribute("aria-hidden", "true");
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute("d", "m5 12 4 4L19 6");
+    icon.append(path);
+    return icon;
+  }
+
+  let initialized = false;
+  window.addEventListener("nakena:guided-recipe", (event) => {
+    if (initialized || !byId("cooking-workspace")) return;
+    initialized = true;
+    const recipe = event.detail;
+    const instructions = recipe.instructions;
+    const groups = recipe.ingredientGroups;
+    const ingredients = groups.flatMap((group) => group.items);
+    const total = instructions.length;
+    const signature = JSON.stringify([recipe.title, instructions, groups]);
+    let progressKey = "nakena_cooking_progress_guest";
+    let stored = {};
+    try {
+      progressKey = `nakena_cooking_progress_${sessionStorage.getItem("nakena_user_email") || "guest"}`;
+      const value = JSON.parse(sessionStorage.getItem(progressKey) || "null");
+      if (value?.signature === signature) stored = value;
+    } catch { /* Cooking remains available when session storage is blocked. */ }
+    const validIndex = (index, limit) => Number.isInteger(index) && index >= 0 && index < limit;
+    let current = validIndex(stored.current, total) ? stored.current : 0;
+    const completed = new Set((Array.isArray(stored.completed) ? stored.completed : []).filter((i) => validIndex(i, total)));
+    const checked = new Set((Array.isArray(stored.checked) ? stored.checked : []).filter((i) => validIndex(i, ingredients.length)));
+    const saveProgress = () => {
+      try {
+        sessionStorage.setItem(progressKey, JSON.stringify({ signature, current, completed: [...completed], checked: [...checked] }));
+      } catch { /* Progress is still maintained in memory for this page. */ }
+    };
+    let interval = null;
+    let speech = null;
+    const timer = { remaining: 60, duration: 60, deadline: 0, running: false, touched: false, source: 0 };
+    const exitDialog = byId("exit-modal-overlay");
+    const finishDialog = byId("celebration-overlay");
+    const minutes = byId("timer-minutes-input");
+
+    document.title = `${recipe.title} — Panduan memasak | NakEna`;
+    byId("recipe-title-display").textContent = recipe.title;
+    byId("recipe-step-total").textContent = `${total} langkah`;
+    byId("outline-step-count").textContent = `${total} langkah`;
+    if (recipe.time) {
+      byId("recipe-total-time").textContent = `Total ${recipe.time}`;
+      byId("recipe-total-time").hidden = false;
     }
-  ];
-
-  let currentStepIndex = 0;
-  let timerInterval = null;
-  let remainingSeconds = 180;
-  let isTimerRunning = false;
-  let isVoiceEnabled = true;
-
-  // Render Step into UI
-  function renderStep(index) {
-    const data = RECIPE_STEPS[index];
-    currentStepIndex = index;
-
-    // Headings & Badges
-    document.getElementById("step-count-text").innerText = `Langkah ${data.step} dari ${data.total}`;
-    const percent = Math.round((data.step / data.total) * 100);
-    document.getElementById("progress-percent-text").innerText = `${percent}% Selesai`;
-    document.getElementById("progress-indicator-bar").style.width = `${percent}%`;
-
-    document.getElementById("step-badge-text").innerText = data.badge;
-    document.getElementById("step-estimation-text").innerText = data.estimation;
-    document.getElementById("step-heading-text").innerText = data.title;
-    document.getElementById("step-description-text").innerText = data.desc;
-
-    // Companion Mascot
-    document.getElementById("mascot-quote-text").innerHTML = `&ldquo;${data.mascotQuote}&rdquo;`;
-    document.getElementById("mascot-tip-text").innerText = data.tip;
-
-    // Reset and Load Timer
-    pauseTimer();
-    remainingSeconds = data.seconds;
-    updateTimerDisplay();
-    document.getElementById("main-timer-btn-label").innerText = `Mulai Timer ${formatTime(remainingSeconds)}`;
-
-    // Build Checklist
-    const listContainer = document.getElementById("ingredients-checklist-container");
-    listContainer.innerHTML = "";
-    data.ingredients.forEach(item => {
-      const label = document.createElement("label");
-      label.className = "ingredient-item flex items-center gap-space-md p-space-md rounded-xl bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all shadow-sm";
-      label.innerHTML = `
-        <input type="checkbox" class="step-ingredient-checkbox w-5 h-5 rounded accent-primary-container cursor-pointer">
-        <div class="flex flex-col min-w-0">
-          <span class="font-body-md text-body-md text-on-surface font-semibold truncate">${item.name}</span>
-          <span class="text-label-sm font-label-sm text-secondary">${item.note}</span>
-        </div>
-      `;
-      listContainer.appendChild(label);
-    });
-
-    // Reset Checklist UI count & alert
-    updateChecklistCount();
-    document.getElementById("step-completion-alert").classList.add("hidden");
-
-    // Reattach checklist listeners
-    document.querySelectorAll(".step-ingredient-checkbox").forEach(chk => {
-      chk.addEventListener("change", () => {
-        updateChecklistCount();
+    if (recipe.tips.length) {
+      recipe.tips.forEach((text) => {
+        const p = document.createElement("p");
+        p.textContent = text;
+        byId("mascot-tip-text").append(p);
       });
-    });
-
-    // Navigation buttons state
-    const prevBtn = document.getElementById("prev-step-btn");
-    if (index === 0) {
-      prevBtn.disabled = true;
-      prevBtn.classList.add("opacity-40", "cursor-not-allowed");
-    } else {
-      prevBtn.disabled = false;
-      prevBtn.classList.remove("opacity-40", "cursor-not-allowed");
+      byId("cooking-tips").hidden = false;
     }
 
-    const nextBtnText = document.getElementById("next-btn-text");
-    if (index === RECIPE_STEPS.length - 1) {
-      nextBtnText.innerText = "Selesaikan Masakan! 🎉";
-    } else {
-      nextBtnText.innerText = "Tandai Selesai & Lanjut";
+    function stopSpeaking() {
+      speech = null;
+      if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+      byId("voice-text").textContent = "Bacakan langkah";
+      byId("toggle-voice-btn").setAttribute("aria-pressed", "false");
     }
 
-    // Update modal display step
-    document.getElementById("modal-step-display").innerText = data.step;
-  }
+    function updateTimer() {
+      byId("timer-display-string").textContent = formatTime(timer.remaining);
+      byId("main-timer-action-btn").textContent = timer.running ? "Jeda" : timer.remaining === 0 ? "Mulai lagi" : timer.touched && timer.remaining < timer.duration ? "Lanjutkan" : "Mulai";
+      minutes.disabled = timer.running;
+    }
 
-  function formatTime(totalSec) {
-    const mins = Math.floor(totalSec / 60);
-    const secs = totalSec % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  }
-
-  function updateTimerDisplay() {
-    const timeStr = formatTime(remainingSeconds);
-    document.getElementById("timer-display-string").innerText = timeStr;
-    document.getElementById("top-timer-badge").innerText = timeStr;
-  }
-
-  function startTimer() {
-    if (isTimerRunning) return;
-    isTimerRunning = true;
-    document.getElementById("main-timer-btn-label").innerText = "Jeda Timer";
-    document.getElementById("main-timer-btn-icon").innerText = "pause";
-    document.getElementById("step-timer-icon").classList.add("animate-pulse", "text-primary-container");
-
-    timerInterval = setInterval(() => {
-      if (remainingSeconds > 0) {
-        remainingSeconds--;
-        updateTimerDisplay();
-      } else {
-        pauseTimer();
-        alert("Waktu langkah ini telah selesai!");
+    function tickTimer() {
+      if (!timer.running) return;
+      timer.remaining = Math.max(0, Math.ceil((timer.deadline - Date.now()) / 1000));
+      if (timer.remaining === 0) {
+        timer.running = false;
+        clearInterval(interval);
+        interval = null;
+        byId("timer-status").textContent = "Waktu habis";
       }
-    }, 1000);
-  }
+      updateTimer();
+    }
 
-  function pauseTimer() {
-    isTimerRunning = false;
-    clearInterval(timerInterval);
-    document.getElementById("main-timer-btn-label").innerText = `Mulai Timer ${formatTime(remainingSeconds)}`;
-    document.getElementById("main-timer-btn-icon").innerText = "play_arrow";
-    document.getElementById("step-timer-icon").classList.remove("animate-pulse", "text-primary-container");
-  }
+    function pauseTimer() {
+      tickTimer();
+      if (timer.running) {
+        timer.running = false;
+        byId("timer-status").textContent = `Timer langkah ${timer.source + 1} dijeda`;
+      }
+      clearInterval(interval);
+      interval = null;
+      updateTimer();
+    }
 
-  function updateChecklistCount() {
-    const checkboxes = document.querySelectorAll(".step-ingredient-checkbox");
-    const total = checkboxes.length;
-    let checked = 0;
-    checkboxes.forEach(c => {
-      if (c.checked) checked++;
+    function loadStepTimer() {
+      if (timer.touched || timer.running) return;
+      const duration = durationForStep(instructions[current]);
+      timer.remaining = timer.duration = duration || 60;
+      timer.source = current;
+      minutes.value = String(timer.duration / 60);
+      byId("timer-status").textContent = duration ? `Durasi pada langkah ${current + 1}` : "Atur sesuai kebutuhan";
+      updateTimer();
+    }
+
+    function updateCheckedCount() {
+      byId("checked-counter").textContent = `${checked.size}/${ingredients.length} siap`;
+    }
+
+    function renderIngredients() {
+      const container = byId("ingredients-checklist-container");
+      container.replaceChildren();
+      let ingredientIndex = 0;
+      groups.forEach((group) => {
+        const block = document.createElement("div");
+        block.className = "gc-ingredient-group";
+        if (groups.length > 1 || /bumbu|utama/.test(group.label)) {
+          const heading = document.createElement("h3");
+          heading.textContent = group.label.charAt(0).toUpperCase() + group.label.slice(1);
+          block.append(heading);
+        }
+        const list = document.createElement("ul");
+        list.className = "gc-ingredient-list";
+        list.setAttribute("role", "list");
+        group.items.forEach((ingredient) => {
+          const index = ingredientIndex++;
+          const item = document.createElement("li");
+          const label = document.createElement("label");
+          const input = document.createElement("input");
+          input.type = "checkbox";
+          input.checked = checked.has(index);
+          const text = document.createElement("span");
+          text.textContent = ingredient;
+          input.addEventListener("change", () => {
+            if (input.checked) checked.add(index); else checked.delete(index);
+            updateCheckedCount();
+            saveProgress();
+          });
+          label.append(input, text);
+          item.append(label);
+          list.append(item);
+        });
+        block.append(list);
+        container.append(block);
+      });
+      byId("cooking-ingredients").hidden = ingredients.length === 0;
+      updateCheckedCount();
+    }
+
+    function renderOutline() {
+      const list = byId("cooking-step-list");
+      list.replaceChildren();
+      instructions.forEach((text, index) => {
+        const item = document.createElement("li");
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = `gc-outline-step${completed.has(index) ? " is-complete" : ""}`;
+        if (index === current) button.setAttribute("aria-current", "step");
+        button.setAttribute("aria-label", `Langkah ${index + 1}${completed.has(index) ? ", selesai" : ""}: ${text}`);
+        const number = document.createElement("span");
+        number.className = "gc-step-number";
+        number.setAttribute("aria-hidden", "true");
+        if (completed.has(index)) number.append(checkIcon()); else number.textContent = String(index + 1).padStart(2, "0");
+        const summary = document.createElement("span");
+        summary.className = "gc-step-summary";
+        summary.textContent = text.length > 94 ? text.slice(0, 91).trimEnd() + "…" : text;
+        button.append(number, summary);
+        button.addEventListener("click", () => goToStep(index));
+        item.append(button);
+        list.append(item);
+      });
+    }
+
+    function renderStep(focus = false) {
+      const percent = Math.round(completed.size / total * 100);
+      byId("step-heading-text").textContent = `Langkah ${current + 1}`;
+      byId("step-description-text").textContent = instructions[current];
+      byId("step-badge-text").textContent = `LANGKAH ${String(current + 1).padStart(2, "0")} / ${String(total).padStart(2, "0")}`;
+      byId("step-count-text").textContent = `Langkah ${current + 1} dari ${total}`;
+      byId("modal-step-display").textContent = String(current + 1);
+      byId("progress-percent-text").textContent = `${completed.size}/${total} selesai · ${percent}%`;
+      byId("progress-indicator-bar").style.width = `${percent}%`;
+      byId("cooking-progress").setAttribute("aria-valuenow", String(percent));
+      byId("cooking-progress").setAttribute("aria-valuetext", `${completed.size} dari ${total} langkah selesai`);
+      byId("step-completed-label").hidden = !completed.has(current);
+      byId("prev-step-btn").disabled = current === 0;
+      byId("next-btn-text").textContent = current === total - 1 ? (completed.size + (completed.has(current) ? 0 : 1) === total ? "Selesai memasak" : "Tandai selesai") : "Selesai & lanjut";
+      renderOutline();
+      loadStepTimer();
+      if (focus) {
+        byId("cooking-instruction").focus({ preventScroll: true });
+        byId("cooking-instruction").scrollIntoView({ block: "nearest", behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+      }
+    }
+
+    function goToStep(index) {
+      stopSpeaking();
+      current = Math.max(0, Math.min(total - 1, index));
+      saveProgress();
+      renderStep(true);
+    }
+
+    byId("next-step-btn").addEventListener("click", () => {
+      completed.add(current);
+      saveProgress();
+      if (completed.size === total) {
+        stopSpeaking();
+        pauseTimer();
+        renderStep();
+        byId("finished-recipe-title").textContent = recipe.title;
+        finishDialog.showModal();
+        return;
+      }
+      const next = current + 1 < total ? current + 1 : instructions.findIndex((_, index) => !completed.has(index));
+      goToStep(next);
     });
-    document.getElementById("checked-counter").innerText = `${checked}/${total} Siap`;
-
-    const alertBanner = document.getElementById("step-completion-alert");
-    if (checked === total && total > 0) {
-      alertBanner.classList.remove("hidden");
-      alertBanner.classList.add("flex");
-    } else {
-      alertBanner.classList.add("hidden");
-      alertBanner.classList.remove("flex");
-    }
-  }
-
-  // Next / Prev Actions
-  document.getElementById("next-step-btn").addEventListener("click", () => {
-    if (currentStepIndex < RECIPE_STEPS.length - 1) {
-      renderStep(currentStepIndex + 1);
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    } else {
-      openCelebrationOverlay();
-    }
-  });
-
-  document.getElementById("prev-step-btn").addEventListener("click", () => {
-    if (currentStepIndex > 0) {
-      renderStep(currentStepIndex - 1);
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
-  });
-
-  document.getElementById("alert-next-btn").addEventListener("click", () => {
-    document.getElementById("next-step-btn").click();
-  });
-
-  // Timer Buttons
-  document.getElementById("main-timer-action-btn").addEventListener("click", () => {
-    if (isTimerRunning) {
+    byId("prev-step-btn").addEventListener("click", () => goToStep(current - 1));
+    byId("trigger-exit-modal-btn").addEventListener("click", () => { stopSpeaking(); exitDialog.showModal(); });
+    byId("cancel-exit-btn").addEventListener("click", () => exitDialog.close());
+    byId("restart-cooking-btn").addEventListener("click", () => {
+      finishDialog.close();
       pauseTimer();
+      timer.touched = false;
+      completed.clear();
+      checked.clear();
+      renderIngredients();
+      goToStep(0);
+    });
+
+    minutes.addEventListener("input", () => {
+      const value = Number(minutes.value);
+      const valid = Number.isFinite(value) && value >= 0.1 && value <= 360;
+      byId("timer-error").hidden = valid;
+      minutes.setAttribute("aria-invalid", String(!valid));
+      byId("main-timer-action-btn").disabled = !valid;
+      if (!valid) return;
+      pauseTimer();
+      timer.remaining = timer.duration = Math.round(value * 60);
+      timer.source = current;
+      timer.touched = true;
+      byId("timer-status").textContent = `Timer langkah ${current + 1}`;
+      updateTimer();
+    });
+    byId("main-timer-action-btn").addEventListener("click", () => {
+      if (timer.running) { pauseTimer(); return; }
+      if (timer.remaining === 0) timer.remaining = timer.duration;
+      timer.running = timer.touched = true;
+      timer.deadline = Date.now() + timer.remaining * 1000;
+      byId("timer-status").textContent = `Timer langkah ${timer.source + 1} berjalan`;
+      interval = setInterval(tickTimer, 250);
+      updateTimer();
+    });
+    byId("reset-timer-btn").addEventListener("click", () => {
+      pauseTimer();
+      timer.remaining = timer.duration;
+      minutes.value = String(timer.duration / 60);
+      byId("timer-error").hidden = true;
+      minutes.setAttribute("aria-invalid", "false");
+      byId("main-timer-action-btn").disabled = false;
+      byId("timer-status").textContent = `Timer langkah ${timer.source + 1}`;
+      updateTimer();
+    });
+    byId("bottom-quick-timer-btn").addEventListener("click", () => {
+      tickTimer();
+      timer.remaining = Math.min(21600, timer.remaining + 60);
+      timer.duration = Math.max(timer.duration, timer.remaining);
+      timer.touched = true;
+      if (timer.running) timer.deadline = Date.now() + timer.remaining * 1000;
+      minutes.value = String(timer.duration / 60);
+      byId("timer-error").hidden = true;
+      minutes.setAttribute("aria-invalid", "false");
+      byId("main-timer-action-btn").disabled = false;
+      if (!timer.running) byId("timer-status").textContent = `Timer langkah ${timer.source + 1}`;
+      updateTimer();
+    });
+
+    if (total && "speechSynthesis" in window && "SpeechSynthesisUtterance" in window) {
+      byId("toggle-voice-btn").hidden = false;
+      byId("toggle-voice-btn").setAttribute("aria-pressed", "false");
+      byId("toggle-voice-btn").addEventListener("click", () => {
+        if (speech) { stopSpeaking(); return; }
+        const utterance = new window.SpeechSynthesisUtterance(`Langkah ${current + 1}. ${instructions[current]}`);
+        utterance.lang = "id-ID";
+        const voice = window.speechSynthesis.getVoices().find((item) => item.lang.toLowerCase().startsWith("id"));
+        if (voice) utterance.voice = voice;
+        utterance.rate = 0.9;
+        utterance.onend = utterance.onerror = () => { if (speech === utterance) stopSpeaking(); };
+        speech = utterance;
+        byId("voice-text").textContent = "Hentikan bacaan";
+        byId("toggle-voice-btn").setAttribute("aria-pressed", "true");
+        window.speechSynthesis.speak(utterance);
+      });
+    }
+    document.addEventListener("visibilitychange", tickTimer);
+    window.addEventListener("pagehide", () => { pauseTimer(); stopSpeaking(); });
+    if (total) {
+      renderIngredients();
+      renderStep();
     } else {
-      startTimer();
+      byId("cooking-grid").hidden = true;
+      byId("cooking-empty").hidden = false;
+      byId("step-count-text").textContent = "Belum ada langkah";
+      byId("progress-percent-text").textContent = "0%";
     }
+    byId("cooking-loading").hidden = true;
+    byId("cooking-workspace").hidden = false;
+    byId("cooking-main").setAttribute("aria-busy", "false");
   });
-
-  document.getElementById("reset-timer-btn").addEventListener("click", () => {
-    pauseTimer();
-    remainingSeconds = RECIPE_STEPS[currentStepIndex].seconds;
-    updateTimerDisplay();
-  });
-
-  document.getElementById("bottom-quick-timer-btn").addEventListener("click", () => {
-    remainingSeconds += 60;
-    updateTimerDisplay();
-    startTimer();
-  });
-
-  // Voice Toggle
-  document.getElementById("toggle-voice-btn").addEventListener("click", () => {
-    isVoiceEnabled = !isVoiceEnabled;
-    const icon = document.getElementById("voice-icon");
-    const text = document.getElementById("voice-text");
-    if (isVoiceEnabled) {
-      icon.innerText = "volume_up";
-      text.innerText = "Suara: ON";
-    } else {
-      icon.innerText = "volume_off";
-      text.innerText = "Suara: OFF";
-    }
-  });
-
-  // Exit Modal Logic
-  const exitModal = document.getElementById("exit-modal-overlay");
-  document.getElementById("trigger-exit-modal-btn").addEventListener("click", () => {
-    exitModal.classList.remove("hidden");
-  });
-  document.getElementById("cancel-exit-btn").addEventListener("click", () => {
-    exitModal.classList.add("hidden");
-  });
-
-  // Celebration Overlay Logic
-  const celebrationOverlay = document.getElementById("celebration-overlay");
-  function openCelebrationOverlay() {
-    celebrationOverlay.classList.remove("hidden");
-  }
-  function closeCelebrationOverlay() {
-    celebrationOverlay.classList.add("hidden");
-    renderStep(0);
-  }
-
-  // Simulator States Switcher Function
-  function setCookingSimulatorState(stateNum) {
-    exitModal.classList.add("hidden");
-    celebrationOverlay.classList.add("hidden");
-
-    switch(stateNum) {
-      case 1:
-        // Normal state: Step 1 initialized
-        renderStep(0);
-        break;
-      case 2:
-        // Timer active state at 02:45
-        renderStep(0);
-        remainingSeconds = 165; // 02:45
-        updateTimerDisplay();
-        startTimer();
-        break;
-      case 3:
-        // Checklist all completed state
-        renderStep(0);
-        document.querySelectorAll(".step-ingredient-checkbox").forEach(c => c.checked = true);
-        updateChecklistCount();
-        break;
-      case 4:
-        // Final celebration completed overlay
-        renderStep(RECIPE_STEPS.length - 1);
-        openCelebrationOverlay();
-        break;
-      case 5:
-        // Exit confirmation modal
-        renderStep(currentStepIndex);
-        exitModal.classList.remove("hidden");
-        break;
-    }
-  }
-
-  // Initialize first view
-  renderStep(0);
+})();

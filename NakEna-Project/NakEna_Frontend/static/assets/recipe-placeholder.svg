@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="900" viewBox="0 0 1200 900" role="img" aria-label="Ilustrasi tempat foto hidangan">
+  <defs>
+    <linearGradient id="bg" x2="1" y2="1"><stop stop-color="#18334f"/><stop offset="1" stop-color="#0b1426"/></linearGradient>
+    <radialGradient id="light"><stop stop-color="#ffad4733"/><stop offset="1" stop-color="#ffad4700"/></radialGradient>
+  </defs>
+  <path fill="url(#bg)" d="M0 0h1200v900H0z"/>
+  <ellipse cx="600" cy="450" rx="420" ry="360" fill="url(#light)"/>
+  <circle cx="600" cy="450" r="218" fill="#142b44" stroke="#b67b4066" stroke-width="3"/>
+  <circle cx="600" cy="450" r="178" fill="#10233b" stroke="#5f769466" stroke-width="2"/>
+  <g fill="none" stroke="#e8ad6e" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" opacity=".85">
+    <path d="M530 464h140a70 70 0 0 1-140 0Zm20 90h100M560 430c-20-24 20-36 0-60m40 60c-20-24 20-36 0-60m40 60c-20-24 20-36 0-60"/>
+    <path d="M312 332v92c0 32 46 32 46 0v-92m-23 0v234M876 332c-38 42-45 83-45 128h45V332Zm0 128v106"/>
+  </g>
+</svg>

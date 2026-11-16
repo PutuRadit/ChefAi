@@ -32,6 +32,59 @@ def _get_owned_upload(db: Session, user: User, upload_id: str) -> Upload:
     return upload
 
 
+@router.post("/guest/detect", response_model=IngredientDetectionResponse)
+def detect_guest_image(
+    file: UploadFile = File(..., description="Foto bahan makanan untuk mode Guest (JPEG/PNG)"),
+):
+    """Deteksi foto untuk Guest tanpa menyimpan file, metadata, atau riwayat ke database.
+
+    Data foto dibaca dan diproses di memori request. Setelah response selesai,
+    tidak ada upload record maupun file permanen yang dibuat.
+    """
+    if file.content_type not in ALLOWED_CONTENT_TYPES:
+        raise HTTPException(status.HTTP_415_UNSUPPORTED_MEDIA_TYPE, "Hanya JPEG atau PNG yang diterima")
+
+    limit = settings.max_upload_size_bytes
+    data = file.file.read(limit + 1)
+    if len(data) > limit:
+        raise HTTPException(
+            status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            f"Ukuran file maksimal {settings.max_upload_size_mb} MB",
+        )
+    if not data:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "File kosong")
+
+    try:
+        image = sanitize_image(data)
+    except UnsupportedImageError as exc:
+        raise HTTPException(status.HTTP_415_UNSUPPORTED_MEDIA_TYPE, str(exc)) from exc
+    except InvalidImageError as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
+
+    try:
+        detections = detect_ingredients(image.content)
+    except ModelUnavailableError as exc:
+        logger.exception("YOLO model unavailable for Guest detection")
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            "Model deteksi bahan tidak tersedia. Periksa YOLO_MODEL_PATH dan instal dependensi ultralytics.",
+        ) from exc
+    except Exception as exc:
+        logger.exception("Guest ingredient detection failed")
+        raise HTTPException(
+            status.HTTP_500_INTERNAL_SERVER_ERROR,
+            "Foto gagal diproses oleh model deteksi.",
+        ) from exc
+
+    ingredients = list(dict.fromkeys(detection.name for detection in detections))
+    return IngredientDetectionResponse(
+        upload_id="guest",
+        status="detected" if ingredients else "no_detections",
+        ingredients=ingredients,
+        detections=detections,
+    )
+
+
 @router.post("", response_model=UploadRead, status_code=status.HTTP_201_CREATED)
 def upload_image(
     file: UploadFile = File(..., description="Foto bahan makanan (JPEG/PNG)"),
