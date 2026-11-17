@@ -32,6 +32,7 @@ def detect_ingredients(image_data: bytes) -> list[IngredientDetection]:
     results = model.predict(
         source=source,
         conf=settings.yolo_confidence,
+        imgsz=800,
         verbose=False,
     )
 

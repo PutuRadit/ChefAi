@@ -1,7 +1,7 @@
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic import SecretStr, field_validator
+from pydantic import EmailStr, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -26,8 +26,10 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 60
     gemini_api_key: SecretStr | None = None
     gemini_model: str = "gemini-3.1-flash-lite"
-    unsplash_access_key: SecretStr | None = None
-    yolo_model_path: Path = BACKEND_ROOT / "models" / "chefai_best.pt"
+    pixabay_api_key: SecretStr | None = None
+    admin_email: EmailStr | None = None
+    admin_password: SecretStr | None = None
+    yolo_model_path: Path = BACKEND_ROOT / "models" / "chefai_best_latest.pt"
     yolo_confidence: float = 0.25
 
     cors_origins: list[str] = [

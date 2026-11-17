@@ -53,6 +53,16 @@ def test_upload_detection_returns_model_ingredients(client, monkeypatch):
             confidence=0.88,
             box=[2.0, 3.0, 20.0, 25.0],
         ),
+        IngredientDetection(
+            name="Cabai",
+            confidence=0.72,
+            box=[2.0, 3.0, 20.0, 25.0],
+        ),
+        IngredientDetection(
+            name="Telur",
+            confidence=0.84,
+            box=[2.0, 3.0, 20.0, 25.0],
+        ),
     ]
     monkeypatch.setattr(
         "app.api.routes.uploads.detect_ingredients",
@@ -63,8 +73,9 @@ def test_upload_detection_returns_model_ingredients(client, monkeypatch):
 
     assert response.status_code == 200
     assert response.json()["status"] == "detected"
-    assert response.json()["ingredients"] == ["Tomat", "Bawang Merah"]
-    assert len(response.json()["detections"]) == 3
+    assert response.json()["ingredients"] == ["Tomat", "Bawang Merah", "Cabai", "Telur"]
+    assert len(response.json()["ingredients"]) == 4
+    assert len(response.json()["detections"]) == 5
     assert client.get(f"/uploads/{upload['id']}", headers=headers).json()["status"] == "detected"
 
 
@@ -145,34 +156,21 @@ def test_uploads_are_private_and_deletable(client):
 
 
 
-def test_guest_detection_works_without_login_and_returns_no_persistent_upload(client, monkeypatch):
-    detections = [
-        IngredientDetection(
-            name="Tomat",
-            confidence=0.93,
-            box=[1.0, 2.0, 30.0, 40.0],
-        )
-    ]
-    monkeypatch.setattr(
-        "app.api.routes.uploads.detect_ingredients",
-        lambda image_data: detections,
-    )
-
+def test_guest_detection_requires_login(client):
     response = client.post(
         "/uploads/guest/detect",
         files={"file": ("foto.jpg", make_image(), "image/jpeg")},
     )
-
-    assert response.status_code == 200, response.text
-    assert response.json()["upload_id"] == "guest"
-    assert response.json()["ingredients"] == ["Tomat"]
-    # Endpoint Guest tidak membuka daftar upload akun dan tidak membuat sesi akun.
-    assert client.get("/uploads").status_code == 401
+    assert response.status_code == 401
 
 
-def test_guest_detection_rejects_invalid_image_without_login(client):
+def test_guest_detection_does_not_validate_or_process_image_before_auth(client, monkeypatch):
+    monkeypatch.setattr(
+        "app.api.routes.uploads.detect_ingredients",
+        lambda image_data: (_ for _ in ()).throw(AssertionError("YOLO should not run")),
+    )
     response = client.post(
         "/uploads/guest/detect",
         files={"file": ("foto.jpg", b"bukan gambar", "image/jpeg")},
     )
-    assert response.status_code == 400
+    assert response.status_code == 401

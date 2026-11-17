@@ -1,0 +1,7 @@
+{
+  "ultralytics": "8.4.215",
+  "roboflow": "1.7.3",
+  "torch": "2.14.1+cu130",
+  "Pillow": "13.0.0",
+  "pandas": "3.1.1"
+}

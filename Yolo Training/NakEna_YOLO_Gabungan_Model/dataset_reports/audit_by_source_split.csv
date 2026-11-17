@@ -1,0 +1,10 @@
+Sumber,Split,Gambar,Objek,Foto >=2 jenis bahan
+aicook,test,94,1134,94
+aicook,train,269,3314,269
+aicook,val,153,1948,153
+food_v2,test,750,2106,89
+food_v2,train,6000,18020,762
+food_v2,val,750,2233,89
+skripsi,test,750,1367,25
+skripsi,train,6000,10179,140
+skripsi,val,750,1364,23

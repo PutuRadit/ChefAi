@@ -1,0 +1,108 @@
+source,old_id,old_name,canonical_name
+skripsi,0,Ayam,Ayam
+skripsi,1,Bawang Bombai,Bawang Bombai
+skripsi,2,Bawang Merah,Bawang Merah
+skripsi,3,Bawang Putih,Bawang Putih
+skripsi,4,Bayam,Bayam
+skripsi,5,Biji Kemiri,Biji Kemiri
+skripsi,6,Cabai Hijau,Cabai Hijau
+skripsi,7,Cabai Merah,Cabai Merah
+skripsi,8,Daging Sapi,Daging Sapi
+skripsi,9,Daun Bawang,Daun Bawang
+skripsi,10,Ikan,Ikan
+skripsi,11,Jagung,Jagung
+skripsi,12,Jahe,Jahe
+skripsi,13,Kacang Panjang,Kacang Panjang
+skripsi,14,Kangkung,Kangkung
+skripsi,15,Kencur,Kencur
+skripsi,16,Kentang,Kentang
+skripsi,17,Ketumbar,Ketumbar
+skripsi,18,Kol,Kol
+skripsi,19,Kunyit,Kunyit
+skripsi,20,Lada,Lada
+skripsi,21,Lengkuas,Lengkuas
+skripsi,22,Selada,Selada
+skripsi,23,Tahu,Tahu
+skripsi,24,Telur,Telur
+skripsi,25,Tempe,Tempe
+skripsi,26,Terong,Terong
+skripsi,27,Tomat,Tomat
+skripsi,28,Udang,Udang
+skripsi,29,Wortel,Wortel
+food_v2,0,apple,Apel
+food_v2,1,avocado,Alpukat
+food_v2,2,banana,Pisang
+food_v2,3,beef,Daging Sapi
+food_v2,4,bell_pepper,Paprika
+food_v2,5,bread,Roti
+food_v2,6,broccoli,Brokoli
+food_v2,7,cabbage,Kol
+food_v2,8,cantaloupe,Cantaloupe
+food_v2,9,carrot,Wortel
+food_v2,10,cauliflower,Kembang Kol
+food_v2,11,chicken,Ayam
+food_v2,12,chili,Cabai (umum)
+food_v2,13,cucumber,Mentimun
+food_v2,14,dragon_fruit,Dragon Fruit
+food_v2,15,durian,Durian
+food_v2,16,egg,Telur
+food_v2,17,eggplant,Terong
+food_v2,18,fish,Ikan
+food_v2,19,garlic,Bawang Putih
+food_v2,20,ginger,Jahe
+food_v2,21,grape,Anggur
+food_v2,22,green_onion,Daun Bawang
+food_v2,23,lemon,Lemon
+food_v2,24,lime,Lime
+food_v2,25,mango,Mangga
+food_v2,26,mint_leaves,Mint Leaves
+food_v2,27,mushroom,Jamur
+food_v2,28,napa_cabbage,Sawi Putih
+food_v2,29,onion,Bawang (onion umum)
+food_v2,30,orange,Jeruk
+food_v2,31,pineapple,Nanas
+food_v2,32,pork,Daging Babi
+food_v2,33,potato,Kentang
+food_v2,34,pumpkin,Labu
+food_v2,35,red_cabbage,Kol Merah
+food_v2,36,salmon,Salmon
+food_v2,37,sausage,Sosis
+food_v2,38,shrimp,Udang
+food_v2,39,squid,Cumi
+food_v2,40,sweet_potato,Ubi Jalar
+food_v2,41,tofu,Tahu
+food_v2,42,tomato,Tomat
+food_v2,43,watermelon,Semangka
+food_v2,44,white_radish,White Radish
+food_v2,45,white_rice,White Rice
+food_v2,46,zucchini,Zucchini
+aicook,0,apple,Apel
+aicook,1,banana,Pisang
+aicook,2,beef,Daging Sapi
+aicook,3,blueberries,Blueberries
+aicook,4,bread,Roti
+aicook,5,butter,Mentega
+aicook,6,carrot,Wortel
+aicook,7,cheese,Keju
+aicook,8,chicken,Ayam
+aicook,9,chicken_breast,Ayam
+aicook,10,chocolate,Chocolate
+aicook,11,corn,Jagung
+aicook,12,eggs,Telur
+aicook,13,flour,Tepung
+aicook,14,goat_cheese,Goat Cheese
+aicook,15,green_beans,Buncis (green beans)
+aicook,16,ground_beef,Daging Sapi
+aicook,17,ham,Ham
+aicook,18,heavy_cream,Heavy Cream
+aicook,19,lime,Lime
+aicook,20,milk,Susu
+aicook,21,mushrooms,Jamur
+aicook,22,onion,Bawang (onion umum)
+aicook,23,potato,Kentang
+aicook,24,shrimp,Udang
+aicook,25,spinach,Spinach
+aicook,26,strawberries,Stroberi
+aicook,27,sugar,Gula
+aicook,28,sweet_potato,Ubi Jalar
+aicook,29,tomato,Tomat

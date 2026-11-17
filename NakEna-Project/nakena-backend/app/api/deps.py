@@ -28,8 +28,16 @@ def get_current_user(
     return user
 
 
+def require_regular_user(current_user: User = Depends(get_current_user)) -> User:
+    if current_user.role != "user":
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            "Akun Admin tidak diizinkan memproses gambar atau membuat resep",
+        )
+    return current_user
+
+
 def require_admin(current_user: User = Depends(get_current_user)) -> User:
-    """Untuk endpoint Admin Dashboard nanti."""
     if current_user.role != "admin":
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Hanya admin yang boleh mengakses")
     return current_user

@@ -49,6 +49,7 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
         email=email,
         full_name=payload.full_name,
         hashed_password=hash_password(payload.password),
+        role="user",
         preference=UserPreference(),  # baris preferensi kosong, diisi lewat /users/me/preferences
     )
     db.add(user)

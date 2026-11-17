@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user
+from app.api.deps import get_current_user, require_regular_user
 from app.core.database import get_db
 from app.models import User, UserPreference
 from app.schemas.preference import PreferenceIn, PreferenceRead
@@ -19,7 +19,7 @@ def read_me(current_user: User = Depends(get_current_user)):
 def update_me(
     payload: UserUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_regular_user),
 ):
     if payload.full_name is not None:
         current_user.full_name = payload.full_name
@@ -39,7 +39,7 @@ def _get_or_create_preference(db: Session, user: User) -> UserPreference:
 
 @router.get("/me/preferences", response_model=PreferenceRead)
 def read_preferences(
-    db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
+    db: Session = Depends(get_db), current_user: User = Depends(require_regular_user)
 ):
     pref = _get_or_create_preference(db, current_user)
     db.commit()
@@ -51,7 +51,7 @@ def read_preferences(
 def replace_preferences(
     payload: PreferenceIn,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_regular_user),
 ):
     """Mengganti seluruh preferensi. Field yang tidak dikirim kembali ke nilai kosong."""
     pref = _get_or_create_preference(db, current_user)
@@ -66,7 +66,7 @@ def replace_preferences(
 def update_preferences(
     payload: PreferenceIn,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_regular_user),
 ):
     """Mengubah sebagian preferensi: hanya field yang dikirim yang berubah."""
     pref = _get_or_create_preference(db, current_user)

@@ -7,7 +7,7 @@ from pydantic import ValidationError
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user
+from app.api.deps import require_regular_user
 from app.core.config import settings
 from app.core.database import get_db
 from app.models import RecipeEntry, User
@@ -30,7 +30,7 @@ router = APIRouter(
 
 @router.get("/history", response_model=list[RecipeEntryRead])
 def recipe_history(
-    db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
+    db: Session = Depends(get_db), current_user: User = Depends(require_regular_user)
 ):
     stmt = (
         select(RecipeEntry)
@@ -45,7 +45,7 @@ def recipe_history(
 def save_recipe_history(
     payload: RecipeEntryCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_regular_user),
 ):
     entry = RecipeEntry(
         id=uuid4().hex,
@@ -62,7 +62,7 @@ def save_recipe_history(
 
 @router.get("/favorites", response_model=list[RecipeEntryRead])
 def favorite_recipes(
-    db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
+    db: Session = Depends(get_db), current_user: User = Depends(require_regular_user)
 ):
     stmt = (
         select(RecipeEntry)
@@ -77,7 +77,7 @@ def favorite_recipes(
 def save_favorite_recipe(
     payload: RecipeEntryCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_regular_user),
 ):
     stmt = select(RecipeEntry).where(
         RecipeEntry.user_id == current_user.id,
@@ -115,7 +115,7 @@ def save_favorite_recipe(
 def remove_favorite_recipe(
     entry_id: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_regular_user),
 ):
     entry = db.get(RecipeEntry, entry_id)
     if entry is None or entry.user_id != current_user.id or not entry.is_favorite:
@@ -125,7 +125,10 @@ def remove_favorite_recipe(
 
 
 @router.post("/generate", response_model=RecipeResponse)
-def generate_recipe_endpoint(request: RecipeRequest):
+def generate_recipe_endpoint(
+    request: RecipeRequest,
+    _: User = Depends(require_regular_user),
+):
     ingredients = ", ".join(request.ingredients)
     preferences = request.preferences or "Tidak ada"
     allergies = ", ".join(request.allergies) or "Tidak ada"
@@ -153,12 +156,15 @@ Jangan menggabungkan kategori lain. Beri variasi nama dan cara memasak untuk set
 Balas hanya dengan JSON valid menggunakan format:
 {{"recipes":[{{"title":"Nama resep","description":"Deskripsi singkat","recipe":"Rincian bahan, langkah memasak, waktu, dan tips penyajian"}}]}}
 
-Jelaskan:
-Di dalam field recipe untuk setiap pilihan, sertakan:
-1. Bahan-bahan beserta takarannya
-2. Langkah-langkah memasak
-3. Waktu memasak
-4. Tips penyajian
+Di dalam field recipe untuk setiap pilihan, gunakan bagian "Bahan-bahan:", "Langkah-langkah memasak:", "Waktu memasak:", dan "Tips penyajian:".
+Pada bagian bahan, tulis jumlah porsi dan takaran setiap bahan dengan satuan jelas (gram, ml, butir, siung, sendok teh, atau sendok makan). Pisahkan bahan utama dan bumbu bila membantu.
+Pada langkah memasak:
+- Buat 6 sampai 10 langkah bernomor, berurutan, dan cukup rinci agar pemula dapat mengikuti.
+- Mulai dari mencuci dan memotong bahan (sebut bentuk/ukuran potongan), lalu menghaluskan atau menyiapkan bumbu bila diperlukan, menyiapkan alat/panaskan wajan, memasak, dan penyajian.
+- Satu langkah berisi satu pekerjaan utama; jangan menggabungkan banyak tahap yang seharusnya dilakukan terpisah.
+- Sebut bahan dan takaran yang dimasukkan pada langkah terkait dengan satuan jelas, misalnya "masukkan 1 sdm kecap manis dan 1/2 sdt garam".
+- Setiap langkah harus berakhir dengan satu perkiraan durasi dalam tanda kurung dengan format "(± 3 menit)". Gunakan durasi berbeda yang masuk akal untuk pekerjaan itu; tahap memotong atau menghaluskan biasanya beberapa menit, sedangkan merebus/ungkep dapat lebih lama. Jangan tulis rentang atau lebih dari satu durasi dalam satu langkah.
+Sertakan perkiraan total waktu memasak dan tips penyajian.
 
 Pastikan resep tidak menggunakan bahan yang menyebabkan alergi pengguna.
 Gunakan bahasa Indonesia yang mudah dipahami.

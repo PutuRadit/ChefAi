@@ -2,6 +2,7 @@ from tests.conftest import register_and_login
 
 
 def test_recipe_generation_uses_llm_service(client, monkeypatch):
+    headers = register_and_login(client)
     prompts = []
 
     def fake_generate_recipe(prompt):
@@ -18,6 +19,7 @@ def test_recipe_generation_uses_llm_service(client, monkeypatch):
 
     response = client.post(
         "/recipes/generate",
+        headers=headers,
         json={
             "ingredients": ["nasi", "telur"],
             "preferences": "halal",
@@ -41,13 +43,19 @@ def test_recipe_generation_uses_llm_service(client, monkeypatch):
     assert "nasi, telur" in prompts[0]
     assert "kacang" in prompts[0]
     assert "Tumisan" in prompts[0]
+    assert "6 sampai 10 langkah bernomor" in prompts[0]
+    assert "memotong bahan (sebut bentuk/ukuran potongan)" in prompts[0]
+    assert "sendok makan" in prompts[0]
+    assert "(± 3 menit)" in prompts[0]
 
 
 def test_recipe_generation_rejects_malformed_llm_response(client, monkeypatch):
+    headers = register_and_login(client)
     monkeypatch.setattr("app.api.routes.recipes.generate_recipe", lambda prompt: "bukan json")
 
     response = client.post(
         "/recipes/generate",
+        headers=headers,
         json={"ingredients": ["telur"], "category": "Kuah Hangat"},
     )
 
@@ -56,6 +64,7 @@ def test_recipe_generation_rejects_malformed_llm_response(client, monkeypatch):
 
 
 def test_recipe_generation_reports_gemini_quota_errors(client, monkeypatch):
+    headers = register_and_login(client)
     class QuotaError(Exception):
         code = 429
 
@@ -66,6 +75,7 @@ def test_recipe_generation_reports_gemini_quota_errors(client, monkeypatch):
 
     response = client.post(
         "/recipes/generate",
+        headers=headers,
         json={"ingredients": ["telur"]},
     )
 
@@ -75,6 +85,7 @@ def test_recipe_generation_reports_gemini_quota_errors(client, monkeypatch):
 
 
 def test_recipe_generation_reports_unavailable_model(client, monkeypatch):
+    headers = register_and_login(client)
     class ModelNotFoundError(Exception):
         code = 404
 
@@ -85,6 +96,7 @@ def test_recipe_generation_reports_unavailable_model(client, monkeypatch):
 
     response = client.post(
         "/recipes/generate",
+        headers=headers,
         json={"ingredients": ["telur"]},
     )
 
@@ -94,6 +106,7 @@ def test_recipe_generation_reports_unavailable_model(client, monkeypatch):
 
 
 def test_recipe_generation_reports_all_models_busy(client, monkeypatch):
+    headers = register_and_login(client)
     class ServiceUnavailableError(Exception):
         code = 503
 
@@ -104,6 +117,7 @@ def test_recipe_generation_reports_all_models_busy(client, monkeypatch):
 
     response = client.post(
         "/recipes/generate",
+        headers=headers,
         json={"ingredients": ["telur"]},
     )
 

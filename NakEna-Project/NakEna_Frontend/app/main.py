@@ -5,6 +5,7 @@ handled by the separate NakEna backend API.
 """
 
 import os
+import re
 from html import escape
 from pathlib import Path
 
@@ -27,8 +28,10 @@ def render_frontend(template_name: str) -> HTMLResponse:
         raise HTTPException(status_code=404, detail="Halaman tidak ditemukan")
 
     html = template_path.read_text(encoding="utf-8")
+    if template_name not in {"home", "login", "register"}:
+        html = re.sub(r"<body(?=[\s>])", '<body style="visibility:hidden"', html, count=1)
     integration_script = (
-        f'<script src="/static/js/api.js?v=18" '
+        f'<script src="/static/js/api.js?v=28" '
         f'data-api-base="{escape(API_BASE_URL, quote=True)}" defer></script>'
     )
     if "</body>" in html:

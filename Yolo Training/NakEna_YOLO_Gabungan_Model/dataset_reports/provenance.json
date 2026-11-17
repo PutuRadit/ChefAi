@@ -1,0 +1,35 @@
+{
+  "sources": [
+    {
+      "key": "skripsi",
+      "workspace": "skripsi-gnafx",
+      "project": "bahan-makanan-lklbu",
+      "version": 3,
+      "license": "CC BY 4.0"
+    },
+    {
+      "key": "food_v2",
+      "workspace": "4b_putu-radit-ardika",
+      "project": "food-ingredient_v2-mvdf5",
+      "version": 1,
+      "license": "CC BY 4.0"
+    },
+    {
+      "key": "aicook",
+      "workspace": "karel-cornelis-q2qqg",
+      "project": "aicook-lcv4d",
+      "version": 1,
+      "license": "MIT"
+    }
+  ],
+  "profile": "uji_awal",
+  "seed": 42,
+  "near_hash_distance": 2,
+  "class_overrides": {},
+  "description": "All downloaded sources audited; grouped split; optional pilot sampling.",
+  "credits": [
+    "Bahan-Makanan by Skripsi — CC BY 4.0 — https://universe.roboflow.com/skripsi-gnafx/bahan-makanan-lklbu",
+    "Food Ingredient_V2 by CQuangs Workspace — CC BY 4.0 — https://universe.roboflow.com/cquangs-workspace/food-ingredient_v2",
+    "AICook by Karel Cornelis — MIT — https://universe.roboflow.com/karel-cornelis-q2qqg/aicook-lcv4d"
+  ]
+}

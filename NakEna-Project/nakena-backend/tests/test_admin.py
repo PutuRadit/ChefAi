@@ -1,0 +1,89 @@
+from io import BytesIO
+
+from PIL import Image
+from sqlalchemy import select
+
+from app.core.database import SessionLocal
+from app.models import RecipeEntry, Upload, User
+from app.services.storage import get_storage
+from tests.conftest import register_and_login
+
+
+def _promote_to_admin(client, headers):
+    user_id = client.get("/users/me", headers=headers).json()["id"]
+    with SessionLocal() as db:
+        db.get(User, user_id).role = "admin"
+        db.commit()
+    return user_id
+
+
+def test_admin_user_listing_requires_admin_and_hides_password_hash(client):
+    regular_headers = register_and_login(client, email="regular@example.com")
+    admin_headers = register_and_login(client, email="admin@example.com")
+    _promote_to_admin(client, admin_headers)
+
+    assert client.get("/admin/users", headers=regular_headers).status_code == 403
+
+    response = client.get("/admin/users", headers=admin_headers)
+    assert response.status_code == 200
+    assert {user["email"] for user in response.json()} == {
+        "admin@example.com",
+        "regular@example.com",
+    }
+    assert all("hashed_password" not in user for user in response.json())
+
+
+def test_admin_can_delete_regular_user_and_related_data(client):
+    admin_headers = register_and_login(client, email="admin@example.com")
+    user_headers = register_and_login(client, email="delete@example.com")
+    _promote_to_admin(client, admin_headers)
+    user_id = client.get("/users/me", headers=user_headers).json()["id"]
+
+    image = BytesIO()
+    Image.new("RGB", (4, 4), "red").save(image, format="PNG")
+    upload_response = client.post(
+        "/uploads",
+        headers=user_headers,
+        files={"file": ("ingredients.png", image.getvalue(), "image/png")},
+    )
+    assert upload_response.status_code == 201
+    upload_id = upload_response.json()["id"]
+    storage = get_storage()
+    with SessionLocal() as db:
+        upload = db.get(Upload, upload_id)
+        stored_path = storage._path(upload.storage_key)
+    assert stored_path.is_file()
+
+    with SessionLocal() as db:
+        db.add(
+            RecipeEntry(
+                id="recipe-for-delete",
+                user_id=user_id,
+                title="Resep",
+                recipe_text="Langkah",
+                ingredients=["tomat"],
+            )
+        )
+        db.commit()
+
+    response = client.delete(f"/admin/users/{user_id}", headers=admin_headers)
+    assert response.status_code == 204
+    assert not stored_path.exists()
+    assert client.get("/admin/users", headers=admin_headers).json()
+    with SessionLocal() as db:
+        assert db.get(User, user_id) is None
+        assert db.get(Upload, upload_id) is None
+        assert db.scalar(select(RecipeEntry).where(RecipeEntry.user_id == user_id)) is None
+
+
+def test_admin_cannot_delete_self_or_another_admin(client):
+    first_headers = register_and_login(client, email="admin-one@example.com")
+    second_headers = register_and_login(client, email="admin-two@example.com")
+    first_id = _promote_to_admin(client, first_headers)
+    second_id = _promote_to_admin(client, second_headers)
+
+    self_delete = client.delete(f"/admin/users/{first_id}", headers=first_headers)
+    other_admin_delete = client.delete(f"/admin/users/{second_id}", headers=first_headers)
+
+    assert self_delete.status_code == 409
+    assert other_admin_delete.status_code == 409

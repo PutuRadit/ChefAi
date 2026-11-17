@@ -1,0 +1,42 @@
+.access-warning-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: #020711d9;
+  backdrop-filter: blur(8px);
+  visibility: visible;
+}
+
+.access-warning-dialog {
+  width: min(100%, 460px);
+  padding: 26px;
+  border: 1px solid #ffb59b4d;
+  border-radius: 20px;
+  background: #111c2e;
+  box-shadow: 0 24px 80px #0009;
+  visibility: visible;
+}
+
+.access-warning-dialog h2 {
+  color: #fff;
+  font-size: 20px;
+}
+
+.access-warning-dialog p {
+  margin-top: 12px;
+  color: #c3cde0;
+}
+
+.access-warning-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.access-warning-actions .btn {
+  min-width: 100px;
+}

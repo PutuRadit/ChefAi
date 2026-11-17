@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta, timezone
 from functools import lru_cache
+import hashlib
 
 import bcrypt
 import jwt
@@ -8,14 +9,20 @@ from app.core.config import settings
 
 
 def hash_password(password: str) -> str:
-    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+    password_bytes = hashlib.sha256(password.encode("utf-8")).hexdigest().encode("ascii")
+    return bcrypt.hashpw(password_bytes, bcrypt.gensalt()).decode("utf-8")
 
 
 def verify_password(password: str, hashed: str) -> bool:
     try:
-        return bcrypt.checkpw(password.encode("utf-8"), hashed.encode("utf-8"))
+        stored_hash = hashed.encode("utf-8")
+        raw_password = password.encode("utf-8")
+        if len(raw_password) <= 72 and bcrypt.checkpw(raw_password, stored_hash):
+            return True
+        password_bytes = hashlib.sha256(raw_password).hexdigest().encode("ascii")
+        return bcrypt.checkpw(password_bytes, stored_hash)
     except ValueError:
-        # mis. password > 72 byte pada bcrypt versi baru, atau hash rusak
+        # Hash rusak atau format bcrypt tidak dikenali.
         return False
 
 

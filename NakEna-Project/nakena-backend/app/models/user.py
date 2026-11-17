@@ -42,7 +42,7 @@ class UserPreference(Base):
     )
 
     # Profil tetap (dipakai sebagai nilai awal tiap sesi memasak)
-    diet: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    diet: Mapped[Optional[str]] = mapped_column(String(300), nullable=True)
     allergies: Mapped[list] = mapped_column(JSON, default=list)
     staple_ingredients: Mapped[list] = mapped_column(JSON, default=list)
 

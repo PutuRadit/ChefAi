@@ -19,7 +19,6 @@ def test_put_then_patch_preferences(client):
             "allergies": ["Kacang", "kacang", " Udang "],
             "staple_ingredients": ["garam", "minyak"],
             "default_servings": 2,
-            "default_difficulty": "easy",
         },
     )
     assert r.status_code == 200
@@ -38,9 +37,23 @@ def test_put_then_patch_preferences(client):
 
 def test_preferences_validation(client):
     headers = register_and_login(client)
-    assert client.put("/users/me/preferences", headers=headers, json={"default_difficulty": "extreme"}).status_code == 422
     assert client.put("/users/me/preferences", headers=headers, json={"default_servings": 0}).status_code == 422
     assert client.put("/users/me/preferences", headers=headers, json={"allergies": None}).status_code == 422
+
+
+def test_preferences_support_multiple_diet_and_allergy_choices(client):
+    headers = register_and_login(client)
+    diets = ["Halal", "Rendah gula", "Vegetarian", "Bebas gluten", "Rendah karbohidrat", "Tinggi protein"]
+    allergies = ["Kacang tanah", "Kacang pohon", "Udang", "Kerang", "Ikan", "Susu", "Telur", "Kedelai", "Gandum", "Wijen"]
+    response = client.put(
+        "/users/me/preferences",
+        headers=headers,
+        json={"diet": ", ".join(diets), "allergies": allergies},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["diet"] == ", ".join(item.lower() for item in diets)
+    assert data["allergies"] == [item.lower() for item in allergies]
 
 
 def test_preferences_are_per_user(client):

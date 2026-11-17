@@ -7,8 +7,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/css/pages/guided_cooking.css?v=18">
-  <script src="/static/js/pages/guided_cooking.js?v=18" defer></script>
+  <link rel="stylesheet" href="/static/css/pages/guided_cooking.css?v=19">
+  <script src="/static/js/pages/guided_cooking.js?v=19" defer></script>
 </head>
 <body class="guided-cooking-page nakena-page page-guided_cooking">
   <a class="gc-skip" href="#cooking-main">Langsung ke panduan</a>
@@ -29,11 +29,16 @@
         <div id="cooking-progress" class="gc-progress-track" role="progressbar" aria-label="Langkah selesai" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div id="progress-indicator-bar"></div></div>
       </section>
       <div id="cooking-empty" class="gc-card gc-empty" hidden><h2>Langkah memasak belum tersedia</h2><p>Resep ini belum memiliki instruksi yang dapat dipisahkan.</p><a class="gc-button gc-button-primary" href="/recipes/1/">Kembali ke detail resep</a></div>
-      <div id="cooking-grid" class="gc-grid">
+      <section id="prep-stage" class="gc-card gc-prep-stage" aria-labelledby="prep-heading" hidden>
+        <div class="gc-prep-intro"><p class="gc-eyebrow">SEBELUM MULAI</p><h2 id="prep-heading">Siapkan bahan dan bumbu</h2><p>Periksa dan centang semua bahan yang sudah kamu siapkan. Setelah lengkap, kita mulai memasak langkah demi langkah.</p></div>
+        <section id="cooking-ingredients" class="gc-ingredients-card" aria-labelledby="ingredients-heading"><div class="gc-section-title"><div class="gc-section-heading"><svg class="gc-icon" viewbox="0 0 24 24" aria-hidden="true"><path d="m3 6 2 2 4-4m3 2h9M3 13l2 2 4-4m3 2h9M3 20l2 2 4-4m3 2h9"></path></svg><h2 id="ingredients-heading">Bahan dan bumbu resep</h2></div><span id="checked-counter" class="gc-muted" role="status"></span></div><div id="ingredients-checklist-container"></div></section>
+        <div class="gc-prep-actions"><span id="prep-check-hint" class="gc-muted">Centang semua bahan untuk melanjutkan.</span><button id="start-cooking-btn" class="gc-button gc-button-primary" type="button" disabled>Mulai memasak</button></div>
+      </section>
+      <div id="cooking-grid" class="gc-grid" hidden>
         <div class="gc-primary-column">
           <section class="gc-card gc-step-card" aria-labelledby="step-heading-text">
             <div class="gc-step-top"><span class="gc-step-badge" id="step-badge-text"></span><span class="gc-step-done" id="step-completed-label" hidden>Sudah selesai</span></div>
-            <div id="cooking-instruction" tabindex="-1"><h2 id="step-heading-text"></h2><p id="step-description-text" class="gc-instruction"></p></div>
+            <p class="gc-step-duration" id="step-duration-estimate"></p><div id="cooking-instruction" tabindex="-1"><h2 id="step-heading-text"></h2><p id="step-description-text" class="gc-instruction"></p></div>
             <div class="gc-step-navigation">
               <button class="gc-button gc-button-secondary" id="prev-step-btn" type="button" disabled><svg class="gc-icon" viewbox="0 0 24 24" aria-hidden="true"><path d="M19 12H5m7-7-7 7 7 7"></path></svg><span>Sebelumnya</span></button>
               <button class="gc-button gc-button-primary" id="next-step-btn" type="button"><span id="next-btn-text">Selesai &amp; lanjut</span><svg class="gc-icon" viewbox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-7-7 7 7-7 7"></path></svg></button>
@@ -47,10 +52,8 @@
               <div class="gc-timer-actions"><button id="main-timer-action-btn" class="gc-button gc-button-primary" type="button">Mulai</button><button id="reset-timer-btn" class="gc-icon-button" type="button" aria-label="Reset timer"><svg class="gc-icon" viewbox="0 0 24 24" aria-hidden="true"><path d="M3 10a9 9 0 1 1 2.5 8M3 4v6h6"></path></svg></button><button id="bottom-quick-timer-btn" class="gc-button gc-button-secondary" type="button">+1 menit</button></div>
             </div>
           </section>
-          <section id="cooking-ingredients" class="gc-card gc-ingredients-card" aria-labelledby="ingredients-heading"><div class="gc-section-title"><div class="gc-section-heading"><svg class="gc-icon" viewbox="0 0 24 24" aria-hidden="true"><path d="m3 6 2 2 4-4m3 2h9M3 13l2 2 4-4m3 2h9M3 20l2 2 4-4m3 2h9"></path></svg><h2 id="ingredients-heading">Bahan resep</h2></div><span id="checked-counter" class="gc-muted" role="status"></span></div><div id="ingredients-checklist-container"></div></section>
         </div>
         <aside class="gc-side-column">
-          <div class="gc-companion panel"><img class="gc-companion-art" src="/static/assets/mascot-chef.png" alt="Maskot NakEna" width="1254" height="1254"><span>NakEna · Teman memasakmu</span></div><nav class="gc-card gc-outline-card" aria-labelledby="step-outline-heading"><div class="gc-section-title"><h2 id="step-outline-heading">Urutan memasak</h2><span id="outline-step-count" class="gc-muted"></span></div><ol id="cooking-step-list" class="gc-step-list"></ol></nav>
           <section id="cooking-tips" class="gc-card gc-tips-card" aria-labelledby="tips-heading" hidden><img class="gc-mascot" src="/static/assets/mascot-chef.png" width="120" height="100" alt="" loading="lazy"><div class="gc-section-heading"><svg class="gc-icon" viewbox="0 0 24 24" aria-hidden="true"><path d="M9 18h6m-5 3h4M8 14a7 7 0 1 1 8 0c-1 .8-1 2-1 2H9s0-1.2-1-2Z"></path></svg><h2 id="tips-heading">Tips resep</h2></div><div id="mascot-tip-text"></div></section>
         </aside>
       </div>

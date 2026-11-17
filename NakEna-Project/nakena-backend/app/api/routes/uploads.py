@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, File, HTTPException, Query, Response, Up
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user
+from app.api.deps import require_regular_user
 from app.core.config import settings
 from app.core.database import get_db
 from app.models import Upload, User
@@ -35,12 +35,9 @@ def _get_owned_upload(db: Session, user: User, upload_id: str) -> Upload:
 @router.post("/guest/detect", response_model=IngredientDetectionResponse)
 def detect_guest_image(
     file: UploadFile = File(..., description="Foto bahan makanan untuk mode Guest (JPEG/PNG)"),
+    _: User = Depends(require_regular_user),
 ):
-    """Deteksi foto untuk Guest tanpa menyimpan file, metadata, atau riwayat ke database.
-
-    Data foto dibaca dan diproses di memori request. Setelah response selesai,
-    tidak ada upload record maupun file permanen yang dibuat.
-    """
+    """Compatibility endpoint that requires a regular user and does not persist uploads."""
     if file.content_type not in ALLOWED_CONTENT_TYPES:
         raise HTTPException(status.HTTP_415_UNSUPPORTED_MEDIA_TYPE, "Hanya JPEG atau PNG yang diterima")
 
@@ -89,7 +86,7 @@ def detect_guest_image(
 def upload_image(
     file: UploadFile = File(..., description="Foto bahan makanan (JPEG/PNG)"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_regular_user),
     storage: StorageBackend = Depends(get_storage),
 ):
     """Menerima foto bahan makanan (multipart/form-data, field `file`).
@@ -146,7 +143,7 @@ def upload_image(
 def detect_uploaded_image(
     upload_id: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_regular_user),
     storage: StorageBackend = Depends(get_storage),
 ):
     upload = _get_owned_upload(db, current_user, upload_id)
@@ -186,7 +183,7 @@ def list_uploads(
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_regular_user),
 ):
     stmt = (
         select(Upload)
@@ -202,7 +199,7 @@ def list_uploads(
 def get_upload(
     upload_id: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_regular_user),
 ):
     return _get_owned_upload(db, current_user, upload_id)
 
@@ -211,7 +208,7 @@ def get_upload(
 def delete_upload(
     upload_id: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_regular_user),
     storage: StorageBackend = Depends(get_storage),
 ):
     """Pengguna bisa menghapus fotonya sendiri sebelum masa retensi habis."""

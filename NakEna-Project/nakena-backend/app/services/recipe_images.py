@@ -1,14 +1,15 @@
-"""Find illustrative food photos without blocking recipe generation."""
+"""Find and locally cache Pixabay food photos without blocking recipe generation."""
 
 import hashlib
 import json
 import logging
 import re
 from collections import OrderedDict
+from pathlib import Path
 from threading import Lock
-from time import monotonic
+from time import monotonic, time
 from urllib.error import URLError
-from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
+from urllib.parse import urlencode, urlsplit
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 from app.core.config import settings
@@ -16,9 +17,11 @@ from app.core.config import settings
 logger = logging.getLogger(__name__)
 _cache = OrderedDict()
 _lock = Lock()
-_TTL = 6 * 60 * 60
+_TTL = 24 * 60 * 60
 _FAILURE_TTL = 60
 _MAX_CACHE = 128
+_MAX_IMAGE_BYTES = 8 * 1024 * 1024
+_EXTENSIONS = {"image/jpeg": "jpg", "image/png": "png", "image/webp": "webp"}
 
 
 class _NoRedirect(HTTPRedirectHandler):
@@ -82,102 +85,180 @@ def search_query(title: str, ingredients: str = "") -> str:
     return query
 
 
-def _url(value, host, prefix="/"):
-    if not isinstance(value, str):
-        return ""
-    parts = urlsplit(value)
-    if parts.scheme != "https" or parts.netloc != host or not parts.path.startswith(prefix):
-        return ""
-    return value
+def _cache_dir() -> Path:
+    return Path(settings.upload_dir).resolve() / "recipe_images"
 
 
-def _referral(value):
-    parts = urlsplit(value)
-    params = dict(parse_qsl(parts.query, keep_blank_values=True))
-    params.update(utm_source="nakena", utm_medium="referral")
-    return urlunsplit((parts.scheme, parts.netloc, parts.path, urlencode(params), parts.fragment))
-
-
-def _get_json(url, key):
-    request = Request(url, headers={
-        "Authorization": "Client-ID " + key,
-        "Accept-Version": "v1",
-        "User-Agent": "NakEna/1.0",
-    })
-    with urlopen(request, timeout=5) as response:
-        raw = response.read(2 * 1024 * 1024 + 1)
-    if len(raw) > 2 * 1024 * 1024:
-        raise ValueError("Unsplash response exceeded size limit")
-    return json.loads(raw)
+def _asset_path(asset_key: str) -> Path | None:
+    if not re.fullmatch(r"[a-f0-9]{64}\.(?:jpg|png|webp)", asset_key):
+        return None
+    return _cache_dir() / asset_key
 
 
 def _empty(status, query):
     return {
-        "status": status, "query": query, "source": "unsplash",
-        "image_url": None, "alt": "", "photographer": "",
-        "photographer_url": "", "photo_url": "",
+        "status": status, "query": query, "source": "pixabay",
+        "image_url": None, "asset_key": None, "alt": "",
+        "photographer": "", "photo_url": "",
     }
 
 
-def _lookup(query, key):
-    url = "https://api.unsplash.com/search/photos?" + urlencode({
-        "query": query, "orientation": "landscape", "per_page": 6,
-        "order_by": "relevant", "content_filter": "high",
+def _get_bytes(url, *, limit):
+    request = Request(url, headers={"User-Agent": "NakEna/1.0", "Accept": "application/json, image/*"})
+    with urlopen(request, timeout=8) as response:
+        content_type = response.headers.get("Content-Type", "").split(";", 1)[0].strip().lower()
+        raw = response.read(limit + 1)
+    if len(raw) > limit:
+        raise ValueError("Pixabay response exceeded size limit")
+    return content_type, raw
+
+
+def _get_json(url):
+    _, raw = _get_bytes(url, limit=2 * 1024 * 1024)
+    return json.loads(raw)
+
+
+def _safe_image_url(value):
+    if not isinstance(value, str):
+        return ""
+    parts = urlsplit(value)
+    allowed = (
+        (parts.netloc == "pixabay.com" and parts.path.startswith("/get/"))
+        or (parts.netloc == "cdn.pixabay.com" and parts.path.startswith("/photo/"))
+    )
+    return value if parts.scheme == "https" and allowed and not parts.username and not parts.password else ""
+
+
+def _safe_page_url(value):
+    if not isinstance(value, str):
+        return ""
+    parts = urlsplit(value)
+    if parts.scheme != "https" or parts.netloc != "pixabay.com" or not parts.path.startswith("/"):
+        return ""
+    return value
+
+
+def _is_image(content_type, data):
+    return (
+        (content_type == "image/jpeg" and data.startswith(b"\xff\xd8\xff"))
+        or (content_type == "image/png" and data.startswith(b"\x89PNG\r\n\x1a\n"))
+        or (
+            content_type == "image/webp"
+            and len(data) >= 12
+            and data.startswith(b"RIFF")
+            and data[8:12] == b"WEBP"
+        )
+    )
+
+
+def _persist_metadata(cache_path, result):
+    payload = {**result, "expires_at": time() + _TTL}
+    cache_path.parent.mkdir(parents=True, exist_ok=True)
+    temporary_path = cache_path.with_suffix(".tmp")
+    temporary_path.write_text(json.dumps(payload), encoding="utf-8")
+    temporary_path.replace(cache_path)
+
+
+def _read_persisted(cache_path, query):
+    try:
+        payload = json.loads(cache_path.read_text(encoding="utf-8"))
+        if payload.get("expires_at", 0) <= time() or payload.get("query") != query:
+            return None
+        asset_key = payload.get("asset_key")
+        if asset_key:
+            asset_path = _asset_path(asset_key)
+            if asset_path is None or not asset_path.is_file():
+                return None
+        return {key: payload[key] for key in _empty("", query)}
+    except (OSError, ValueError, TypeError, KeyError):
+        return None
+
+
+def _lookup(query, api_key, cache_path):
+    url = "https://pixabay.com/api/?" + urlencode({
+        "key": api_key,
+        "q": query,
+        "lang": "en",
+        "image_type": "photo",
+        "orientation": "horizontal",
+        "category": "food",
+        "safesearch": "true",
+        "per_page": 10,
     })
-    payload = _get_json(url, key)
+    payload = _get_json(url)
+    hits = payload.get("hits", []) if isinstance(payload, dict) else []
     candidates = []
-    for photo in payload.get("results", []):
-        if not isinstance(photo, dict):
+    for hit in hits:
+        if not isinstance(hit, dict) or hit.get("type") != "photo":
             continue
-        image_url = _url(photo.get("urls", {}).get("regular"), "images.unsplash.com")
-        user = photo.get("user") or {}
-        profile = _url(user.get("links", {}).get("html"), "unsplash.com", "/@")
-        photo_url = _url(photo.get("links", {}).get("html"), "unsplash.com", "/photos/")
-        download = _url(photo.get("links", {}).get("download_location"), "api.unsplash.com", "/photos/")
-        if not (image_url and profile and photo_url and urlsplit(download).path.endswith("/download") and user.get("name")):
-            continue
-        text = str(photo.get("alt_description") or "") + " " + str(photo.get("description") or "")
-        score = sum(word in text.casefold() for word in query.split())
-        candidates.append((score, photo, image_url, profile, photo_url, download))
+        image_url = _safe_image_url(hit.get("webformatURL") or hit.get("largeImageURL"))
+        page_url = _safe_page_url(hit.get("pageURL"))
+        if image_url and page_url:
+            tags = str(hit.get("tags") or "").casefold()
+            score = sum(1 for word in query.split() if word.casefold() in tags)
+            candidates.append((score, hit, image_url, page_url))
     if not candidates:
-        return _empty("not_found", query)
-    _, photo, image_url, profile, photo_url, download = max(candidates, key=lambda item: item[0])
-    # Register the image assignment using Unsplash's returned download endpoint.
-    # This is tracking only; the image remains hotlinked to the returned CDN URL.
-    _get_json(download, key)
-    return {
-        "status": "ok", "query": query, "source": "unsplash",
-        "image_url": image_url,
-        "alt": str(photo.get("alt_description") or "Foto ilustrasi hidangan")[:300],
-        "photographer": str(photo["user"]["name"])[:120],
-        "photographer_url": _referral(profile), "photo_url": _referral(photo_url),
-    }
+        result = _empty("not_found", query)
+        _persist_metadata(cache_path, result)
+        return result
+
+    candidates.sort(key=lambda candidate: candidate[0], reverse=True)
+    for _, hit, image_url, page_url in candidates:
+        content_type, image_data = _get_bytes(image_url, limit=_MAX_IMAGE_BYTES)
+        extension = _EXTENSIONS.get(content_type)
+        if not extension or not _is_image(content_type, image_data):
+            continue
+        asset_key = hashlib.sha256(image_url.encode("utf-8")).hexdigest() + "." + extension
+        asset_path = _asset_path(asset_key)
+        asset_path.parent.mkdir(parents=True, exist_ok=True)
+        asset_path.write_bytes(image_data)
+        result = {
+            "status": "ok",
+            "query": query,
+            "source": "pixabay",
+            "image_url": None,
+            "asset_key": asset_key,
+            "alt": str(hit.get("tags") or "Foto ilustrasi hidangan")[:300],
+            "photographer": str(hit.get("user") or "Kontributor Pixabay")[:120],
+            "photo_url": page_url,
+        }
+        _persist_metadata(cache_path, result)
+        return result
+    result = _empty("not_found", query)
+    _persist_metadata(cache_path, result)
+    return result
 
 
 def find_recipe_image(title: str, ingredients: str = "") -> dict:
     query = search_query(title, ingredients)
-    secret = settings.unsplash_access_key
+    secret = settings.pixabay_api_key
     if not secret or not secret.get_secret_value().strip():
         return _empty("disabled", query)
-    key = secret.get_secret_value().strip()
-    identity = hashlib.sha256(key.encode()).hexdigest()[:16]
+    api_key = secret.get_secret_value().strip()
+    identity = hashlib.sha256(api_key.encode()).hexdigest()[:16]
+    cache_identity = hashlib.sha256(f"{identity}:{query}".encode()).hexdigest()
     cache_key = (identity, query)
-    # Single-flight requests avoid spending the demo quota on duplicate lookups.
+    cache_path = _cache_dir() / f"{cache_identity}.json"
     with _lock:
         now = monotonic()
         cached = _cache.get(cache_key)
         if cached and cached[0] > now:
             _cache.move_to_end(cache_key)
             return dict(cached[1])
+        persisted = _read_persisted(cache_path, query)
+        if persisted is not None:
+            _cache[cache_key] = (now + _TTL, persisted)
+            _cache.move_to_end(cache_key)
+            return dict(persisted)
         try:
-            result = _lookup(query, key)
+            result = _lookup(query, api_key, cache_path)
         except (URLError, OSError, ValueError, TypeError, AttributeError, KeyError) as error:
             logger.warning(
-                "Unsplash lookup failed (%s, HTTP %s)",
+                "Pixabay lookup failed (%s, HTTP %s)",
                 type(error).__name__, getattr(error, "code", "-"),
             )
             result = _empty("unavailable", query)
-        lifetime = _TTL if result["status"] == "ok" else _FAILURE_TTL
+        lifetime = _FAILURE_TTL if result["status"] == "unavailable" else _TTL
         _cache[cache_key] = (monotonic() + lifetime, result)
         _cache.move_to_end(cache_key)
         while len(_cache) > _MAX_CACHE:

@@ -34,7 +34,7 @@ def _normalize_text(v: str | None) -> str | None:
 class PreferenceIn(BaseModel):
     """Dipakai untuk PUT (ganti semua) dan PATCH (hanya field yang dikirim)."""
 
-    diet: str | None = Field(default=None, max_length=50)
+    diet: str | None = Field(default=None, max_length=300)
     allergies: list[str] = Field(default_factory=list, max_length=MAX_ITEMS)
     staple_ingredients: list[str] = Field(default_factory=list, max_length=MAX_ITEMS)
     default_max_cook_minutes: int | None = Field(default=None, ge=5, le=600)

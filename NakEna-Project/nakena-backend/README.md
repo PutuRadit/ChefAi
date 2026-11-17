@@ -13,7 +13,7 @@ nakena-backend/
 │   ├── schemas/          # request/response Pydantic
 │   ├── services/         # YOLO, Gemini, image validation, storage
 │   └── main.py           # API entry point (JSON only)
-├── models/chefai_best.pt # bobot YOLO
+├── models/chefai_best_latest.pt # bobot YOLO terbaru
 ├── storage/              # lokasi file upload runtime
 ├── tests/
 ├── .env.example
@@ -30,7 +30,9 @@ Copy-Item .env.example .env
 notepad .env
 ```
 
-Isi `SECRET_KEY` dengan string acak minimal 32 karakter dan `GEMINI_API_KEY` dengan API key milikmu. Konfigurasi lokal contoh memakai SQLite (`sqlite:///./nakena.db`). Model YOLO harus tersedia di `models/chefai_best.pt`.
+Isi `SECRET_KEY` dengan string acak minimal 32 karakter dan `GEMINI_API_KEY` dengan API key milikmu. Konfigurasi lokal contoh memakai SQLite (`sqlite:///./nakena.db`). Model YOLO terbaru harus tersedia di `models/chefai_best_latest.pt`.
+
+Untuk membuat akun admin saat backend mulai, isi `ADMIN_EMAIL` dan `ADMIN_PASSWORD` di `.env`. Password admin mengikuti kebijakan yang sama seperti registrasi: 8–64 karakter, memiliki huruf besar, huruf kecil, angka, dan tidak sama dengan email atau nama akun. Kosongkan keduanya jika tidak ingin menjalankan seeder admin.
 
 Jalankan server:
 
@@ -59,7 +61,7 @@ Frontend: `http://127.0.0.1:8001`. `CORS_ORIGINS` pada `.env` backend harus memu
 - File `.env` tidak disertakan dalam arsip dan tidak boleh di-commit.
 - Jangan membagikan API key Gemini atau `SECRET_KEY`. Jika key pernah terbagikan, rotasi/ganti key tersebut.
 - Database lokal `nakena.db`, virtual environment, cache, dan foto upload tidak disertakan.
-- File `models/chefai_best.pt` dipertahankan karena dibutuhkan backend untuk deteksi YOLO.
+- File `models/chefai_best_latest.pt` digunakan backend untuk deteksi YOLO terbaru; model sebelumnya tetap dipertahankan sebagai cadangan.
 
 ## Endpoint utama
 
@@ -67,25 +69,25 @@ Frontend: `http://127.0.0.1:8001`. `CORS_ORIGINS` pada `.env` backend harus memu
 |---|---|---|
 | POST | `/auth/register` | Registrasi pengguna |
 | POST | `/auth/login` | Login dan penerbitan JWT |
+| GET | `/admin/users` | Daftar user (khusus admin; mendukung limit dan offset) |
+| DELETE | `/admin/users/{user_id}` | Hapus user beserta resep, preferensi, dan file upload (khusus admin) |
 | GET/PATCH | `/users/me` | Baca/perbarui profil |
 | GET/PUT/PATCH | `/users/me/preferences` | Preferensi pengguna |
-| POST | `/uploads` | Upload foto akun (tersimpan di storage dan database) |\n| POST | `/uploads/guest/detect` | Deteksi foto Guest tanpa menyimpan file atau record |
+| POST | `/uploads` | Upload foto akun (tersimpan di storage dan database) |
+| POST | `/uploads/guest/detect` | Endpoint kompatibilitas untuk User; Guest ditolak dengan 401 (tidak dipakai frontend) |
 | POST | `/uploads/{id}/detect` | Deteksi bahan dengan YOLO |
 | GET/DELETE | `/uploads` dan `/uploads/{id}` | Daftar/detail/hapus upload |
 | POST | `/recipes/generate` | Generate tiga opsi resep dengan Gemini |
 | GET/POST | `/recipes/history` | Riwayat resep |
 | GET/POST/DELETE | `/recipes/favorites` | Resep favorit |
+| GET | `/recipes/image` | Foto makanan Pixabay untuk pengguna yang login |
 
+## Hak akses
 
-## Endpoint Guest tanpa penyimpanan
+- Guest hanya dapat melihat Beranda, Login, dan Register. Semua endpoint yang memproses gambar, resep, riwayat, favorit, preferensi, atau data admin memerlukan autentikasi dan mengembalikan `401 Unauthorized` untuk Guest.
+- User dapat menggunakan fitur memasak dan preferensi. Endpoint admin mengembalikan `403 Forbidden`.
+- Admin hanya menggunakan Beranda dan dashboard admin di frontend. API menolak akses Admin ke fitur memasak/preferensi dengan `403 Forbidden`; API admin hanya dapat digunakan oleh Admin.
+- Registrasi publik selalu membuat `role="user"`. Jangan memberi kredensial admin lewat registrasi; gunakan seeder `.env`.
+- Password disimpan sebagai bcrypt hash dengan SHA-256 prehash untuk menerima hingga 64 karakter Unicode meskipun bcrypt membatasi input 72 byte. Verifikasi tetap mendukung hash bcrypt lama.
 
-`POST /uploads/guest/detect` menerima foto JPEG/PNG dan langsung menjalankan YOLO tanpa autentikasi. Endpoint ini:
-- memvalidasi tipe dan ukuran foto;
-- memproses foto dari memori request;
-- tidak menulis foto ke folder storage;
-- tidak membuat record `Upload` di database;
-- mengembalikan nama bahan, confidence, dan bounding box.
-
-Endpoint `/recipes/generate` juga tidak menyimpan resep. Frontend Guest tidak memanggil endpoint `/recipes/history`, `/recipes/favorites`, atau `/users/me/preferences`.
-
-**Catatan deployment:** endpoint Guest bersifat publik dan menjalankan inferensi YOLO. Sebelum deployment publik, tambahkan rate limiting dan batas konkurensi agar endpoint tidak disalahgunakan.
+Foto resep dicari dari kategori `food` Pixabay dengan tipe `photo` dan SafeSearch aktif. Hasilnya diunduh dan disajikan dari cache lokal backend; hasil pencarian (termasuk hasil kosong) disimpan setidaknya 24 jam sesuai ketentuan Pixabay. Atur `PIXABAY_API_KEY` di `.env`.

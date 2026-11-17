@@ -3,26 +3,38 @@
   const byId = (id) => document.getElementById(id);
   const formatTime = (seconds) => `${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
 
-  // Only prefill one explicit duration. Ranges and multiple durations stay manual.
   function durationForStep(text) {
-    if (/\d\s*(?:[-–—]|sampai|hingga)\s*\d/i.test(text) || /\d+\s*\/\s*\d+\s*(?:jam|menit|detik)\b/i.test(text)) return null;
-    const durations = [...text.matchAll(/(^|[^\d.,])(\d+(?:[.,]\d+)?)\s*(jam|menit|detik)\b/gi)];
-    if (durations.length !== 1) return null;
-    const value = Number(durations[0][2].replace(",", "."));
-    const unit = durations[0][3].toLowerCase();
+    const range = text.match(/(\d+(?:[.,]\d+)?)\s*(?:[-–—]|sampai|hingga)\s*(\d+(?:[.,]\d+)?)\s*(jam|menit|detik)\b/i);
+    const duration = range || text.match(/(\d+(?:[.,]\d+)?)\s*(jam|menit|detik)\b/i);
+    if (!duration) return null;
+    const value = range
+      ? (Number(range[1].replace(",", ".")) + Number(range[2].replace(",", "."))) / 2
+      : Number(duration[1].replace(",", "."));
+    const unit = duration[range ? 3 : 2].toLowerCase();
     const seconds = Math.round(value * (unit === "jam" ? 3600 : unit === "menit" ? 60 : 1));
     return seconds >= 6 && seconds <= 21600 ? seconds : null;
   }
 
-  function checkIcon() {
-    const icon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    icon.setAttribute("class", "gc-icon");
-    icon.setAttribute("viewBox", "0 0 24 24");
-    icon.setAttribute("aria-hidden", "true");
-    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-    path.setAttribute("d", "m5 12 4 4L19 6");
-    icon.append(path);
-    return icon;
+  function estimateStepSeconds(text) {
+    const explicit = durationForStep(text);
+    if (explicit) return explicit;
+    const instruction = text.toLowerCase();
+    if (/potong|iris|cincang|kupas|bersihkan|siapkan/.test(instruction)) return 4 * 60;
+    if (/haluskan|ulek|blender|giling/.test(instruction)) return 5 * 60;
+    if (/panaskan/.test(instruction)) return 2 * 60;
+    if (/rebus|ungkep|panggang|bakar/.test(instruction)) return 12 * 60;
+    if (/tumis|goreng/.test(instruction)) return 6 * 60;
+    if (/sajikan|angkat|taburkan/.test(instruction)) return 1 * 60;
+    return 3 * 60;
+  }
+
+  function formatEstimate(seconds) {
+    const minutes = Math.max(1, Math.round(seconds / 6) / 10);
+    return `${new Intl.NumberFormat("id-ID", { maximumFractionDigits: 1 }).format(minutes)} menit`;
+  }
+
+  function instructionWithoutEstimate(text) {
+    return text.replace(/\s*\((?:±|sekitar|kurang lebih)\s*\d+(?:[.,]\d+)?\s*(?:jam|menit|detik)\)\s*$/i, "").trim();
   }
 
   let initialized = false;
@@ -32,6 +44,7 @@
     const recipe = event.detail;
     const instructions = recipe.instructions;
     const groups = recipe.ingredientGroups;
+    if (!Array.isArray(instructions) || !Array.isArray(groups)) return;
     const ingredients = groups.flatMap((group) => group.items);
     const total = instructions.length;
     const signature = JSON.stringify([recipe.title, instructions, groups]);
@@ -46,9 +59,11 @@
     let current = validIndex(stored.current, total) ? stored.current : 0;
     const completed = new Set((Array.isArray(stored.completed) ? stored.completed : []).filter((i) => validIndex(i, total)));
     const checked = new Set((Array.isArray(stored.checked) ? stored.checked : []).filter((i) => validIndex(i, ingredients.length)));
+    let started = stored.started === true && (ingredients.length === 0 || checked.size === ingredients.length);
+    if (!ingredients.length) started = true;
     const saveProgress = () => {
       try {
-        sessionStorage.setItem(progressKey, JSON.stringify({ signature, current, completed: [...completed], checked: [...checked] }));
+        sessionStorage.setItem(progressKey, JSON.stringify({ signature, current, completed: [...completed], checked: [...checked], started }));
       } catch { /* Progress is still maintained in memory for this page. */ }
     };
     let interval = null;
@@ -61,7 +76,6 @@
     document.title = `${recipe.title} — Panduan memasak | NakEna`;
     byId("recipe-title-display").textContent = recipe.title;
     byId("recipe-step-total").textContent = `${total} langkah`;
-    byId("outline-step-count").textContent = `${total} langkah`;
     if (recipe.time) {
       byId("recipe-total-time").textContent = `Total ${recipe.time}`;
       byId("recipe-total-time").hidden = false;
@@ -113,16 +127,31 @@
 
     function loadStepTimer() {
       if (timer.touched || timer.running) return;
-      const duration = durationForStep(instructions[current]);
-      timer.remaining = timer.duration = duration || 60;
+      const duration = estimateStepSeconds(instructions[current]);
+      timer.remaining = timer.duration = duration;
       timer.source = current;
       minutes.value = String(timer.duration / 60);
-      byId("timer-status").textContent = duration ? `Durasi pada langkah ${current + 1}` : "Atur sesuai kebutuhan";
+      byId("timer-status").textContent = `Perkiraan ${formatEstimate(duration)} · bisa disesuaikan`;
       updateTimer();
     }
 
+    function updatePrepProgress() {
+      const percent = ingredients.length ? Math.round(checked.size / ingredients.length * 100) : 100;
+      byId("step-count-text").textContent = "Persiapan bahan";
+      byId("progress-percent-text").textContent = `${checked.size}/${ingredients.length} bahan siap`;
+      byId("progress-indicator-bar").style.width = `${percent}%`;
+      byId("cooking-progress").setAttribute("aria-valuenow", String(percent));
+      byId("cooking-progress").setAttribute("aria-valuetext", `${checked.size} dari ${ingredients.length} bahan siap`);
+    }
+
     function updateCheckedCount() {
+      const ready = checked.size === ingredients.length;
       byId("checked-counter").textContent = `${checked.size}/${ingredients.length} siap`;
+      byId("start-cooking-btn").disabled = !ready;
+      byId("prep-check-hint").textContent = ready
+        ? "Semua bahan siap. Kamu bisa mulai memasak."
+        : "Centang semua bahan untuk melanjutkan.";
+      updatePrepProgress();
     }
 
     function renderIngredients() {
@@ -165,34 +194,12 @@
       updateCheckedCount();
     }
 
-    function renderOutline() {
-      const list = byId("cooking-step-list");
-      list.replaceChildren();
-      instructions.forEach((text, index) => {
-        const item = document.createElement("li");
-        const button = document.createElement("button");
-        button.type = "button";
-        button.className = `gc-outline-step${completed.has(index) ? " is-complete" : ""}`;
-        if (index === current) button.setAttribute("aria-current", "step");
-        button.setAttribute("aria-label", `Langkah ${index + 1}${completed.has(index) ? ", selesai" : ""}: ${text}`);
-        const number = document.createElement("span");
-        number.className = "gc-step-number";
-        number.setAttribute("aria-hidden", "true");
-        if (completed.has(index)) number.append(checkIcon()); else number.textContent = String(index + 1).padStart(2, "0");
-        const summary = document.createElement("span");
-        summary.className = "gc-step-summary";
-        summary.textContent = text.length > 94 ? text.slice(0, 91).trimEnd() + "…" : text;
-        button.append(number, summary);
-        button.addEventListener("click", () => goToStep(index));
-        item.append(button);
-        list.append(item);
-      });
-    }
-
     function renderStep(focus = false) {
       const percent = Math.round(completed.size / total * 100);
+      const duration = estimateStepSeconds(instructions[current]);
       byId("step-heading-text").textContent = `Langkah ${current + 1}`;
-      byId("step-description-text").textContent = instructions[current];
+      byId("step-description-text").textContent = instructionWithoutEstimate(instructions[current]);
+      byId("step-duration-estimate").textContent = `Perkiraan waktu: ${formatEstimate(duration)}`;
       byId("step-badge-text").textContent = `LANGKAH ${String(current + 1).padStart(2, "0")} / ${String(total).padStart(2, "0")}`;
       byId("step-count-text").textContent = `Langkah ${current + 1} dari ${total}`;
       byId("modal-step-display").textContent = String(current + 1);
@@ -203,7 +210,6 @@
       byId("step-completed-label").hidden = !completed.has(current);
       byId("prev-step-btn").disabled = current === 0;
       byId("next-btn-text").textContent = current === total - 1 ? (completed.size + (completed.has(current) ? 0 : 1) === total ? "Selesai memasak" : "Tandai selesai") : "Selesai & lanjut";
-      renderOutline();
       loadStepTimer();
       if (focus) {
         byId("cooking-instruction").focus({ preventScroll: true });
@@ -213,11 +219,22 @@
 
     function goToStep(index) {
       stopSpeaking();
+      pauseTimer();
+      timer.touched = false;
       current = Math.max(0, Math.min(total - 1, index));
       saveProgress();
       renderStep(true);
     }
 
+    byId("start-cooking-btn").addEventListener("click", () => {
+      if (checked.size !== ingredients.length) return;
+      started = true;
+      current = 0;
+      saveProgress();
+      byId("prep-stage").hidden = true;
+      byId("cooking-grid").hidden = false;
+      renderStep(true);
+    });
     byId("next-step-btn").addEventListener("click", () => {
       completed.add(current);
       saveProgress();
@@ -239,10 +256,15 @@
       finishDialog.close();
       pauseTimer();
       timer.touched = false;
+      started = false;
       completed.clear();
       checked.clear();
       renderIngredients();
-      goToStep(0);
+      current = 0;
+      saveProgress();
+      byId("prep-stage").hidden = false;
+      byId("cooking-grid").hidden = true;
+      updatePrepProgress();
     });
 
     minutes.addEventListener("input", () => {
@@ -313,9 +335,12 @@
     window.addEventListener("pagehide", () => { pauseTimer(); stopSpeaking(); });
     if (total) {
       renderIngredients();
-      renderStep();
+      byId("prep-stage").hidden = started;
+      byId("cooking-grid").hidden = !started;
+      if (started) renderStep();
     } else {
       byId("cooking-grid").hidden = true;
+      byId("prep-stage").hidden = true;
       byId("cooking-empty").hidden = false;
       byId("step-count-text").textContent = "Belum ada langkah";
       byId("progress-percent-text").textContent = "0%";

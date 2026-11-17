@@ -11,17 +11,20 @@ import pytest  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
 
 from app.core.database import Base, engine  # noqa: E402
+from app.core.config import settings  # noqa: E402
 from app.main import app  # noqa: E402
 
 
 @pytest.fixture()
-def client():
+def client(monkeypatch):
+    monkeypatch.setattr(settings, "admin_email", None)
+    monkeypatch.setattr(settings, "admin_password", None)
     Base.metadata.create_all(bind=engine)
     yield TestClient(app)
     Base.metadata.drop_all(bind=engine)
 
 
-def register_and_login(client, email="budi@example.com", password="rahasia123", name="Budi"):
+def register_and_login(client, email="budi@example.com", password="Rahasia123", name="Budi"):
     r = client.post("/auth/register", json={"email": email, "password": password, "full_name": name})
     assert r.status_code == 201, r.text
     r = client.post("/auth/login", json={"email": email, "password": password})

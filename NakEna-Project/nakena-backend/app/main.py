@@ -10,14 +10,17 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app import models  # noqa: F401 - register SQLAlchemy models
-from app.api.routes import auth, recipe_images, recipes, uploads, users
+from app.api.routes import admin, auth, recipe_images, recipes, uploads, users
 from app.core.config import settings
-from app.core.database import Base, engine
+from app.core.bootstrap import seed_admin_user
+from app.core.database import Base, SessionLocal, engine
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
+    with SessionLocal() as db:
+        seed_admin_user(db, settings)
     yield
 
 
@@ -44,6 +47,7 @@ app.add_middleware(
 )
 
 app.include_router(auth.router)
+app.include_router(admin.router)
 app.include_router(users.router)
 app.include_router(uploads.router)
 app.include_router(recipes.router)

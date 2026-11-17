@@ -2,12 +2,14 @@
   const tokenKey = "nakena_access_token";
   const emailKey = "nakena_user_email";
   const userNameKey = "nakena_user_name";
+  const userRoleKey = "nakena_user_role";
   const uploadKey = "nakena_last_upload";
   const recipeKey = "nakena_latest_recipe";
   const recipeNoticeKey = "nakena_recipe_notice";
   const apiBaseUrl = (document.currentScript?.dataset.apiBase || "http://127.0.0.1:8000").replace(/\/+$/, "");
   const token = () => sessionStorage.getItem(tokenKey);
-  const isGuest = () => !token();
+  let currentRole = "guest";
+  let currentUser = null;
   const email = () => sessionStorage.getItem(emailKey) || "guest";
   const storageKey = (name) => `nakena_${name}_${email()}`;
 
@@ -115,33 +117,19 @@
     return Number.isFinite(date.getTime()) ? date.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }) : "";
   }
 
-  function createGuestInfoCard(title, description, actionPath = "/login/", actionLabel = "Masuk atau daftar") {
-    const card = uiElement("section", "empty-card guest-card");
-    card.append(uiElement("h2", "", title), uiElement("p", "", description));
-    const actions = uiElement("div", "button-row");
-    const login = uiElement("a", "btn btn-primary", actionLabel); login.href = actionPath;
-    const scan = uiElement("a", "btn btn-secondary", "Scan bahan"); scan.href = "/scan/";
-    actions.append(login, scan); card.append(actions); return card;
-  }
-
-  function showGuestInfo(main, title, description, actionPath = "/login/", actionLabel = "Masuk atau daftar") {
-    if (!main) return;
-    main.prepend(createGuestInfoCard(title, description, actionPath, actionLabel));
-  }
-
   function setupHeaderAccount() {
     const accounts = document.querySelectorAll("[data-header-account]");
     if (!accounts.length) return;
     const sync = (detail = {}) => {
-      const authenticated = Boolean(token()) && detail.authenticated === true;
+      const authenticated = Boolean(token()) && ["user", "admin"].includes(detail.role || currentRole);
       const next = encodeURIComponent(`${location.pathname}${location.search}`);
       accounts.forEach((account) => {
         const guest = account.querySelector("[data-header-guest]");
         const profile = account.querySelector("[data-header-profile]");
         if (guest) guest.hidden = authenticated;
-        if (profile) profile.hidden = !authenticated;
+        if (profile) profile.hidden = !authenticated || (detail.role || currentRole) === "admin";
         account.querySelectorAll("[data-header-member-only]").forEach((element) => {
-          element.hidden = !authenticated;
+          element.hidden = !authenticated || (detail.role || currentRole) !== "user";
         });
         const login = account.querySelector("[data-header-login]");
         const register = account.querySelector("[data-header-register]");
@@ -151,76 +139,46 @@
         if (authenticated) renderProfileAvatar(avatar, { full_name: detail.fullName });
         else if (avatar) avatar.replaceChildren();
       });
+      configureRoleNavigation(detail.role || currentRole);
     };
     // Keep the guest controls until the stored session has been verified.
     sync();
     window.addEventListener("nakena:auth-changed", (event) => sync(event.detail));
   }
 
-  function renderGuestIdentity() {
-    if (!isGuest() || location.pathname === "/" || location.pathname.startsWith("/login") || location.pathname.startsWith("/register")) return;
-
-    document.querySelectorAll("[data-user-name]").forEach((element) => {
-      element.textContent = "Guest";
-    });
-    document.querySelectorAll("[data-user-email]").forEach((element) => {
-      element.textContent = "Mode tamu • tanpa akun";
-    });
-    const memberBadge = document.getElementById("userMemberBadge");
-    if (memberBadge) memberBadge.textContent = "Mode Tamu";
-    const createdAt = document.getElementById("userCreatedAt");
-    if (createdAt) createdAt.textContent = "Tidak terdaftar";
-
-    // Guest tetap dapat memakai halaman scan. Ganti avatar profil dengan
-    // tombol Masuk/Daftar agar status belum login terlihat tanpa banner tambahan.
-    const profileLink = document.querySelector(
-      'header a[data-path="profil-pengguna"], header a[data-path="profil"], header a[href="/profile/"]'
-    );
-    if (profileLink && !profileLink.closest("[data-header-account]")) {
-      const actions = document.createElement("div");
-      actions.className = "flex items-center gap-2 shrink-0";
-      actions.setAttribute("aria-label", "Akun Guest");
-
-      const next = encodeURIComponent(`${location.pathname}${location.search}`);
-      const login = document.createElement("a");
-      login.href = `/login/?next=${next}`;
-      login.textContent = "Masuk";
-      login.className = "inline-flex items-center justify-center rounded-full border border-[#FF5E14]/60 px-3 sm:px-4 py-2 text-[11px] sm:text-xs font-bold text-[#ffb59b] hover:bg-[#FF5E14]/10 transition-colors whitespace-nowrap";
-
-      const register = document.createElement("a");
-      register.href = `/register/?next=${next}`;
-      register.textContent = "Daftar";
-      register.className = "inline-flex items-center justify-center rounded-full bg-gradient-to-r from-[#FF5E14] to-[#ea580c] px-3 sm:px-4 py-2 text-[11px] sm:text-xs font-bold text-white shadow-[0_0_16px_rgba(255,94,20,0.25)] hover:brightness-110 transition whitespace-nowrap";
-
-      actions.append(login, register);
-      profileLink.replaceWith(actions);
-    }
-
-    // Guest tidak memiliki daftar favorit tersimpan, jadi jangan tampilkan
-    // penghitung bookmark yang selalu bernilai nol.
-    document.querySelectorAll('header a[data-path="resep-tersimpan"]').forEach((link) => {
-      if (!link.hasAttribute("data-header-member-only")) link.remove();
-    });
-  }
-
   async function api(path, options = {}) {
+    const {
+      quietAccessFailure = false,
+      accessToken = null,
+      ...requestOptions
+    } = options;
     const headers = new Headers(options.headers || {});
-    if (token()) headers.set("Authorization", `Bearer ${token()}`);
+    const bearerToken = accessToken || token();
+    if (bearerToken) headers.set("Authorization", `Bearer ${bearerToken}`);
     if (options.body && !(options.body instanceof FormData)) {
       headers.set("Content-Type", "application/json");
     }
     const endpoint = `${apiBaseUrl}${path.startsWith("/") ? path : `/${path}`}`;
-    const response = await fetch(endpoint, { ...options, headers });
+    const response = await fetch(endpoint, { ...requestOptions, headers });
     const data = response.status === 204 ? null : await response.json().catch(() => ({}));
     if (!response.ok) {
       if (response.status === 401) {
         sessionStorage.removeItem(tokenKey);
         sessionStorage.removeItem(emailKey);
         sessionStorage.removeItem(userNameKey);
-        window.dispatchEvent(new CustomEvent("nakena:auth-changed", { detail: { authenticated: false } }));
+        sessionStorage.removeItem(userRoleKey);
+        currentRole = "guest";
+        currentUser = null;
+        window.dispatchEvent(new CustomEvent("nakena:auth-changed", { detail: { authenticated: false, role: "guest" } }));
       }
       const detail = data?.detail;
-      throw new Error(Array.isArray(detail) ? "Periksa kembali data yang dimasukkan." : detail || "Permintaan ke server gagal.");
+      const message = Array.isArray(detail) ? "Periksa kembali data yang dimasukkan." : detail || "Permintaan ke server gagal.";
+      if (!quietAccessFailure && [401, 403].includes(response.status)) {
+        showAccessWarning(message, response.status === 401 ? "/login/" : "/");
+      }
+      const error = new Error(message);
+      error.status = response.status;
+      throw error;
     }
     return data;
   }
@@ -238,6 +196,86 @@
     }
   }
 
+  function showAccessWarning(message, actionPath = "/login/", redirectPath = "") {
+    document.getElementById("accessWarningDialog")?.remove();
+    if (!document.getElementById("access-warning-styles")) {
+      const style = document.createElement("link");
+      style.id = "access-warning-styles";
+      style.rel = "stylesheet";
+      style.href = "/static/css/access_notice.css";
+      document.head.append(style);
+    }
+    const overlay = document.createElement("div");
+    overlay.id = "accessWarningDialog";
+    overlay.className = "access-warning-overlay";
+    overlay.setAttribute("role", "presentation");
+    const dialog = uiElement("section", "access-warning-dialog");
+    dialog.setAttribute("role", "alertdialog");
+    dialog.setAttribute("aria-modal", "true");
+    dialog.setAttribute("aria-labelledby", "accessWarningTitle");
+    const heading = uiElement("h2", "", "Peringatan akses");
+    heading.id = "accessWarningTitle";
+    const detail = uiElement("p", "", message);
+    const actions = uiElement("div", "access-warning-actions");
+    const action = uiElement("a", "btn btn-primary", actionPath === "/" ? "Ke beranda" : "Masuk");
+    action.href = actionPath;
+    const close = uiElement("button", "btn btn-secondary", "Tutup");
+    close.type = "button";
+    actions.append(action, close);
+    dialog.append(heading, detail, actions);
+    overlay.append(dialog);
+    document.body.append(overlay);
+    const dismiss = () => {
+      clearTimeout(overlay.redirectTimer);
+      overlay.remove();
+    };
+    close.addEventListener("click", dismiss);
+    overlay.addEventListener("click", (event) => {
+      if (event.target === overlay) dismiss();
+    });
+    close.focus();
+    if (redirectPath) {
+      overlay.redirectTimer = setTimeout(() => location.replace(redirectPath), 1800);
+    }
+  }
+
+  function confirmManyDetectedIngredients(count) {
+    return new Promise((resolve) => {
+      const dialog = document.createElement("dialog");
+      dialog.className = "detection-warning-dialog";
+      dialog.setAttribute("aria-labelledby", "detectionWarningTitle");
+      dialog.innerHTML = `
+        <section>
+          <h2 id="detectionWarningTitle">Bahan terdeteksi lebih dari 3 jenis</h2>
+          <p>Teridentifikasi ${count} jenis bahan. Jika bahan dalam foto terlalu banyak, hasil scan mungkin kurang akurat. Kamu bisa tetap lanjut atau scan ulang dengan bahan lebih sedikit.</p>
+          <div class="button-row">
+            <button type="button" class="btn btn-secondary" data-retake>Scan ulang</button>
+            <button type="button" class="btn btn-primary" data-continue>Lanjutkan</button>
+          </div>
+        </section>`;
+      document.body.append(dialog);
+      let settled = false;
+      const finish = (shouldContinue) => {
+        if (settled) return;
+        settled = true;
+        if (dialog.open) dialog.close();
+        dialog.remove();
+        resolve(shouldContinue);
+      };
+      dialog.querySelector("[data-retake]").addEventListener("click", () => finish(false));
+      dialog.querySelector("[data-continue]").addEventListener("click", () => finish(true));
+      dialog.addEventListener("cancel", (event) => {
+        event.preventDefault();
+        finish(false);
+      });
+      dialog.addEventListener("click", (event) => {
+        if (event.target === dialog) finish(false);
+      });
+      dialog.showModal();
+      dialog.querySelector("[data-retake]").focus();
+    });
+  }
+
   function captureSubmit(form, handler) {
     if (!form) return;
     form.addEventListener("submit", (event) => {
@@ -247,12 +285,17 @@
     }, true);
   }
 
-  function saveToken(data, userEmail) {
+  function saveToken(data, userEmail, user) {
     sessionStorage.setItem(tokenKey, data.access_token);
     sessionStorage.setItem(emailKey, userEmail);
-    sessionStorage.removeItem(userNameKey);
+    sessionStorage.setItem(userNameKey, user.full_name);
+    sessionStorage.setItem(userRoleKey, user.role);
+    currentRole = user.role;
+    currentUser = user;
     sessionStorage.removeItem("nakena_guest_mode");
-    window.dispatchEvent(new CustomEvent("nakena:auth-changed", { detail: { authenticated: true } }));
+    window.dispatchEvent(new CustomEvent("nakena:auth-changed", {
+      detail: { authenticated: true, role: user.role, fullName: user.full_name, email: user.email },
+    }));
   }
 
   function setupAuth() {
@@ -268,9 +311,12 @@
           method: "POST",
           body: JSON.stringify({ email: userEmail, password }),
         });
-        saveToken(data, userEmail);
+        const user = await api("/users/me", { accessToken: data.access_token });
+        saveToken(data, userEmail, user);
         const next = new URLSearchParams(location.search).get("next");
-        const target = next?.startsWith("/") && !next.startsWith("//") ? next : "/scan/";
+        const target = next?.startsWith("/") && !next.startsWith("//")
+          ? next
+          : user.role === "admin" ? "/admin-dashboard/" : "/scan/";
         window.location.assign(target);
       } catch (error) {
         setNotice(error.message);
@@ -285,10 +331,13 @@
       const userEmail = String(values.get("email") || "").trim().toLowerCase();
       const password = String(values.get("password") || "");
       const confirmation = String(values.get("password_confirm") || "");
-      if (!fullName || !userEmail || password.length < 8 || password !== confirmation) {
+      const passwordValid = password.length >= 8 && password.length <= 64
+        && /[A-Z]/.test(password) && /[a-z]/.test(password) && /[0-9]/.test(password)
+        && password.toLowerCase() !== userEmail.toLowerCase();
+      if (!fullName || !userEmail || !passwordValid || password !== confirmation) {
         const message = document.getElementById("globalErrorMessage");
         const alert = document.getElementById("globalErrorAlert");
-        if (message) message.textContent = "Lengkapi data, gunakan kata sandi minimal 8 karakter, dan pastikan konfirmasi cocok.";
+        if (message) message.textContent = "Lengkapi data. Kata sandi harus 8–64 karakter, memiliki huruf besar, huruf kecil, angka, tidak sama dengan email, dan konfirmasi harus cocok.";
         if (alert) alert.classList.remove("hidden");
         return;
       }
@@ -303,9 +352,12 @@
           method: "POST",
           body: JSON.stringify({ email: userEmail, password }),
         });
-        saveToken(data, userEmail);
+        const user = await api("/users/me", { accessToken: data.access_token });
+        saveToken(data, userEmail, user);
         const next = new URLSearchParams(location.search).get("next");
-        const target = next?.startsWith("/") && !next.startsWith("//") ? next : "/scan/";
+        const target = next?.startsWith("/") && !next.startsWith("//")
+          ? next
+          : user.role === "admin" ? "/admin-dashboard/" : "/scan/";
         window.location.assign(target);
       } catch (error) {
         const message = document.getElementById("globalErrorMessage");
@@ -337,16 +389,140 @@
     document.querySelectorAll('a[href="#login"]').forEach((link) => link.setAttribute("href", "/login/"));
   }
 
+  function isRegularUserPath(path) {
+    return ["/scan", "/recipes", "/history", "/favorites", "/profile"].some(
+      (prefix) => path === prefix || path.startsWith(`${prefix}/`),
+    );
+  }
+
+  function isAdminPath(path) {
+    return path === "/admin-dashboard" || path === "/admin-dashboard/";
+  }
+
+  function configureRoleNavigation(role) {
+    document.querySelectorAll(".site-header .header-inner").forEach((header) => {
+      let nav = header.querySelector(".site-nav");
+      if (!nav) {
+        nav = document.createElement("nav");
+        nav.className = "site-nav";
+        nav.setAttribute("aria-label", "Navigasi utama");
+        header.insertBefore(nav, header.querySelector(".header-account"));
+      }
+      nav.querySelectorAll("[data-role-generated]").forEach((item) => item.remove());
+      const addLink = (label, href) => {
+        const link = uiElement("a", "", label);
+        link.href = href;
+        link.dataset.roleGenerated = "true";
+        nav.append(link);
+      };
+      if (role === "user") {
+        addLink("Scan Bahan", "/scan/");
+        if (!["/scan", "/scan/"].includes(location.pathname)) {
+          addLink("Resep", "/recipes/");
+        }
+        addLink("Riwayat", "/history/");
+        addLink("Favorit", "/favorites/");
+        addLink("Preferensi", "/profile/");
+      } else if (role === "admin") {
+        addLink("Admin Dashboard", "/admin-dashboard/");
+      }
+      if (role === "user" || role === "admin") {
+        const logout = uiElement("button", "", "Keluar");
+        logout.type = "button";
+        logout.dataset.roleGenerated = "true";
+        logout.dataset.action = "logout";
+        nav.append(logout);
+      }
+      nav.querySelectorAll("a[href]").forEach((link) => {
+        const path = new URL(link.href, location.origin).pathname;
+        if (role === "admin" && isRegularUserPath(path)) link.hidden = true;
+        else if (role === "user" && isAdminPath(path)) link.hidden = true;
+        else link.hidden = false;
+      });
+
+      const account = header.querySelector(".header-account");
+      if (account && role === "admin") {
+        const avatar = account.querySelector("[data-header-profile]");
+        if (avatar) avatar.hidden = true;
+      }
+
+      if (location.pathname === "/" && role === "admin") {
+        const actions = document.querySelector(".home-hero .button-row");
+        if (actions && !actions.querySelector("[data-admin-home-link]")) {
+          const quickLink = uiElement("a", "btn btn-primary", "Buka Admin Dashboard");
+          quickLink.href = "/admin-dashboard/";
+          quickLink.dataset.adminHomeLink = "true";
+          actions.append(quickLink);
+        }
+      } else {
+        document.querySelector("[data-admin-home-link]")?.remove();
+      }
+      if (location.pathname === "/" && role === "admin") {
+        document.querySelectorAll('.home-hero a[href^="/scan"], .home-cta a[href^="/scan"]').forEach((link) => {
+          link.hidden = true;
+        });
+      }
+    });
+  }
+
   function protectPages() {
-    // Halaman memasak dapat dipakai tanpa akun. Hanya area admin yang wajib login.
-    if (location.pathname.startsWith("/admin-dashboard/") && isGuest()) {
-      location.replace(`/login/?next=${encodeURIComponent(location.pathname)}`);
+    const path = location.pathname;
+    const publicPath = path === "/" || /^\/(login|register)\/?$/.test(path);
+    if (currentRole === "guest" && !publicPath) {
+      [uploadKey, recipeKey, recipeNoticeKey, "nakena_preview_image", "nakena_guest_mode"]
+        .forEach((key) => sessionStorage.removeItem(key));
+      showAccessWarning(
+        "Anda harus login terlebih dahulu untuk memindai bahan makanan dan membuat resep.",
+        "/login/",
+        "/login/",
+      );
       return false;
     }
-    if (isGuest() && location.pathname.startsWith("/scan/")) {
-      sessionStorage.setItem("nakena_guest_mode", "1");
+    if (currentRole === "user" && isAdminPath(path)) {
+      showAccessWarning("Akses ditolak. Halaman ini hanya untuk Admin.", "/", "/");
+      return false;
     }
+    if (currentRole === "admin" && path !== "/" && !isAdminPath(path)) {
+      showAccessWarning(
+        "Akun Admin hanya dapat mengakses Beranda dan Admin Dashboard.",
+        "/",
+        "/",
+      );
+      return false;
+    }
+    document.body.style.visibility = "";
     return true;
+  }
+
+  function setupAccessNavigationGuard() {
+    document.addEventListener("click", (event) => {
+      const link = event.target.closest?.("a[href]");
+      if (!link || link.target === "_blank") return;
+      let target;
+      try {
+        target = new URL(link.href, location.origin);
+      } catch {
+        return;
+      }
+      if (target.origin !== location.origin) return;
+      const path = target.pathname;
+      if (currentRole === "guest" && isRegularUserPath(path)) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        showAccessWarning(
+          "Anda harus login terlebih dahulu untuk memindai bahan makanan dan membuat resep.",
+          "/login/",
+        );
+      } else if (currentRole === "user" && isAdminPath(path)) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        showAccessWarning("Akses ditolak. Halaman Admin hanya tersedia untuk Admin.", "/");
+      } else if (currentRole === "admin" && isRegularUserPath(path)) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        showAccessWarning("Akun Admin tidak diizinkan memproses gambar atau membuat resep.", "/");
+      }
+    }, true);
   }
 
   function setupScan() {
@@ -405,34 +581,40 @@
       const formData = new FormData();
       formData.append("file", file);
       try {
-        if (isGuest()) {
-          // Mode Guest: foto diproses langsung di memori backend, tanpa upload record,
-          // penyimpanan file, atau riwayat pada database.
-          const detection = await api("/uploads/guest/detect", {
-            method: "POST",
-            body: formData,
-          });
-          sessionStorage.setItem(uploadKey, JSON.stringify({
-            id: "guest",
-            filename: file.name,
-            width: sourceDimensions?.width || null,
-            height: sourceDimensions?.height || null,
-            guest: true,
-            ingredients: detection.ingredients,
-            detections: detection.detections,
-          }));
-        } else {
-          const upload = await api("/uploads", { method: "POST", body: formData });
-          const detection = await api(`/uploads/${upload.id}/detect`, { method: "POST" });
-          sessionStorage.setItem(uploadKey, JSON.stringify({
-            id: upload.id,
-            filename: upload.original_filename,
-            width: upload.width,
-            height: upload.height,
-            ingredients: detection.ingredients,
-            detections: detection.detections,
-          }));
+        const upload = await api("/uploads", { method: "POST", body: formData });
+        const detection = await api(`/uploads/${upload.id}/detect`, { method: "POST" });
+        const ingredientTypes = new Set(
+          (Array.isArray(detection.detections) ? detection.detections : [])
+            .map((item) => String(item.name || "").trim().toLocaleLowerCase("id-ID"))
+            .filter(Boolean),
+        );
+        if (ingredientTypes.size > 3) {
+          const shouldContinue = await confirmManyDetectedIngredients(ingredientTypes.size);
+          if (!shouldContinue) {
+            try {
+              await api(`/uploads/${upload.id}`, { method: "DELETE" });
+            } catch (error) {
+              setNotice(`Foto lama tidak dapat dihapus: ${error.message}`);
+            }
+            sessionStorage.removeItem(uploadKey);
+            sessionStorage.removeItem("nakena_preview_image");
+            input.value = "";
+            const cameraInput = document.getElementById("cameraInput");
+            if (cameraInput) cameraInput.value = "";
+            document.querySelector("#state-preview img")?.removeAttribute("src");
+            window.switchState?.("upload");
+            uploadInFlight = false;
+            return;
+          }
         }
+        sessionStorage.setItem(uploadKey, JSON.stringify({
+          id: upload.id,
+          filename: upload.original_filename,
+          width: upload.width,
+          height: upload.height,
+          ingredients: detection.ingredients,
+          detections: detection.detections,
+        }));
         location.assign("/scan/result/");
       } catch (error) {
         setNotice(error.message);
@@ -488,13 +670,19 @@
     ingredientList?.replaceChildren();
     const detectionsByName = new Map();
     (Array.isArray(upload.detections) ? upload.detections : []).forEach((detection) => {
-      const previous = detectionsByName.get(detection.name);
+      const key = String(detection.name || "").trim().toLocaleLowerCase("id-ID");
+      if (!key) return;
+      const previous = detectionsByName.get(key);
       if (!previous || detection.confidence > previous.confidence) {
-        detectionsByName.set(detection.name, detection);
+        detectionsByName.set(key, detection);
       }
     });
-    const detections = Array.from(detectionsByName.values());
-    const ingredients = Array.isArray(upload.ingredients) ? upload.ingredients : [];
+    const detections = Array.from(detectionsByName.values())
+      .sort((left, right) => right.confidence - left.confidence);
+    upload.detections = detections;
+    const ingredients = detections.map((detection) => detection.name);
+    const confirmationForm = document.getElementById("ingredientsConfirmationForm");
+    if (confirmationForm) confirmationForm.dataset.scanStatus = detections.length ? "detected" : "no_detections";
     detections.forEach((detection, index) => {
       if (!itemTemplate || !ingredientList) return;
       const item = itemTemplate.content.firstElementChild.cloneNode(true);
@@ -514,20 +702,43 @@
     const summary = document.getElementById("detectedIngredientSummary");
     if (summary) summary.textContent = detections.length
       ? `${detections.length} bahan siap diolah jadi mahakarya`
-      : "Belum ada bahan terdeteksi. Kamu bisa menambahkannya secara manual.";
+      : "Belum ada bahan yang terdeteksi. Silakan foto ulang.";
     if (ingredientList) ingredientList.classList.toggle("hidden", detections.length === 0);
     if (emptyState) {
       emptyState.classList.toggle("hidden", detections.length > 0);
       emptyState.classList.toggle("flex", detections.length === 0);
       const emptyMessage = emptyState.querySelector("p");
-      if (emptyMessage) emptyMessage.textContent = "Tambahkan bahan secara manual.";
+      if (emptyMessage) emptyMessage.textContent = "Foto ini mungkin bukan bahan makanan atau kurang jelas. Silakan foto ulang.";
     }
     const message = document.querySelector("#ingredientsConfirmationForm aside .text-slate-400");
     if (message) message.textContent = detections.length
       ? `${detections.length} objek bahan terdeteksi. Periksa hasilnya sebelum membuat resep.`
-      : "Tidak ada bahan terdeteksi. Tambahkan bahan secara manual sebelum membuat resep.";
+      : "Foto ini mungkin bukan bahan makanan atau kurang jelas. Silakan foto ulang.";
     const detectedBadge = document.querySelector("#ingredientsConfirmationForm aside .text-amber-400.text-xs.font-bold");
     if (detectedBadge) detectedBadge.textContent = `${detections.length} Bahan Terdeteksi`;
+    if (!detections.length && confirmationForm) {
+      emptyState?.classList.add("hidden");
+      const controls = confirmationForm.querySelector(".confirmation-controls");
+      if (controls) controls.hidden = true;
+      const aside = confirmationForm.querySelector(".confirmation-layout > aside");
+      if (aside && !aside.querySelector("[data-no-detections]")) {
+        const warning = uiElement("section", "panel");
+        warning.dataset.noDetections = "true";
+        warning.setAttribute("role", "alert");
+        const heading = uiElement("h2", "", "Bahan belum terdeteksi");
+        const explanation = uiElement(
+          "p",
+          "muted",
+          "Foto ini mungkin bukan bahan makanan atau kurang jelas. Gunakan cahaya yang cukup, foto bahan dengan jelas, lalu coba lagi. Jika lebih dari 3 jenis bahan terdeteksi, kamu tetap bisa memilih untuk melanjutkan.",
+        );
+        explanation.style.marginTop = "8px";
+        const retake = uiElement("a", "btn btn-primary", "Foto ulang");
+        retake.href = "/scan/";
+        retake.style.marginTop = "16px";
+        warning.append(heading, explanation, retake);
+        aside.append(warning);
+      }
+    }
   }
 
   function renderDetectionBoxes(image, upload) {
@@ -578,7 +789,6 @@
       allergies: values.getAll("profile_allergies"),
       staple_ingredients: Array.from(document.querySelectorAll("[data-staple-ingredient]")).map((chip) => chip.dataset.stapleIngredient),
       default_max_cook_minutes: values.get("max_cook_minutes") ? Number(values.get("max_cook_minutes")) : null,
-      default_difficulty: values.get("default_difficulty") || null,
       default_servings: Number(values.get("default_servings") || 2),
       preferred_cuisine: values.get("preferred_cuisine") || null,
     };
@@ -599,13 +809,6 @@
   function setupProfile() {
     const form = document.getElementById("preferences-form");
     if (!form) return;
-    if (isGuest()) {
-      document.querySelector("main")?.replaceChildren(createGuestInfoCard(
-        "Preferensi dan profil akunmu",
-        "Masuk untuk menyimpan preferensi, resep favorit, dan riwayat. Kamu tetap bisa scan bahan dan memasak sebagai Guest.",
-        "/login/?next=%2Fprofile%2F", "Masuk ke akun",
-      )); return;
-    }
     const preferenceButton = document.getElementById("btn-save-preferences");
     preferenceButton.disabled = true;
     api("/users/me/preferences").then((preferences) => {
@@ -621,7 +824,6 @@
         } else input.value = value == null ? "" : String(value);
       };
       set("max_cook_minutes", preferences.default_max_cook_minutes);
-      set("default_difficulty", preferences.default_difficulty);
       set("default_servings", preferences.default_servings || 2);
       set("preferred_cuisine", preferences.preferred_cuisine);
       renderPantryIngredients(preferences.staple_ingredients || []);
@@ -637,7 +839,7 @@
     captureSubmit(form, async () => {
       if (preferenceButton.disabled) return;
       const payload = profilePreferenceFromForm(form);
-      if ((payload.diet || "").length > 50) return setNotice("Pilih pola makan dengan total nama maksimal 50 karakter.");
+      if ((payload.diet || "").length > 300) return setNotice("Pilih pola makan dengan total nama maksimal 300 karakter.");
       preferenceButton.disabled = true;
       try {
         const saved = await api("/users/me/preferences", { method: "PATCH", body: JSON.stringify(payload) });
@@ -678,7 +880,7 @@
     let confirmationEdited = false;
     form.addEventListener("input", () => { confirmationEdited = true; });
     form.addEventListener("change", () => { confirmationEdited = true; });
-    if (!isGuest()) api("/users/me/preferences").then((preferences) => {
+    api("/users/me/preferences").then((preferences) => {
       if (confirmationEdited) return;
       const syncChecks = (name, values) => {
         const selected = values.map((text) => String(text).trim()).filter(Boolean);
@@ -701,18 +903,15 @@
         if (found) options.forEach((input) => { input.checked = input === found; });
       };
       if (preferences.default_max_cook_minutes) pick("cooking_time", preferences.default_max_cook_minutes <= 15 ? "under_15" : preferences.default_max_cook_minutes <= 30 ? "15_to_30" : "over_30");
-      if (preferences.default_difficulty === "hard") {
-        const model = form.querySelector('input[name="difficulty"]')?.closest("label");
-        if (model && !form.querySelector('input[name="difficulty"][value="Sulit"]')) {
-          const label = model.cloneNode(true); label.querySelector("input").value = "Sulit"; label.querySelector("span").textContent = "Sulit"; model.parentElement.append(label);
-        }
-      }
-      if (preferences.default_difficulty) pick("difficulty", { easy: "Mudah", medium: "Sedang", hard: "Sulit" }[preferences.default_difficulty]);
       if (preferences.preferred_cuisine) pick("cuisine_type", preferences.preferred_cuisine.toLowerCase() === "berkuah" ? "Kuah Hangat" : preferences.preferred_cuisine);
       if (preferences.default_servings) document.getElementById("servingsInput").value = String(preferences.default_servings);
       document.dispatchEvent(new Event("nakena:preferences-loaded"));
     }).catch(() => { /* The visible manual choices remain available if saved defaults cannot be loaded. */ });
     captureSubmit(form, async () => {
+      if (form.dataset.scanStatus === "no_detections") {
+        setNotice("Belum ada bahan yang terdeteksi. Silakan foto ulang dengan gambar bahan yang jelas.");
+        return;
+      }
       confirmationEdited = true;
       const values = new FormData(form);
       const ingredients = [
@@ -732,7 +931,6 @@
       const preferences = [
         ...values.getAll("diet").map(String),
         `Waktu memasak: ${String(values.get("cooking_time") || "15_to_30")}`,
-        `Tingkat kesulitan: ${String(values.get("difficulty") || "Sangat Mudah")}`,
       ].join("; ");
       const category = String(values.get("cuisine_type") || "Rumahan");
       const servings = Math.max(1, Math.min(20, Number(values.get("servings") || 2)));
@@ -783,10 +981,6 @@
         category,
       };
     });
-    // Resep Guest hanya hidup di sessionStorage agar halaman hasil/detail/cooking
-    // tetap dapat digunakan selama tab terbuka. Tidak ada POST ke tabel riwayat.
-    if (isGuest()) return { recipes, errors: [] };
-
     const errors = [];
     for (const recipe of recipes) {
       try {
@@ -1031,7 +1225,7 @@
       const link = document.createElement("link");
       link.id = "recipe-photo-styles";
       link.rel = "stylesheet";
-      link.href = "/static/css/recipe_images.css?v=5";
+      link.href = "/static/css/recipe_images.css?v=6";
       document.head.append(link);
     }
     const host = image.parentElement;
@@ -1095,29 +1289,25 @@
     let valid = false;
     try {
       const url = new URL(photo.image_url);
-      valid = url.protocol === "https:" && url.hostname === "images.unsplash.com";
+      const apiOrigin = new URL(apiBaseUrl).origin;
+      valid = url.origin === apiOrigin
+        && /^\/recipes\/image\/assets\/[a-f0-9]{64}\.(?:jpg|png|webp)$/.test(url.pathname);
     } catch {}
     if (photo.status !== "ok" || !valid) {
       fallback();
       return;
     }
-    const creditLink = (text, value) => {
-      let url;
-      try { url = new URL(value); } catch { return null; }
-      if (url.protocol !== "https:" || url.hostname !== "unsplash.com") return null;
-      const link = document.createElement("a");
-      link.href = url.href;
-      link.textContent = text;
-      link.target = "_blank";
-      link.rel = "noopener";
-      return link;
-    };
-    const photographer = creditLink(photo.photographer, photo.photographer_url);
-    const source = creditLink("Unsplash", photo.photo_url);
-    if (!photographer || !source) {
+    let sourceUrl;
+    try { sourceUrl = new URL(photo.photo_url); } catch {}
+    if (!sourceUrl || sourceUrl.protocol !== "https:" || sourceUrl.hostname !== "pixabay.com") {
       fallback();
       return;
     }
+    const source = document.createElement("a");
+    source.href = sourceUrl.href;
+    source.textContent = "Pixabay";
+    source.target = "_blank";
+    source.rel = "noopener";
     image.onload = async () => {
       try {
         if (typeof image.decode === "function") await image.decode();
@@ -1127,8 +1317,8 @@
       }
       if (image.dataset.recipePhotoKey !== key) return;
       credit.replaceChildren(
-        document.createTextNode("Ilustrasi · Foto: "), photographer,
-        document.createTextNode(" / "), source,
+        document.createTextNode("Ilustrasi · Foto: " + (photo.photographer || "Kontributor") + " / "),
+        source,
       );
       finishLoading("ready");
     };
@@ -1186,7 +1376,7 @@
     const featured = document.getElementById("recipeFeaturedStage");
     if (!featured) return;
     let raw = storedJSON(recipeKey);
-    if (!raw?.text && !raw?.recipe_text && !isGuest()) {
+    if (!raw?.text && !raw?.recipe_text) {
       try { raw = (await api("/recipes/history"))[0] || null; } catch (error) { setNotice(error.message); }
     }
     const empty = document.getElementById("recipeEmptyState");
@@ -1201,12 +1391,9 @@
       const recipe = normalizeRecipe(value); recipe.request ||= raw.request; recipe.category ||= raw.category; return recipe;
     });
     const favorites = new Map();
-    if (!isGuest()) {
-      try { (await api("/recipes/favorites")).forEach((item) => favorites.set(item.title, item)); updateSavedCount(favorites.size); }
-      catch (error) { setNotice(error.message); }
-    }
+    try { (await api("/recipes/favorites")).forEach((item) => favorites.set(item.title, item)); updateSavedCount(favorites.size); }
+    catch (error) { setNotice(error.message); }
     const favorite = async (recipe, button) => {
-      if (isGuest()) { location.assign("/login/?next=%2Frecipes%2F"); return; }
       button.disabled = true;
       try {
         const existing = favorites.get(recipe.title);
@@ -1328,12 +1515,6 @@
   async function setupFavorites() {
     const grid = document.getElementById("recipeCardsGrid"); if (!grid) return;
     const status = document.getElementById("collectionStatus");
-    if (isGuest()) {
-      status.hidden = true;
-      document.getElementById("recipeCounterBadge").hidden = true;
-      document.querySelector(".collection-toolbar").hidden = true;
-      showGuestInfo(document.querySelector("main"), "Koleksi resep favoritmu", "Masuk untuk menyimpan resep dan membukanya kembali kapan saja.", "/login/?next=%2Ffavorites%2F", "Masuk untuk menyimpan resep"); return;
-    }
     let saved;
     try { saved = await api("/recipes/favorites"); } catch (error) { status.textContent = "Koleksi belum dapat dimuat."; setNotice(error.message); return; }
     const favorites = new Map(saved.map((value) => [value.title, value]));
@@ -1363,10 +1544,6 @@
   async function setupHistory() {
     const grid = document.getElementById("activityGrid"); if (!grid) return;
     const status = document.getElementById("collectionStatus");
-    if (isGuest()) {
-      status.hidden = true; document.querySelector(".collection-toolbar").hidden = true;
-      showGuestInfo(document.querySelector("main"), "Riwayat Guest tidak disimpan", "Hasil scan dan resep pada mode Guest hanya digunakan selama sesi ini. Masuk agar aktivitas berikutnya tersimpan ke akun.", "/login/?next=%2Fhistory%2F", "Masuk untuk menyimpan riwayat"); return;
-    }
     let history, uploads;
     try { [history, uploads] = await Promise.all([api("/recipes/history"), api("/uploads")]); }
     catch (error) { status.textContent = "Riwayat belum dapat dimuat."; setNotice(error.message); return; }
@@ -1435,14 +1612,11 @@
       const text = button.querySelector("span"); text.textContent = favorite ? "Tersimpan" : "Simpan resep";
       button.setAttribute("aria-pressed", String(Boolean(favorite)));
     };
-    if (!isGuest()) {
-      button.disabled = true;
-      try { const favorites = await api("/recipes/favorites"); favorite = favorites.find((entry) => entry.title === recipe.title); updateSavedCount(favorites.length); update(); }
-      catch (error) { setNotice(error.message); }
-      finally { button.disabled = false; }
-    }
+    button.disabled = true;
+    try { const favorites = await api("/recipes/favorites"); favorite = favorites.find((entry) => entry.title === recipe.title); updateSavedCount(favorites.length); update(); }
+    catch (error) { setNotice(error.message); }
+    finally { button.disabled = false; }
     button.addEventListener("click", async () => {
-      if (isGuest()) { location.assign("/login/?next=%2Frecipes%2F1%2F"); return; }
       button.disabled = true;
       try {
         if (favorite) { await api(`/recipes/favorites/${favorite.id}`, { method: "DELETE" }); favorite = null; }
@@ -1551,28 +1725,166 @@
   }
 
   async function setupAdminDashboard() {
-    if (location.pathname !== "/admin-dashboard/") return;
+    if (!isAdminPath(location.pathname)) return;
     const main = document.querySelector("main");
     if (!main) return;
     main.classList.add("hidden");
     try {
       const user = await api("/users/me");
       if (user.role !== "admin") {
-        location.replace("/scan/");
+        showAccessWarning("Akses ditolak. Halaman ini hanya untuk Admin.", "/", "/");
         return;
       }
       main.replaceChildren();
-      const message = document.createElement("section");
-      message.className = "mx-auto my-12 max-w-3xl rounded-3xl border border-white/10 bg-surface-container-low p-8 text-center";
+      const section = document.createElement("section");
+      section.className = "mx-auto my-8 max-w-6xl rounded-3xl border border-white/10 bg-surface-container-low p-6 sm:p-8";
+
+      const header = document.createElement("div");
+      header.className = "mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between";
+      const titleGroup = document.createElement("div");
       const heading = document.createElement("h1");
       heading.className = "text-2xl font-bold text-on-surface";
-      heading.textContent = "Dashboard admin belum terhubung";
+      heading.textContent = "Kelola Pengguna";
       const detail = document.createElement("p");
-      detail.className = "mt-3 text-on-surface-variant";
-      detail.textContent = "API belum menyediakan data statistik administrasi. Data contoh tidak ditampilkan.";
-      message.append(heading, detail);
-      main.append(message);
+      detail.className = "mt-2 text-sm text-on-surface-variant";
+      detail.textContent = "Lihat akun terdaftar dan hapus akun pengguna yang tidak diperlukan.";
+      titleGroup.append(heading, detail);
+
+      const refreshButton = document.createElement("button");
+      refreshButton.type = "button";
+      refreshButton.className = "rounded-lg bg-surface-container-high px-4 py-2 text-sm font-semibold text-on-surface hover:bg-secondary-container";
+      refreshButton.textContent = "Muat ulang";
+      header.append(titleGroup, refreshButton);
+
+      const status = document.createElement("p");
+      status.className = "mb-4 text-sm text-on-surface-variant";
+      status.setAttribute("role", "status");
+      const tableWrap = document.createElement("div");
+      tableWrap.className = "overflow-x-auto rounded-xl border border-white/10";
+      const table = document.createElement("table");
+      table.className = "w-full min-w-[640px] text-left text-sm";
+      const tableHead = document.createElement("thead");
+      tableHead.className = "bg-surface-container-high text-xs uppercase tracking-wide text-on-surface-variant";
+      const headRow = document.createElement("tr");
+      ["Nama", "Email", "Role", "Terdaftar", "Aksi"].forEach((label) => {
+        const cell = document.createElement("th");
+        cell.className = "px-4 py-3 font-semibold";
+        cell.scope = "col";
+        cell.textContent = label;
+        headRow.append(cell);
+      });
+      tableHead.append(headRow);
+      const tableBody = document.createElement("tbody");
+      tableBody.className = "divide-y divide-white/10";
+      table.append(tableHead, tableBody);
+      tableWrap.append(table);
+
+      const pagination = document.createElement("div");
+      pagination.className = "mt-5 flex items-center justify-between gap-3";
+      const pageLabel = document.createElement("span");
+      pageLabel.className = "text-sm text-on-surface-variant";
+      const previousButton = document.createElement("button");
+      previousButton.type = "button";
+      previousButton.className = "rounded-lg border border-white/10 px-4 py-2 text-sm text-on-surface disabled:cursor-not-allowed disabled:opacity-40";
+      previousButton.textContent = "Sebelumnya";
+      const nextButton = document.createElement("button");
+      nextButton.type = "button";
+      nextButton.className = previousButton.className;
+      nextButton.textContent = "Berikutnya";
+      const pageActions = document.createElement("div");
+      pageActions.className = "flex gap-2";
+      pageActions.append(previousButton, nextButton);
+      pagination.append(pageLabel, pageActions);
+      section.append(header, status, tableWrap, pagination);
+      main.append(section);
       main.classList.remove("hidden");
+
+      const pageSize = 50;
+      let offset = 0;
+      let loading = false;
+      let currentPageCount = 0;
+      const loadUsers = async () => {
+        if (loading) return;
+        loading = true;
+        refreshButton.disabled = previousButton.disabled = nextButton.disabled = true;
+        status.textContent = "Memuat daftar pengguna…";
+        try {
+          const users = await api(`/admin/users?limit=${pageSize}&offset=${offset}`);
+          currentPageCount = users.length;
+          tableBody.replaceChildren();
+          users.forEach((listedUser) => {
+            const row = document.createElement("tr");
+            row.className = "bg-surface-container-lowest/40";
+            const nameCell = document.createElement("td");
+            nameCell.className = "px-4 py-4 font-medium text-on-surface";
+            nameCell.textContent = listedUser.full_name;
+            const emailCell = document.createElement("td");
+            emailCell.className = "px-4 py-4 text-on-surface-variant";
+            emailCell.textContent = listedUser.email;
+            const roleCell = document.createElement("td");
+            roleCell.className = "px-4 py-4 text-on-surface-variant";
+            roleCell.textContent = listedUser.role;
+            const dateCell = document.createElement("td");
+            dateCell.className = "px-4 py-4 text-on-surface-variant";
+            const createdAt = new Date(listedUser.created_at);
+            dateCell.textContent = Number.isNaN(createdAt.getTime()) ? "-" : createdAt.toLocaleDateString("id-ID");
+            const actionCell = document.createElement("td");
+            actionCell.className = "px-4 py-4";
+            if (listedUser.role === "admin" || listedUser.id === user.id) {
+              const protectedLabel = document.createElement("span");
+              protectedLabel.className = "text-xs text-on-surface-variant";
+              protectedLabel.textContent = listedUser.id === user.id ? "Akun Anda" : "Admin dilindungi";
+              actionCell.append(protectedLabel);
+            } else {
+              const deleteButton = document.createElement("button");
+              deleteButton.type = "button";
+              deleteButton.className = "rounded-lg bg-error-container/30 px-3 py-2 text-xs font-semibold text-error hover:bg-error-container/60 disabled:opacity-50";
+              deleteButton.textContent = "Hapus";
+              deleteButton.addEventListener("click", async () => {
+                if (!window.confirm(`Hapus akun ${listedUser.full_name} (${listedUser.email})? Data akun, resep, dan upload terkait akan ikut dihapus.`)) return;
+                deleteButton.disabled = true;
+                try {
+                  await api(`/admin/users/${listedUser.id}`, { method: "DELETE" });
+                  status.textContent = `Akun ${listedUser.email} berhasil dihapus.`;
+                  if (currentPageCount === 1 && offset > 0) offset -= pageSize;
+                  await loadUsers();
+                } catch (error) {
+                  status.textContent = error.message;
+                  deleteButton.disabled = false;
+                }
+              });
+              actionCell.append(deleteButton);
+            }
+            row.append(nameCell, emailCell, roleCell, dateCell, actionCell);
+            tableBody.append(row);
+          });
+          status.textContent = users.length
+            ? `Menampilkan ${offset + 1}–${offset + users.length} pengguna pada halaman ini.`
+            : offset === 0 ? "Belum ada pengguna terdaftar." : "Tidak ada pengguna pada halaman ini.";
+          pageLabel.textContent = `Halaman ${Math.floor(offset / pageSize) + 1}`;
+          previousButton.disabled = offset === 0;
+          nextButton.disabled = users.length < pageSize;
+        } catch (error) {
+          tableBody.replaceChildren();
+          status.textContent = `Gagal memuat daftar pengguna: ${error.message}`;
+          pageLabel.textContent = `Halaman ${Math.floor(offset / pageSize) + 1}`;
+          previousButton.disabled = offset === 0;
+          nextButton.disabled = true;
+        } finally {
+          loading = false;
+          refreshButton.disabled = false;
+        }
+      };
+      refreshButton.addEventListener("click", loadUsers);
+      previousButton.addEventListener("click", () => {
+        offset = Math.max(0, offset - pageSize);
+        loadUsers();
+      });
+      nextButton.addEventListener("click", () => {
+        offset += pageSize;
+        loadUsers();
+      });
+      await loadUsers();
     } catch (error) {
       setNotice(error.message);
     }
@@ -1581,14 +1893,20 @@
   function setupLogout() {
     const clearSession = () => {
       [tokenKey, emailKey, userNameKey, uploadKey, recipeKey, recipeNoticeKey,
-        "nakena_preview_image", "nakena_guest_mode"].forEach((key) => sessionStorage.removeItem(key));
-      window.dispatchEvent(new CustomEvent("nakena:auth-changed", { detail: { authenticated: false } }));
+        userRoleKey, "nakena_preview_image", "nakena_guest_mode"].forEach((key) => sessionStorage.removeItem(key));
+      currentRole = "guest";
+      currentUser = null;
+      window.dispatchEvent(new CustomEvent("nakena:auth-changed", {
+        detail: { authenticated: false, role: "guest" },
+      }));
     };
-    document.querySelectorAll('[data-action="logout"]').forEach((button) => {
-      button.addEventListener("click", () => {
+    document.addEventListener("click", (event) => {
+      const button = event.target.closest?.('[data-action="logout"], a[data-path="logout"]');
+      if (button) {
+        event.preventDefault();
         clearSession();
         location.assign("/");
-      });
+      }
     });
     document.querySelector("#logout-modal a[data-path='beranda']")?.addEventListener("click", (event) => {
       event.preventDefault();
@@ -1597,12 +1915,50 @@
     });
   }
 
-  setPageLinks();
-  setupAuth();
-  const allowed = protectPages();
-  if (allowed) {
+  async function initialize() {
+    setPageLinks();
+    setupAuth();
     setupHeaderAccount();
-    renderGuestIdentity();
+    setupAccessNavigationGuard();
+    setupLogout();
+
+    if (token()) {
+      try {
+        currentUser = await api("/users/me", { quietAccessFailure: true });
+        currentRole = currentUser.role;
+        sessionStorage.setItem(userRoleKey, currentRole);
+        sessionStorage.setItem(userNameKey, currentUser.full_name || "");
+        window.dispatchEvent(new CustomEvent("nakena:auth-changed", {
+          detail: {
+            authenticated: true,
+            role: currentRole,
+            fullName: currentUser.full_name,
+            email: currentUser.email,
+          },
+        }));
+      } catch (error) {
+        if (error.status === 401) {
+          currentRole = "guest";
+          currentUser = null;
+        } else {
+          document.body.style.visibility = "hidden";
+          showAccessWarning(
+            "Sesi belum dapat diverifikasi. Periksa koneksi backend lalu masuk kembali.",
+            "/login/",
+          );
+          return;
+        }
+      }
+    } else {
+      currentRole = "guest";
+      currentUser = null;
+      sessionStorage.removeItem(userRoleKey);
+      [uploadKey, recipeKey, recipeNoticeKey, "nakena_preview_image", "nakena_guest_mode"]
+        .forEach((key) => sessionStorage.removeItem(key));
+    }
+
+    configureRoleNavigation(currentRole);
+    if (!protectPages()) return;
     setupScan();
     setupDetectionResult();
     setupProfile();
@@ -1614,6 +1970,10 @@
     setupGuidedCooking();
     setupAdminDashboard();
     hydrateProfile();
-    setupLogout();
   }
+
+  initialize().catch((error) => {
+    document.body.style.visibility = "";
+    showAccessWarning(`Gagal memuat halaman: ${error.message}`, "/");
+  });
 })();
