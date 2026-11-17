@@ -28,7 +28,7 @@ def render_frontend(template_name: str) -> HTMLResponse:
 
     html = template_path.read_text(encoding="utf-8")
     integration_script = (
-        f'<script src="/static/js/api.js?v=6" '
+        f'<script src="/static/js/api.js?v=18" '
         f'data-api-base="{escape(API_BASE_URL, quote=True)}" defer></script>'
     )
     if "</body>" in html:

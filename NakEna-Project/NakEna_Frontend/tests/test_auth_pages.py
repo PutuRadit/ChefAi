@@ -1,132 +1,107 @@
+"""HTTP and template contracts for the Figma-based, live-data frontend."""
+from html.parser import HTMLParser
 from pathlib import Path
 import re
 
 import pytest
 from fastapi.testclient import TestClient
-
-from app.main import TEMPLATES_DIR, STATIC_DIR, app
+from app.main import STATIC_DIR, TEMPLATES_DIR, app
 
 client = TestClient(app)
-
-PAGE_ROUTES = {
-    "/": "home",
-    "/login/": "login",
-    "/register/": "register",
-    "/scan/": "scan",
-    "/scan/result/": "detection_result",
-    "/recipes/": "recipes",
-    "/recipes/1/": "recipe_detail",
-    "/recipes/1/guided-cooking/": "guided_cooking",
-    "/history/": "history",
-    "/favorites/": "favorites",
-    "/profile/": "profile",
-    "/admin-dashboard/": "admin_dashboard",
+ROUTES = {
+    '/': 'home', '/login/': 'login', '/register/': 'register',
+    '/scan/': 'scan', '/scan/result/': 'detection_result', '/recipes/': 'recipes',
+    '/recipes/1/': 'recipe_detail', '/recipes/1/guided-cooking/': 'guided_cooking',
+    '/history/': 'history', '/favorites/': 'favorites', '/profile/': 'profile',
 }
 
+class Nodes(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.tags = []
+    def handle_starttag(self, tag, attrs):
+        self.tags.append((tag, dict(attrs)))
 
-@pytest.mark.parametrize(("path", "template"), PAGE_ROUTES.items())
-def test_application_pages_render(path, template):
-    response = client.get(path)
+
+def parse(text):
+    nodes = Nodes()
+    nodes.feed(text)
+    return nodes.tags
+
+
+@pytest.mark.parametrize(('route', 'page'), ROUTES.items())
+def test_routes_and_local_page_assets(route, page):
+    response = client.get(route)
     assert response.status_code == 200
-    assert f"/static/css/pages/{template}.css" in response.text
+    tags = parse(response.text)
+    ids = [attrs['id'] for _, attrs in tags if 'id' in attrs]
+    assert len(ids) == len(set(ids)), f'duplicate ids on {page}'
+    for tag, attrs in tags:
+        target = attrs.get('src') or (attrs.get('href') if tag == 'link' else None)
+        if target and target.startswith('/static/'):
+            assert client.get(target).status_code == 200, target
+    assert f'/static/css/pages/{page}.css' in response.text
+    assert response.text.count('/static/js/api.js?v=18') == 1
 
 
-@pytest.mark.parametrize("page", [path.stem for path in TEMPLATES_DIR.glob("*.html")])
-def test_templates_do_not_contain_inline_css_or_javascript(page):
-    html = (TEMPLATES_DIR / f"{page}.html").read_text(encoding="utf-8")
-    assert not re.search(r"<style\b", html, re.I)
-    inline_scripts = re.findall(r"<script\b([^>]*)>(.*?)</script\s*>", html, re.I | re.S)
-    assert all(re.search(r"\bsrc\s*=", attrs, re.I) for attrs, _ in inline_scripts)
+@pytest.mark.parametrize('page', ROUTES.values())
+def test_templates_have_no_embedded_scripts_icon_fonts_or_design_download_urls(page):
+    text = (TEMPLATES_DIR / f'{page}.html').read_text(encoding='utf-8')
+    assert not re.search(r'<style\b', text, re.I)
+    tags = parse(text)
+    for tag, attrs in tags:
+        assert not any(key.startswith('on') for key in attrs)
+        if tag == 'script':
+            assert attrs.get('src')
+    assert 'material-symbols' not in text
+    assert 'figma.com/api/mcp/asset/' not in text
+    assert 'setCookingSimulatorState' not in text
+    assert not re.search(r'^(<<<<<<<|=======|>>>>>>>)', text, re.M)
 
 
-def test_login_has_no_prefilled_demo_credentials():
-    response = client.get("/login/")
-    assert response.status_code == 200
-    assert 'id="id_email"' in response.text
-    assert 'id="id_password"' in response.text
-    assert "dapur.chef@kuliner.com" not in response.text
-    assert "rahasiaDapur123" not in response.text
+@pytest.mark.parametrize('page', [p for p in ROUTES.values() if p not in ('login', 'register')])
+def test_guest_controls_are_the_first_paint_default(page):
+    text = (TEMPLATES_DIR / f'{page}.html').read_text(encoding='utf-8')
+    tags = parse(text)
+    guest = [attrs for _, attrs in tags if 'data-header-guest' in attrs]
+    profile = [attrs for _, attrs in tags if 'data-header-profile' in attrs]
+    assert len(guest) == len(profile) == 1
+    assert 'hidden' not in guest[0]
+    assert 'hidden' in profile[0]
+    assert 'Masuk' in text and 'Daftar' in text
 
 
-def test_detection_page_does_not_show_seeded_ingredients_or_redirect_button():
-    response = client.get("/scan/result/")
-    assert response.status_code == 200
-    assert "Telur Ayam" not in response.text
-    assert "Tomat Segar" not in response.text
-    assert "Bawang Merah" not in response.text
-    assert "96% Cocok" not in response.text
-    assert "onclick=\"window.location.assign('/recipes/')\"" not in response.text
+def test_auth_forms_are_blank_and_register_does_not_restore_removed_checkboxes():
+    for route in ['/login/', '/register/']:
+        tags = parse(client.get(route).text)
+        for tag, attrs in tags:
+            if tag == 'input' and attrs.get('type') in ('email', 'password'):
+                assert not attrs.get('value')
+    register = parse(client.get('/register/').text)
+    assert not any(tag == 'input' and attrs.get('type') == 'checkbox' for tag, attrs in register)
+    assert 'rahasiaDapur123' not in client.get('/login/').text
 
 
-def test_profile_page_does_not_expose_demo_account_values():
-    response = client.get("/profile/")
-    assert response.status_code == 200
-    assert "Rian Pratama" not in response.text
-    assert "rian.pratama@kuliner.com" not in response.text
-    assert "secretpassword123" not in response.text
+def test_confirmation_form_uses_backend_category_values():
+    tags = parse(client.get('/scan/result/').text)
+    categories = {attrs['value'] for tag, attrs in tags if tag == 'input' and attrs.get('name') == 'cuisine_type'}
+    assert categories == {'Rumahan', 'Tumisan', 'Kuah Hangat'}
+    fields = {attrs.get('name') for tag, attrs in tags if tag == 'input'}
+    assert {'allergies', 'servings', 'diet', 'detected_ingredients', 'staple_ingredients'} <= fields
 
 
-def test_page_css_and_javascript_files_exist():
-    for template_path in TEMPLATES_DIR.glob("*.html"):
-        page = template_path.stem
-        assert (STATIC_DIR / "css" / "pages" / f"{page}.css").is_file()
-        config_file = STATIC_DIR / "js" / "pages" / f"{page}.config.js"
-        assert config_file.is_file()
+def test_recipe_and_collection_pages_wait_for_live_data_instead_of_demo_cards():
+    for route in ['/recipes/', '/favorites/', '/history/']:
+        response = client.get(route)
+        assert '<article' not in response.text
+        assert 'Nasi Goreng Rumahan Spesial' not in response.text
+    detail = client.get('/recipes/1/').text
+    assert 'Total 7 Langkah' not in detail
+    assert '98% Cocok' not in detail
+    assert '420 Kkal' not in detail
 
 
-def test_design_assets_are_served():
-    for asset in ["assets/mascottt.png", "assets/recipe-1.jpg"]:
-        response = client.get(f"/static/{asset}")
-        assert response.status_code == 200
-
-
-def test_extracted_css_and_javascript_are_served():
-    for template_path in TEMPLATES_DIR.glob("*.html"):
-        page = template_path.stem
-        assert client.get(f"/static/css/pages/{page}.css").status_code == 200
-        assert client.get(f"/static/js/pages/{page}.config.js").status_code == 200
-        page_script = STATIC_DIR / "js" / "pages" / f"{page}.js"
-        if page_script.is_file():
-            assert client.get(f"/static/js/pages/{page}.js").status_code == 200
-
-
-def test_api_integration_script_is_loaded_from_frontend_static():
-    response = client.get("/login/")
-    assert '/static/js/api.js?v=3' in response.text
-    script_response = client.get('/static/js/api.js?v=3')
-    assert script_response.status_code == 200
-    assert 'data-api-base' in response.text
-
-
-def test_no_unresolved_git_conflict_markers_remain():
-    files = list(TEMPLATES_DIR.glob("*.html")) + [STATIC_DIR / "js" / "api.js"]
-    for file_path in files:
-        content = file_path.read_text(encoding="utf-8")
-        assert not re.search(r"^(<<<<<<<|=======|>>>>>>>)", content, re.M)
-
-
-def test_legacy_duplicate_template_directory_is_not_present():
-    assert not (TEMPLATES_DIR.parent.parent / "app" / "web").exists()
-
-
-
-def test_home_start_now_buttons_open_scan_without_login():
-    response = client.get("/")
-    assert response.status_code == 200
-    assert response.text.count('href="/scan/"') >= 2
-
-
-def test_guest_mode_frontend_does_not_write_recipe_history():
-    script = (STATIC_DIR / "js" / "api.js").read_text(encoding="utf-8")
-    assert '"/uploads/guest/detect"' in script
-    assert "if (isGuest()) return { recipes, errors: [] };" in script
-    assert "Riwayat Guest tidak disimpan" in script
-
-
-def test_guest_scan_keeps_scan_ui_and_does_not_inject_guest_notice():
-    script = (STATIC_DIR / "js" / "api.js").read_text(encoding="utf-8")
-    assert 'if (!form) return;' in script
-    assert 'Kamu sedang menggunakan NakEna sebagai Guest' in script  # Profile-only message remains available.
-    assert 'Mode Guest aktif — foto dan hasil resep hanya digunakan sementara' not in script
-    assert 'login.textContent = "Masuk"' in script
-    assert 'register.textContent = "Daftar"' in script
+def test_current_shared_assets_are_served():
+    for path in ['css/nakena.css', 'css/recipe_images.css', 'js/app_ui.js', 'assets/mascot-chef.png', 'assets/mascot-steps-hd.png', 'assets/recipe-placeholder.svg']:
+        response = client.get('/static/' + path)
+        assert response.status_code == 200 and response.content

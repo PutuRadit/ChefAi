@@ -91,7 +91,7 @@
   }
   document.getElementById('incrementServings').addEventListener('click', () => changeServings(1));
   document.getElementById('decrementServings').addEventListener('click', () => changeServings(-1));
-  document.getElementById('cancelGeneratingBtn').addEventListener('click', () => {
+  document.getElementById('cancelGeneratingBtn')?.addEventListener('click', () => {
     overlay.classList.add('opacity-0', 'pointer-events-none');
   });
 

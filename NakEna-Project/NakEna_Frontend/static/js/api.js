@@ -11,46 +11,122 @@
   const email = () => sessionStorage.getItem(emailKey) || "guest";
   const storageKey = (name) => `nakena_${name}_${email()}`;
 
+  function uiElement(tag, className = "", text = "") {
+    const element = document.createElement(tag);
+    if (className) element.className = className;
+    if (text !== "") element.textContent = text;
+    return element;
+  }
+
+  function uiIcon(name) {
+    const paths = {
+      clock: "M12 7v5l3 2M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z",
+      list: "m3 6 2 2 4-4m3 2h9M3 13l2 2 4-4m3 2h9M3 20l2 2 4-4m3 2h9",
+      people: "M16 6a4 4 0 1 1-8 0 4 4 0 0 1 8 0ZM3 22v-3a9 9 0 0 1 18 0v3",
+      next: "M5 12h14m-7-7 7 7-7 7",
+      close: "M6 6l12 12M6 18 18 6",
+      heart: "M20.8 4.6a5.5 5.5 0 0 0-7.8 0l-1 1-1-1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z",
+      camera: "M14 4h-4L8 7H4a2 2 0 0 0-2 2v10h20V9a2 2 0 0 0-2-2h-4l-2-3ZM16 13a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z",
+    };
+    const icon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    for (const [key, value] of Object.entries({ class: "icon", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", "stroke-width": "1.8", "stroke-linecap": "round", "stroke-linejoin": "round", "aria-hidden": "true" })) icon.setAttribute(key, value);
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute("d", paths[name] || paths.next); icon.append(path); return icon;
+  }
+
+  function storedJSON(key, fallback = null) {
+    try { return JSON.parse(sessionStorage.getItem(key) || "null") || fallback; }
+    catch { sessionStorage.removeItem(key); return fallback; }
+  }
+
+  function normalizeRecipe(value) {
+    const { options, ...recipe } = value || {};
+    return { ...recipe, title: String(recipe.title || "Resep NakEna"), text: String(recipe.text || recipe.recipe_text || ""), ingredients: Array.isArray(recipe.ingredients) ? recipe.ingredients : [] };
+  }
+
+  function recipeMinutes(recipe) {
+    const text = parseRecipeContent(recipe.text || recipe.recipe_text, recipe.ingredients).time.toLowerCase();
+    const times = [...text.matchAll(/(\d+(?:[.,]\d+)?)(?:\s*[-–]\s*(\d+(?:[.,]\d+)?))?\s*(jam|menit|detik)/g)];
+    if (!times.length) return null;
+    return times.reduce((sum, match) => sum + Number((match[2] || match[1]).replace(",", ".")) * (match[3] === "jam" ? 60 : match[3] === "detik" ? 1 / 60 : 1), 0);
+  }
+
+  function recipeMeta(recipe) {
+    const parsed = parseRecipeContent(recipe.text || recipe.recipe_text, recipe.ingredients);
+    const root = uiElement("div", "recipe-meta");
+    const values = [];
+    if (parsed.time) values.push(["clock", parsed.time]);
+    const count = recipeInstructions(parsed, recipe.title).length;
+    if (count) values.push(["list", `${count} langkah`]);
+    if (recipe.request?.servings) values.push(["people", `${recipe.request.servings} porsi`]);
+    values.forEach(([name, text]) => { const span = uiElement("span"); span.append(uiIcon(name), document.createTextNode(text)); root.append(span); });
+    return root;
+  }
+
+  function updateSavedCount(count) {
+    const element = document.getElementById("savedCountHeader");
+    if (element) { element.textContent = String(count); element.hidden = false; }
+  }
+
+  function openRecipe(recipe, cooking = false, options = null) {
+    const value = normalizeRecipe(recipe);
+    if (options?.length) value.options = options;
+    sessionStorage.setItem(recipeKey, JSON.stringify(value));
+    location.assign(cooking ? "/recipes/1/guided-cooking/" : "/recipes/1/");
+  }
+
+  function recipeCard(recipe, { featured = false, favorite = null, favorites = new Map(), options = null, label = "" } = {}) {
+    const stage = uiElement("div", featured ? "recipe-results-stage" : "recipe-card-stage");
+    const loader = uiElement("div", "recipe-results-loading");
+    // This markup is a constant skeleton. Recipe/provider text is always textContent.
+    loader.innerHTML = '<div class="recipe-results-loading-photo"></div><div class="recipe-results-loading-copy"><span class="recipe-loading-bar recipe-loading-title"></span><span class="recipe-loading-bar"></span><span class="recipe-loading-bar recipe-loading-short"></span><span class="recipe-loading-bar recipe-loading-action"></span></div>';
+    const card = uiElement("article", featured ? "recipe-featured" : "recipe-other-card");
+    card.dataset.title = recipe.title;
+    const photo = uiElement("div", "recipe-visual");
+    const image = uiElement("img"); image.alt = "Foto hidangan"; photo.append(image);
+    if (favorite) {
+      const button = uiElement("button", "recipe-card-favorite"); button.type = "button";
+      button.setAttribute("aria-label", `${favorites.has(recipe.title) ? "Hapus dari favorit" : "Simpan"} ${recipe.title}`);
+      button.setAttribute("aria-pressed", String(favorites.has(recipe.title)));
+      button.append(uiIcon("heart"));
+      button.addEventListener("click", () => favorite(recipe, button)); photo.append(button);
+    }
+    const body = uiElement("div", "recipe-card-body");
+    if (label) body.append(uiElement("span", "small-label warm", label));
+    body.append(uiElement(featured ? "h2" : "h3", "", recipe.title));
+    const parsed = parseRecipeContent(recipe.text || recipe.recipe_text, recipe.ingredients);
+    const intro = String(recipe.description || parsed.intro || "").trim();
+    if (intro && intro.toLowerCase() !== recipe.title.toLowerCase()) body.append(uiElement("p", "", intro));
+    body.append(recipeMeta(recipe));
+    if (recipe.ingredients.length) body.append(uiElement("p", "recipe-mini-ingredients", recipe.ingredients.join(" · ")));
+    const actions = uiElement("div", "button-row");
+    const detail = uiElement("a", "btn btn-primary", "Lihat detail resep"); detail.href = "/recipes/1/"; detail.append(uiIcon("next"));
+    detail.addEventListener("click", (event) => { event.preventDefault(); openRecipe(recipe, false, options); }); actions.append(detail);
+    const cook = uiElement("a", "btn btn-secondary", "Mulai memasak"); cook.href = "/recipes/1/guided-cooking/";
+    cook.addEventListener("click", (event) => { event.preventDefault(); openRecipe(recipe, true, options); }); actions.append(cook);
+    body.append(actions); card.append(photo, body); stage.append(loader, card);
+    const reveal = prepareRecipeReveal(card, loader);
+    renderRecipePhoto(image, recipe, !featured, reveal.reveal);
+    return stage;
+  }
+
+  function dateLabel(value) {
+    const date = new Date(value);
+    return Number.isFinite(date.getTime()) ? date.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }) : "";
+  }
+
   function createGuestInfoCard(title, description, actionPath = "/login/", actionLabel = "Masuk atau daftar") {
-    const card = document.createElement("section");
-    card.className = "mx-auto my-8 w-full max-w-3xl rounded-3xl border border-primary/30 bg-surface-container-low p-7 text-center shadow-xl sm:p-9";
-
-    const badge = document.createElement("span");
-    badge.className = "inline-flex items-center gap-2 rounded-full bg-primary-container/15 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-primary";
-    badge.textContent = "Guest mode";
-
-    const heading = document.createElement("h2");
-    heading.className = "mt-4 text-2xl font-bold text-on-surface";
-    heading.textContent = title;
-
-    const text = document.createElement("p");
-    text.className = "mx-auto mt-3 max-w-xl text-sm leading-7 text-on-surface-variant";
-    text.textContent = description;
-
-    const actions = document.createElement("div");
-    actions.className = "mt-6 flex flex-wrap items-center justify-center gap-3";
-
-    const action = document.createElement("a");
-    action.className = "inline-flex items-center justify-center rounded-full bg-primary-container px-6 py-3 text-sm font-bold text-on-primary shadow-lg transition hover:brightness-110";
-    action.href = actionPath;
-    action.textContent = actionLabel;
-    actions.append(action);
-
-    const scanLink = document.createElement("a");
-    scanLink.className = "inline-flex items-center justify-center rounded-full border border-outline/40 px-6 py-3 text-sm font-semibold text-on-surface transition hover:bg-surface-container-high";
-    scanLink.href = "/scan/";
-    scanLink.textContent = "Kembali ke scan";
-    if (location.pathname.startsWith("/scan/")) scanLink.classList.add("hidden");
-    actions.append(scanLink);
-
-    card.append(badge, heading, text, actions);
-    return card;
+    const card = uiElement("section", "empty-card guest-card");
+    card.append(uiElement("h2", "", title), uiElement("p", "", description));
+    const actions = uiElement("div", "button-row");
+    const login = uiElement("a", "btn btn-primary", actionLabel); login.href = actionPath;
+    const scan = uiElement("a", "btn btn-secondary", "Scan bahan"); scan.href = "/scan/";
+    actions.append(login, scan); card.append(actions); return card;
   }
 
   function showGuestInfo(main, title, description, actionPath = "/login/", actionLabel = "Masuk atau daftar") {
     if (!main) return;
-    const host = main.firstElementChild || main;
-    host.prepend(createGuestInfoCard(title, description, actionPath, actionLabel));
+    main.prepend(createGuestInfoCard(title, description, actionPath, actionLabel));
   }
 
   function setupHeaderAccount() {
@@ -149,16 +225,17 @@
     return data;
   }
 
+  let noticeTimer;
   function setNotice(message, success = false) {
     const errorBox = document.getElementById("general-error-box");
     const errorText = document.getElementById("general-error-text");
-    const successBox = document.getElementById("success-box");
-    if (errorBox && errorText) {
-      errorText.textContent = message;
-      errorBox.classList.toggle("hidden", success);
+    if (errorBox && errorText) { errorText.textContent = message; errorBox.classList.toggle("hidden", success); }
+    const box = document.getElementById("appNotice");
+    if (box) {
+      clearTimeout(noticeTimer); box.textContent = message; box.hidden = false;
+      box.classList.toggle("is-error", !success); box.setAttribute("role", success ? "status" : "alert");
+      noticeTimer = setTimeout(() => { box.hidden = true; }, 9000);
     }
-    if (successBox) successBox.classList.toggle("hidden", !success);
-    if (!errorBox && !successBox) window.alert(message);
   }
 
   function captureSubmit(form, handler) {
@@ -277,10 +354,13 @@
     const input = document.getElementById("fileInput");
     if (!form || !input) return;
     let previewReady = Promise.resolve();
+    let uploadInFlight = false;
+    let sourceDimensions = null;
 
     input.addEventListener("change", () => {
       const file = input.files?.[0];
       if (!file) return;
+      sourceDimensions = null;
       if (file.size > 5 * 1024 * 1024) {
         input.value = "";
         return setNotice("Ukuran foto maksimal 5 MB.");
@@ -294,6 +374,7 @@
         reader.addEventListener("load", () => {
           const image = new Image();
           image.onload = () => {
+            sourceDimensions = { width: image.width, height: image.height };
             const scale = Math.min(1, 1400 / Math.max(image.width, image.height));
             const canvas = document.createElement("canvas");
             canvas.width = Math.max(1, Math.round(image.width * scale));
@@ -317,6 +398,9 @@
     async function uploadSelectedImage() {
       const file = input.files?.[0];
       if (!file) return setNotice("Pilih foto bahan terlebih dahulu.");
+      if (uploadInFlight) return;
+      uploadInFlight = true;
+      window.switchState?.("loading");
       await previewReady;
       const formData = new FormData();
       formData.append("file", file);
@@ -331,8 +415,8 @@
           sessionStorage.setItem(uploadKey, JSON.stringify({
             id: "guest",
             filename: file.name,
-            width: null,
-            height: null,
+            width: sourceDimensions?.width || null,
+            height: sourceDimensions?.height || null,
             guest: true,
             ingredients: detection.ingredients,
             detections: detection.detections,
@@ -352,6 +436,7 @@
         location.assign("/scan/result/");
       } catch (error) {
         setNotice(error.message);
+        uploadInFlight = false;
         if (typeof window.switchState === "function") window.switchState("preview");
       }
     }
@@ -474,11 +559,11 @@
       const height = (y2 - y1) * sourceScaleY * scale / bounds.height * 100;
       const color = colors[index % colors.length];
       const box = document.createElement("div");
-      box.className = "absolute rounded-2xl border-2";
+      box.className = "detection-box";
       box.style.cssText = `left:${left}%;top:${top}%;width:${width}%;height:${height}%;border-color:${color};background:${color}22;`;
       box.title = `${detection.name} (${Math.round(detection.confidence * 100)}%)`;
       const label = document.createElement("span");
-      label.className = "absolute -top-3 left-1 px-2 py-0.5 rounded-full bg-[#060D1A]/90 text-white font-bold text-[10px] sm:text-xs whitespace-nowrap";
+      label.className = "detection-box-label";
       label.style.color = color;
       label.textContent = `${detection.name} • ${Math.round(detection.confidence * 100)}%`;
       box.append(label);
@@ -488,131 +573,15 @@
 
   function profilePreferenceFromForm(form) {
     const values = new FormData(form);
-    const activeChips = (id) => Array.from(document.querySelectorAll(`#${id} .chip-toggle.active`))
-      .map((chip) => chip.textContent.replace(/[^\p{L}\p{N}\s-]/gu, "").trim())
-      .filter(Boolean);
-    const selectedTime = values.get("cook_time");
-    const selectedDifficulty = Array.from(form.querySelectorAll("button"))
-      .find((button) => button.className.includes("bg-primary-container") && /Mudah|Sedang|Ahli/.test(button.textContent))?.textContent.trim();
-    const selectedCuisine = Array.from(form.querySelectorAll("button"))
-      .find((button) => button.className.includes("bg-primary-container") && /Nusantara|Tumisan|Sup|Pedas/.test(button.textContent))?.textContent.trim();
-    const cookMinutes = { quick: 15, medium: 30, long: 120 }[selectedTime] || null;
-    const difficulty = /Ahli/i.test(selectedDifficulty || "") ? "hard" : /Sedang/i.test(selectedDifficulty || "") ? "medium" : "easy";
-    const portion = Number(document.getElementById("portion-value")?.textContent || 2);
     return {
-      diet: activeChips("diet-chips").join(", ") || null,
-      allergies: activeChips("allergy-chips").map((value) => value.replace(/^Bebas\s+/i, "")).filter((value) => !/Tidak Ada/i.test(value)),
-      staple_ingredients: Array.from(document.querySelectorAll("[data-staple-ingredient]"))
-        .map((chip) => chip.dataset.stapleIngredient)
-        .filter(Boolean),
-      default_max_cook_minutes: cookMinutes,
-      default_difficulty: difficulty,
-      default_servings: portion,
-      preferred_cuisine: selectedCuisine || null,
+      diet: values.getAll("profile_diet").join(", ") || null,
+      allergies: values.getAll("profile_allergies"),
+      staple_ingredients: Array.from(document.querySelectorAll("[data-staple-ingredient]")).map((chip) => chip.dataset.stapleIngredient),
+      default_max_cook_minutes: values.get("max_cook_minutes") ? Number(values.get("max_cook_minutes")) : null,
+      default_difficulty: values.get("default_difficulty") || null,
+      default_servings: Number(values.get("default_servings") || 2),
+      preferred_cuisine: values.get("preferred_cuisine") || null,
     };
-  }
-
-  function setupProfile() {
-    const form = document.getElementById("preferences-form");
-    // Fungsi ini dipanggil di setiap halaman; jangan pernah mengganti <main>
-    // halaman lain. Kartu Guest hanya relevan pada halaman profil.
-    if (!form) return;
-    if (isGuest()) {
-      const main = document.querySelector("main");
-      if (main) {
-        main.replaceChildren(createGuestInfoCard(
-          "Kamu sedang menggunakan NakEna sebagai Guest",
-          "Mode Guest tidak membutuhkan login. Kamu bisa langsung scan bahan dan membuat resep. Profil, preferensi, riwayat, dan favorit tidak disimpan. Masuk atau daftar jika ingin menggunakan fitur akun.",
-          "/login/?next=%2Fprofile%2F",
-          "Masuk atau daftar",
-        ));
-      }
-      return;
-    }
-    api("/users/me/preferences").then((preferences) => {
-      document.querySelectorAll("#diet-chips .chip-toggle").forEach((chip) => {
-        const name = chip.textContent.replace(/[^\p{L}\p{N}\s-]/gu, "").trim().toLowerCase();
-        const active = (preferences.diet || "").toLowerCase().includes(name);
-        chip.classList.toggle("active", active);
-        chip.classList.toggle("bg-primary-container", active);
-        chip.classList.toggle("text-on-primary", active);
-        chip.classList.toggle("shadow-sm", active);
-        chip.classList.toggle("bg-surface-container", !active);
-        chip.classList.toggle("text-on-surface", !active);
-      });
-      document.querySelectorAll("#allergy-chips .chip-toggle").forEach((chip) => {
-        const name = chip.textContent.replace(/[^\p{L}\p{N}\s-]/gu, "").replace(/^Bebas\s+/i, "").trim().toLowerCase();
-        const active = (preferences.allergies || []).some((item) => item.toLowerCase().includes(name));
-        chip.classList.toggle("active", active);
-        chip.classList.toggle("bg-primary-container", active);
-        chip.classList.toggle("text-on-primary", active);
-        chip.classList.toggle("shadow-sm", active);
-        chip.classList.toggle("bg-surface-container", !active);
-        chip.classList.toggle("text-on-surface", !active);
-      });
-      const timeValue = preferences.default_max_cook_minutes <= 15 ? "quick" : preferences.default_max_cook_minutes > 30 ? "long" : "medium";
-      const radio = form.querySelector(`input[name="cook_time"][value="${timeValue}"]`);
-      if (radio) radio.checked = true;
-      const portion = document.getElementById("portion-value");
-      if (portion && preferences.default_servings) portion.textContent = preferences.default_servings;
-      renderPantryIngredients(preferences.staple_ingredients || []);
-    }).catch((error) => setNotice(error.message));
-
-    if (form) {
-      const save = async () => {
-        try {
-          await api("/users/me/preferences", {
-            method: "PATCH",
-            body: JSON.stringify(profilePreferenceFromForm(form)),
-          });
-          document.getElementById("save-toast")?.classList.remove("hidden");
-        } catch (error) {
-          setNotice(error.message);
-        }
-      };
-      captureSubmit(form, save);
-      document.getElementById("btn-save-preferences")?.addEventListener("click", (event) => {
-        event.preventDefault();
-        event.stopImmediatePropagation();
-        save();
-      }, true);
-    }
-
-    const accountForm = document.getElementById("account-form");
-    if (accountForm) {
-      const saveAccount = async () => {
-        const fullName = String(new FormData(accountForm).get("fullname") || "").trim();
-        if (!fullName) return setNotice("Nama lengkap tidak boleh kosong.");
-        try {
-          const user = await api("/users/me", {
-            method: "PATCH",
-            body: JSON.stringify({ full_name: fullName }),
-          });
-          sessionStorage.setItem(userNameKey, user.full_name);
-          document.querySelectorAll("[data-user-name]").forEach((element) => {
-            element.textContent = user.full_name;
-          });
-          setNotice("Profil berhasil diperbarui.", true);
-        } catch (error) {
-          setNotice(error.message);
-        }
-      };
-      captureSubmit(accountForm, saveAccount);
-      document.getElementById("btn-save-account")?.addEventListener("click", (event) => {
-        event.preventDefault();
-        event.stopImmediatePropagation();
-        saveAccount();
-      }, true);
-    }
-
-    document.getElementById("btn-add-pantry-ingredient")?.addEventListener("click", () => {
-      const name = window.prompt("Nama bahan yang selalu tersedia di rumah:");
-      if (!name?.trim()) return;
-      const current = Array.from(document.querySelectorAll("[data-staple-ingredient]"))
-        .map((chip) => chip.dataset.stapleIngredient.toLowerCase());
-      if (current.includes(name.trim().toLowerCase())) return setNotice("Bahan tersebut sudah ada.");
-      renderPantryIngredients([...current, name.trim()]);
-    });
   }
 
   function renderPantryIngredients(ingredients) {
@@ -620,26 +589,131 @@
     if (!list) return;
     list.replaceChildren();
     ingredients.forEach((ingredient) => {
-      const chip = document.createElement("span");
-      chip.className = "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container text-on-surface font-label-md text-label-md";
-      chip.dataset.stapleIngredient = ingredient;
-      const label = document.createElement("span");
-      label.textContent = ingredient;
-      const remove = document.createElement("button");
-      remove.className = "material-symbols-outlined text-[14px] text-primary cursor-pointer hover:text-primary-container";
-      remove.type = "button";
-      remove.setAttribute("aria-label", `Hapus ${ingredient}`);
-      remove.textContent = "close";
-      remove.addEventListener("click", () => chip.remove());
-      chip.append(label, remove);
-      list.append(chip);
+      const chip = uiElement("span", "pantry-chip"); chip.dataset.stapleIngredient = ingredient;
+      const name = uiElement("span", "", ingredient);
+      const remove = uiElement("button"); remove.type = "button"; remove.setAttribute("aria-label", `Hapus ${ingredient}`); remove.append(uiIcon("close"));
+      remove.addEventListener("click", () => chip.remove()); chip.append(name, remove); list.append(chip);
+    });
+  }
+
+  function setupProfile() {
+    const form = document.getElementById("preferences-form");
+    if (!form) return;
+    if (isGuest()) {
+      document.querySelector("main")?.replaceChildren(createGuestInfoCard(
+        "Preferensi dan profil akunmu",
+        "Masuk untuk menyimpan preferensi, resep favorit, dan riwayat. Kamu tetap bisa scan bahan dan memasak sebagai Guest.",
+        "/login/?next=%2Fprofile%2F", "Masuk ke akun",
+      )); return;
+    }
+    const preferenceButton = document.getElementById("btn-save-preferences");
+    preferenceButton.disabled = true;
+    api("/users/me/preferences").then((preferences) => {
+      const selectedDiet = (preferences.diet || "").toLowerCase().split(",").map((text) => text.trim());
+      form.querySelectorAll('[name="profile_diet"]').forEach((input) => { input.checked = selectedDiet.includes(input.value.toLowerCase()); });
+      form.querySelectorAll('[name="profile_allergies"]').forEach((input) => { input.checked = (preferences.allergies || []).some((value) => value.toLowerCase() === input.value.toLowerCase()); });
+      const set = (name, value) => {
+        const input = form.elements.namedItem(name);
+        if (input.tagName === "SELECT" && value != null && value !== "") {
+          let option = Array.from(input.options).find((item) => item.value.toLowerCase() === String(value).toLowerCase());
+          if (!option) { option = uiElement("option", "", String(value)); option.value = String(value); input.append(option); }
+          input.value = option.value;
+        } else input.value = value == null ? "" : String(value);
+      };
+      set("max_cook_minutes", preferences.default_max_cook_minutes);
+      set("default_difficulty", preferences.default_difficulty);
+      set("default_servings", preferences.default_servings || 2);
+      set("preferred_cuisine", preferences.preferred_cuisine);
+      renderPantryIngredients(preferences.staple_ingredients || []);
+      document.getElementById("profilePantryCount").textContent = String((preferences.staple_ingredients || []).length);
+      document.dispatchEvent(new Event("nakena:preferences-loaded"));
+      preferenceButton.disabled = false;
+    }).catch((error) => setNotice(`Preferensi belum dapat dimuat: ${error.message}`));
+    const metrics = [["/uploads", "profileScanCount"], ["/recipes/history", "profileRecipeCount"], ["/recipes/favorites", "profileFavoriteCount"]];
+    metrics.forEach(async ([path, id]) => {
+      try { const values = await api(path); document.getElementById(id).textContent = String(values.length); if (path.endsWith("favorites")) updateSavedCount(values.length); }
+      catch { /* Leave unknown counts as dashes, without fabricated statistics. */ }
+    });
+    captureSubmit(form, async () => {
+      if (preferenceButton.disabled) return;
+      const payload = profilePreferenceFromForm(form);
+      if ((payload.diet || "").length > 50) return setNotice("Pilih pola makan dengan total nama maksimal 50 karakter.");
+      preferenceButton.disabled = true;
+      try {
+        const saved = await api("/users/me/preferences", { method: "PATCH", body: JSON.stringify(payload) });
+        renderPantryIngredients(saved.staple_ingredients || []);
+        document.getElementById("profilePantryCount").textContent = String((saved.staple_ingredients || []).length);
+        setNotice("Preferensi memasak tersimpan.", true);
+      } catch (error) { setNotice(error.message); }
+      finally { preferenceButton.disabled = false; }
+    });
+    document.getElementById("btn-add-pantry-ingredient")?.addEventListener("click", () => {
+      const input = document.getElementById("pantryIngredientInput");
+      const ingredient = input.value.trim(); if (!ingredient) { input.focus(); return; }
+      const current = Array.from(document.querySelectorAll("[data-staple-ingredient]")).map((chip) => chip.dataset.stapleIngredient);
+      if (current.length >= 30) return setNotice("Maksimal 30 bahan dapur.");
+      if (current.some((text) => text.toLowerCase() === ingredient.toLowerCase())) return setNotice("Bahan tersebut sudah ada.");
+      renderPantryIngredients([...current, ingredient]); input.value = "";
+    });
+    const account = document.getElementById("account-form");
+    captureSubmit(account, async () => {
+      const name = String(new FormData(account).get("fullname") || "").trim();
+      if (!name) return setNotice("Nama lengkap tidak boleh kosong.");
+      const button = document.getElementById("btn-save-account"); button.disabled = true;
+      try {
+        const user = await api("/users/me", { method: "PATCH", body: JSON.stringify({ full_name: name }) });
+        sessionStorage.setItem(userNameKey, user.full_name);
+        document.querySelectorAll("[data-user-name]").forEach((element) => { element.textContent = user.full_name; });
+        document.querySelectorAll("[data-profile-initial]").forEach((element) => { element.textContent = Array.from(user.full_name.trim())[0].toLocaleUpperCase("id-ID"); });
+        window.dispatchEvent(new CustomEvent("nakena:auth-changed", { detail: { authenticated: true, fullName: user.full_name, email: user.email } }));
+        setNotice("Nama akun diperbarui.", true);
+      } catch (error) { setNotice(error.message); }
+      finally { button.disabled = false; }
     });
   }
 
   function setupRecipeGeneration() {
     const form = document.getElementById("ingredientsConfirmationForm");
     if (!form) return;
+    let confirmationEdited = false;
+    form.addEventListener("input", () => { confirmationEdited = true; });
+    form.addEventListener("change", () => { confirmationEdited = true; });
+    if (!isGuest()) api("/users/me/preferences").then((preferences) => {
+      if (confirmationEdited) return;
+      const syncChecks = (name, values) => {
+        const selected = values.map((text) => String(text).trim()).filter(Boolean);
+        const existing = Array.from(form.querySelectorAll(`input[name="${name}"]`));
+        existing.forEach((input) => { input.checked = selected.some((text) => text.toLowerCase() === input.value.toLowerCase()); });
+        selected.forEach((text) => {
+          if (existing.some((input) => input.value.toLowerCase() === text.toLowerCase()) || !existing[0]) return;
+          const label = existing[0].closest("label").cloneNode(true);
+          const input = label.querySelector("input"); input.value = text; input.checked = true;
+          label.querySelector("span").textContent = text;
+          existing[0].closest("label").parentElement.append(label);
+        });
+      };
+      syncChecks("diet", (preferences.diet || "").split(","));
+      syncChecks("allergies", preferences.allergies || []);
+      syncChecks("staple_ingredients", preferences.staple_ingredients || []);
+      const pick = (name, value) => {
+        const options = Array.from(form.querySelectorAll(`input[name="${name}"]`));
+        const found = options.find((input) => input.value.toLowerCase() === String(value).toLowerCase());
+        if (found) options.forEach((input) => { input.checked = input === found; });
+      };
+      if (preferences.default_max_cook_minutes) pick("cooking_time", preferences.default_max_cook_minutes <= 15 ? "under_15" : preferences.default_max_cook_minutes <= 30 ? "15_to_30" : "over_30");
+      if (preferences.default_difficulty === "hard") {
+        const model = form.querySelector('input[name="difficulty"]')?.closest("label");
+        if (model && !form.querySelector('input[name="difficulty"][value="Sulit"]')) {
+          const label = model.cloneNode(true); label.querySelector("input").value = "Sulit"; label.querySelector("span").textContent = "Sulit"; model.parentElement.append(label);
+        }
+      }
+      if (preferences.default_difficulty) pick("difficulty", { easy: "Mudah", medium: "Sedang", hard: "Sulit" }[preferences.default_difficulty]);
+      if (preferences.preferred_cuisine) pick("cuisine_type", preferences.preferred_cuisine.toLowerCase() === "berkuah" ? "Kuah Hangat" : preferences.preferred_cuisine);
+      if (preferences.default_servings) document.getElementById("servingsInput").value = String(preferences.default_servings);
+      document.dispatchEvent(new Event("nakena:preferences-loaded"));
+    }).catch(() => { /* The visible manual choices remain available if saved defaults cannot be loaded. */ });
     captureSubmit(form, async () => {
+      confirmationEdited = true;
       const values = new FormData(form);
       const ingredients = [
         ...String(values.get("detected_ingredients") || "").split(","),
@@ -668,18 +742,11 @@
       overlay?.classList.remove("opacity-0", "pointer-events-none");
 
       try {
-        const result = await api("/recipes/generate", {
-          method: "POST",
-          body: JSON.stringify({
-            ingredients: uniqueIngredients,
-            preferences,
-            allergies,
-            servings,
-            category,
-          }),
-        });
+        const request = { ingredients: uniqueIngredients, preferences, allergies, servings, category };
+        const result = await api("/recipes/generate", { method: "POST", body: JSON.stringify(request) });
         const { recipes, errors } = await saveGeneratedRecipes(result, uniqueIngredients, category);
-        const recipe = { ...recipes[0], options: recipes, category };
+        recipes.forEach((recipe) => { recipe.request = request; });
+        const recipe = { ...recipes[0], options: recipes, category, request };
         sessionStorage.setItem(recipeKey, JSON.stringify(recipe));
         if (errors.length) {
           sessionStorage.setItem(
@@ -964,7 +1031,7 @@
       const link = document.createElement("link");
       link.id = "recipe-photo-styles";
       link.rel = "stylesheet";
-      link.href = "/static/css/recipe_images.css?v=4";
+      link.href = "/static/css/recipe_images.css?v=5";
       document.head.append(link);
     }
     const host = image.parentElement;
@@ -1116,554 +1183,281 @@
   }
 
   async function setupRecipes() {
-    if (location.pathname !== "/recipes/") return;
-    const main = document.querySelector("main");
-    if (!main) return;
-    let recipe = null;
-    try {
-      recipe = JSON.parse(sessionStorage.getItem(recipeKey) || "null");
-    } catch {
-      sessionStorage.removeItem(recipeKey);
+    const featured = document.getElementById("recipeFeaturedStage");
+    if (!featured) return;
+    let raw = storedJSON(recipeKey);
+    if (!raw?.text && !raw?.recipe_text && !isGuest()) {
+      try { raw = (await api("/recipes/history"))[0] || null; } catch (error) { setNotice(error.message); }
     }
-    const articles = Array.from(main.querySelectorAll("article"));
-    const featured = articles[0];
-    const recipeReveal = prepareRecipeReveal(featured, document.getElementById("recipeResultsLoading"));
-    const extraGrid = articles[1]?.parentElement;
-    articles.slice(1).forEach((article) => article.remove());
-    if (extraGrid?.classList.contains("grid")) {
-      const sectionHeading = extraGrid.previousElementSibling;
-      extraGrid.remove();
-      if (sectionHeading?.querySelector("h3")) sectionHeading.remove();
+    const empty = document.getElementById("recipeEmptyState");
+    if (!raw?.text && !raw?.recipe_text) {
+      featured.replaceChildren(); featured.hidden = true; empty.hidden = false;
+      document.getElementById("customRecipeSection").hidden = true;
+      document.getElementById("regenerateRecipes").disabled = true;
+      return;
     }
-    featured?.classList.add("hidden");
-    let history = [];
-    let favorites = [];
-    let notice = sessionStorage.getItem(recipeNoticeKey) || "";
-    sessionStorage.removeItem(recipeNoticeKey);
+    const selected = normalizeRecipe(raw);
+    const options = (Array.isArray(raw.options) && raw.options.length ? raw.options : [raw]).map((value) => {
+      const recipe = normalizeRecipe(value); recipe.request ||= raw.request; recipe.category ||= raw.category; return recipe;
+    });
+    const favorites = new Map();
     if (!isGuest()) {
+      try { (await api("/recipes/favorites")).forEach((item) => favorites.set(item.title, item)); updateSavedCount(favorites.size); }
+      catch (error) { setNotice(error.message); }
+    }
+    const favorite = async (recipe, button) => {
+      if (isGuest()) { location.assign("/login/?next=%2Frecipes%2F"); return; }
+      button.disabled = true;
       try {
-        [history, favorites] = await Promise.all([
-          api("/recipes/history"),
-          api("/recipes/favorites"),
-        ]);
-      } catch (error) {
-        if (!recipe?.text && !recipe?.recipe_text) {
-          recipeReveal.cancel();
-          setNotice(error.message);
-          return;
+        const existing = favorites.get(recipe.title);
+        if (existing) { await api(`/recipes/favorites/${existing.id}`, { method: "DELETE" }); favorites.delete(recipe.title); }
+        else {
+          const saved = await api("/recipes/favorites", { method: "POST", body: JSON.stringify({ title: recipe.title, recipe_text: recipe.text, ingredients: recipe.ingredients }) });
+          favorites.set(recipe.title, saved);
         }
-        notice = [notice, "Riwayat atau favorit belum dapat dimuat dari server."].filter(Boolean).join(" ");
-      }
-    }
-    if (!recipe?.recipe_text && !recipe?.text) {
-      recipe = (recipe?.id ? history.find((entry) => entry.id === recipe.id) : null)
-        || history[0]
-        || null;
-    } else if (recipe?.id) {
-      const savedRecipe = history.find((entry) => entry.id === recipe.id);
-      if (savedRecipe) recipe = { ...recipe, ...savedRecipe, text: savedRecipe.recipe_text };
-    }
-    if (recipe?.recipe_text && !recipe.text) recipe.text = recipe.recipe_text;
-    if (Array.isArray(recipe?.options)) {
-      recipe.options = recipe.options.map((option) => {
-        const entry = history.find((item) => item.id === option.id);
-        return entry ? { ...option, title: entry.title, text: entry.recipe_text } : option;
-      });
-    }
-
-    const favoriteTitles = new Set(favorites.map((entry) => entry.title));
-    const savedCount = document.getElementById("savedCountHeader");
-    const bottomCount = document.getElementById("savedCountBottom");
-    if (savedCount) savedCount.textContent = String(favorites.length);
-    if (bottomCount) bottomCount.textContent = String(favorites.length);
-
-    const pantryBadges = document.getElementById("pantryBadges");
-    if (pantryBadges) {
-      pantryBadges.replaceChildren();
-      (recipe?.ingredients || []).forEach((ingredient) => {
-        const badge = document.createElement("span");
-        badge.className = "recipe-confirmed-ingredient";
-        badge.textContent = ingredient;
-        pantryBadges.append(badge);
-      });
-    }
-
-    if (!recipe) {
-      recipeReveal.cancel();
-      main.querySelectorAll("article").forEach((article) => article.remove());
-      const empty = document.createElement("section");
-      empty.className = "mx-auto my-10 max-w-3xl rounded-3xl border border-white/10 bg-navy-card p-8 text-center shadow-xl";
-      const heading = document.createElement("h2");
-      heading.className = "text-2xl font-display font-bold text-white";
-      heading.textContent = "Belum ada resep buatanmu";
-      const text = document.createElement("p");
-      text.className = "mt-3 text-on-surface-variant";
-      text.textContent = "Pindai bahan di dapur lalu minta NakEna meracik resep sesuai bahanmu.";
-      const link = document.createElement("a");
-      link.className = "mt-6 inline-flex rounded-xl bg-primary px-5 py-3 font-bold text-white";
-      link.href = "/scan/";
-      link.textContent = "Mulai scan bahan";
-      empty.append(heading, text, link);
-      main.append(empty);
-    } else if (featured) {
-      featured.classList.remove("hidden");
-      const options = Array.isArray(recipe.options) && recipe.options.length
-        ? recipe.options
-        : [recipe];
-      if (options.length > 1) {
-        const selector = document.createElement("section");
-        recipeReveal.hold(selector);
-        selector.className = "mb-6 rounded-2xl border border-white/10 bg-navy-card p-4";
-        const heading = document.createElement("h3");
-        heading.className = "mb-3 font-display text-lg font-bold text-white";
-        heading.textContent = `Pilihan resep kategori ${recipe.category || "Rumahan"}`;
-        const list = document.createElement("div");
-        list.className = "grid grid-cols-1 gap-2 sm:grid-cols-3";
-        options.forEach((option, index) => {
-          const choice = document.createElement("button");
-          choice.type = "button";
-          choice.className = "rounded-xl border border-white/10 bg-navy-surface px-4 py-3 text-left text-sm font-semibold text-on-surface hover:border-primary";
-          choice.classList.add("recipe-choice-option");
-          choice.textContent = option.title;
-          choice.setAttribute("aria-pressed", String(option.id === recipe.id));
-          if (option.id === recipe.id) choice.classList.add("border-primary", "text-white");
-          choice.addEventListener("click", () => {
-            sessionStorage.setItem(recipeKey, JSON.stringify({
-              ...option,
-              options,
-              category: recipe.category || "Rumahan",
-            }));
-            location.reload();
-          });
-          choice.setAttribute("aria-label", `Pilihan ${index + 1}: ${option.title}`);
-          list.append(choice);
-        });
-        selector.append(heading, list);
-        const featuredContainer = featured.parentElement;
-        if (featuredContainer?.parentElement === main) {
-          main.insertBefore(selector, featuredContainer);
-        }
-      }
-      const title = featured.querySelector("h2");
-      const description = featured.querySelector("p");
-      const image = featured.querySelector("img");
-      if (title) title.textContent = recipe.title;
-      if (description) {
-        description.textContent = String(recipe.description || "").trim();
-        description.hidden = !description.textContent;
-      }
-      if (image) renderRecipePhoto(image, recipe, false, recipeReveal.reveal);
-      else recipeReveal.reveal();
-      const content = Array.from(featured.querySelectorAll("div"))
-        .find((element) => element.classList.contains("lg:col-span-7"));
-      const recipeBody = Array.from(content?.children || [])
-        .find((element) => element.classList.contains("flex-col"));
-      const recipeHeading = recipeBody?.querySelector("h2");
-      const recipeDescription = recipeBody?.querySelector("p");
-      if (recipeHeading) recipeHeading.className = "recipe-content-title";
-      if (recipeDescription) recipeDescription.className = "recipe-content-description";
-      const details = createRecipeContent(recipe);
-      if (recipeBody) {
-        recipeBody.replaceChildren(...[recipeHeading, recipeDescription?.hidden ? null : recipeDescription, details].filter(Boolean));
-      }
-      featured.querySelectorAll("[onclick]").forEach((button) => {
-        const action = button.getAttribute("onclick") || "";
-        button.removeAttribute("onclick");
-        if (action.startsWith("toggleFav")) {
-          button.addEventListener("click", (event) => {
-            event.preventDefault();
-            event.stopImmediatePropagation();
-            window.toggleFav(button, recipe.title);
-          }, true);
-        } else if (button.textContent.toLowerCase().includes("detail resep")) {
-          button.addEventListener("click", (event) => {
-            event.preventDefault();
-            sessionStorage.setItem(recipeKey, JSON.stringify(recipe));
-            location.assign("/recipes/1/");
-          }, true);
-        }
-      });
-      const icon = featured.querySelector(".bookmark-icon");
-      updateRecipeFavoriteIcon(icon, favoriteTitles.has(recipe.title));
-    }
-    showRecipeNotice(main, notice);
-
-    window.toggleFav = async (button, title) => {
-      if (isGuest()) {
-        setNotice("Mode Guest tidak menyimpan favorit atau riwayat. Masuk/daftar jika ingin menyimpan resep.");
-        return;
-      }
-      try {
-        const favorites = await api("/recipes/favorites");
-        const existing = favorites.find((item) => item.title === title);
-        if (existing) {
-          await api(`/recipes/favorites/${existing.id}`, { method: "DELETE" });
-        } else {
-          await api("/recipes/favorites", {
-            method: "POST",
-            body: JSON.stringify({
-              title,
-              recipe_text: recipe?.title === title ? recipe.text : recipe?.recipe_text || "",
-              ingredients: recipe?.title === title ? recipe.ingredients : [],
-            }),
-          });
-        }
-        const icon = button?.querySelector(".bookmark-icon, [data-recipe-icon], .material-symbols-outlined");
-        updateRecipeFavoriteIcon(icon, !existing);
-        const count = document.getElementById("savedCountHeader");
-        if (count) count.textContent = existing ? favorites.length - 1 : favorites.length + 1;
-        const bottomCount = document.getElementById("savedCountBottom");
-        if (bottomCount) bottomCount.textContent = existing ? favorites.length - 1 : favorites.length + 1;
-      } catch (error) {
-        setNotice(error.message);
-      }
+        button.setAttribute("aria-pressed", String(favorites.has(recipe.title)));
+        button.setAttribute("aria-label", `${favorites.has(recipe.title) ? "Hapus" : "Simpan"} ${recipe.title}`);
+        updateSavedCount(favorites.size); setNotice(favorites.has(recipe.title) ? "Resep tersimpan di favorit." : "Resep dihapus dari favorit.", true);
+      } catch (error) { setNotice(error.message); }
+      finally { button.disabled = false; }
     };
-
-    const regenerate = async (preferences = "Buat variasi resep baru dari bahan yang sama") => {
-      const ingredients = recipe?.ingredients;
-      if (!Array.isArray(ingredients) || !ingredients.length) {
-        setNotice("Pindai bahan terlebih dahulu sebelum membuat resep.");
-        return;
-      }
+    const pantry = document.getElementById("pantryBadges"); pantry.replaceChildren();
+    selected.ingredients.forEach((ingredient) => pantry.append(uiElement("span", "recipe-confirmed-ingredient", ingredient)));
+    const stages = new Map();
+    const otherGrid = document.getElementById("recipeOtherGrid");
+    const otherSection = document.getElementById("other-recipes");
+    featured.replaceChildren();
+    options.forEach((recipe, index) => {
+      const isSelected = recipe.id === selected.id || (!selected.id && index === 0);
+      const stage = recipeCard(recipe, { featured: isSelected, favorite, favorites, options, label: recipe.category || selected.category || "Dari bahanmu" });
+      stages.set(recipe, { stage, featured: isSelected });
+      (isSelected ? featured : otherGrid).append(stage);
+    });
+    // Older saved entries may not have ids matching their options. The first becomes the lead card.
+    if (!featured.children.length && options.length) {
+      const first = stages.get(options[0]); first.stage.remove();
+      const stage = recipeCard(options[0], { featured: true, favorite, favorites, options, label: "Dari bahanmu" });
+      stages.set(options[0], { stage, featured: true }); featured.append(stage);
+    }
+    document.getElementById("recipeOptionsLabel").textContent = `${options.length} pilihan resep · ${selected.category || "Rumahan"}`;
+    let maxMinutes = null;
+    const filter = () => {
+      const sort = document.getElementById("recipe-sort").value;
+      const ordered = [...options].sort((a, b) => sort === "name" ? a.title.localeCompare(b.title, "id") : sort === "time" ? (recipeMinutes(a) ?? Infinity) - (recipeMinutes(b) ?? Infinity) : 0);
+      let visible = 0, visibleOther = 0, visibleFeatured = 0;
+      ordered.forEach((recipe) => {
+        const value = stages.get(recipe);
+        const minutes = recipeMinutes(recipe);
+        const show = maxMinutes == null || (minutes != null && minutes <= maxMinutes);
+        value.stage.hidden = !show;
+        if (show) { visible += 1; if (value.featured) visibleFeatured += 1; else visibleOther += 1; }
+        if (!value.featured) otherGrid.append(value.stage);
+      });
+      featured.hidden = !visibleFeatured; otherSection.hidden = !visibleOther;
+      document.getElementById("recipeFilterEmpty").hidden = visible > 0;
+    };
+    document.querySelectorAll("#recipe-time-filters button").forEach((button) => button.addEventListener("click", () => {
+      maxMinutes = button.dataset.maxMinutes ? Number(button.dataset.maxMinutes) : null;
+      document.querySelectorAll("#recipe-time-filters button").forEach((item) => item.setAttribute("aria-pressed", String(item === button)));
+      filter();
+    }));
+    document.getElementById("recipe-sort").addEventListener("change", filter); filter();
+    const notice = sessionStorage.getItem(recipeNoticeKey); if (notice) { setNotice(notice); sessionStorage.removeItem(recipeNoticeKey); }
+    let generating = false;
+    const regenerate = async (extra = "") => {
+      if (generating) return;
+      const original = raw.request || {};
+      const category = ["Rumahan", "Tumisan", "Kuah Hangat"].includes(selected.category) ? selected.category : "Rumahan";
+      const request = {
+        ingredients: selected.ingredients,
+        preferences: [original.preferences || "", extra || "Buat variasi resep baru dari bahan yang sama"].filter(Boolean).join("; "),
+        allergies: Array.isArray(original.allergies) ? original.allergies : [],
+        servings: original.servings || 2,
+        category,
+      };
+      if (!request.ingredients.length) return setNotice("Konfirmasikan bahan terlebih dahulu.");
+      generating = true;
+      const button = document.getElementById("regenerateRecipes");
+      const customButton = document.querySelector('#customRecipeForm button');
+      button.disabled = customButton.disabled = true;
+      const label = button.textContent; button.textContent = "Meracik resep…";
       try {
-        const result = await api("/recipes/generate", {
-          method: "POST",
-          body: JSON.stringify({
-            ingredients,
-            preferences,
-            allergies: [],
-            servings: 2,
-            category: recipe.category || "Rumahan",
-          }),
-        });
-        const { recipes, errors } = await saveGeneratedRecipes(
-          result,
-          ingredients,
-          recipe.category || "Rumahan",
-        );
-        sessionStorage.setItem(recipeKey, JSON.stringify({
-          ...recipes[0],
-          options: recipes,
-          category: recipe.category || "Rumahan",
-        }));
-        if (errors.length) {
-          sessionStorage.setItem(
-            recipeNoticeKey,
-            "Resep berhasil dibuat, tetapi sebagian tidak tersimpan ke riwayat. " + errors.join(" "),
-          );
-        }
+        const result = await api("/recipes/generate", { method: "POST", body: JSON.stringify(request) });
+        const saved = await saveGeneratedRecipes(result, request.ingredients, request.category);
+        saved.recipes.forEach((recipe) => { recipe.request = request; });
+        sessionStorage.setItem(recipeKey, JSON.stringify({ ...saved.recipes[0], options: saved.recipes, request }));
+        if (saved.errors.length) sessionStorage.setItem(recipeNoticeKey, "Resep dibuat, tetapi belum semuanya tersimpan. " + saved.errors.join(" "));
         location.reload();
-      } catch (error) {
-        setNotice(error.message);
-      }
+      } catch (error) { setNotice(error.message); button.textContent = label; button.disabled = customButton.disabled = false; generating = false; }
     };
-    window.triggerRegenerate = () => regenerate();
-    window.requestCustomPrompt = () => {
-      const input = document.getElementById("customPromptInput");
-      const prompt = input?.value.trim();
-      if (!prompt) return setNotice("Tuliskan permintaan masakanmu terlebih dahulu.");
+    document.getElementById("regenerateRecipes").addEventListener("click", () => regenerate());
+    captureSubmit(document.getElementById("customRecipeForm"), () => {
+      const prompt = document.getElementById("customPromptInput").value.trim();
+      if (!prompt) return setNotice("Tuliskan permintaan masakan terlebih dahulu.");
       regenerate(prompt);
+    });
+  }
+
+  function bindCollectionFilters(records, grid, empty, { kind = false } = {}) {
+    const search = document.getElementById("collectionSearch");
+    const sort = document.getElementById("collectionSort");
+    const status = document.getElementById("collectionStatus");
+    let selected = kind ? "all" : null;
+    const refresh = () => {
+      const query = search.value.trim().toLocaleLowerCase("id-ID");
+      let visible = 0;
+      const values = [...records].sort((a, b) => sort.value === "name" ? a.recipe.title.localeCompare(b.recipe.title, "id") : (new Date(b.created).getTime() - new Date(a.created).getTime()) * (sort.value === "oldest" ? -1 : 1));
+      values.forEach((value) => {
+        const text = `${value.recipe.title} ${value.recipe.ingredients.join(" ")}`.toLocaleLowerCase("id-ID");
+        const minutes = recipeMinutes(value.recipe);
+        const matches = (!query || text.includes(query)) && (kind ? selected === "all" || selected === value.kind : selected == null || minutes != null && minutes <= selected);
+        value.node.hidden = !matches; if (matches) visible += 1; grid.append(value.node);
+      });
+      empty.hidden = visible > 0;
+      status.hidden = visible > 0 || !records.length;
+      if (records.length && !visible) { status.hidden = false; status.textContent = "Tidak ada hasil yang sesuai dengan pencarian atau filter."; empty.hidden = true; }
     };
+    search.addEventListener("input", refresh); sort.addEventListener("change", refresh);
+    document.querySelectorAll(kind ? "#historyTypeFilter button" : "#favoriteTimeFilter button").forEach((button) => button.addEventListener("click", () => {
+      selected = kind ? button.dataset.kind : button.dataset.maxMinutes ? Number(button.dataset.maxMinutes) : null;
+      button.parentElement.querySelectorAll("button").forEach((item) => item.setAttribute("aria-pressed", String(item === button))); refresh();
+    }));
+    refresh(); return refresh;
   }
 
   async function setupFavorites() {
-    const grid = document.getElementById("recipeCardsGrid");
-    if (!grid) return;
+    const grid = document.getElementById("recipeCardsGrid"); if (!grid) return;
+    const status = document.getElementById("collectionStatus");
     if (isGuest()) {
-      grid.replaceChildren();
-      grid.style.display = "none";
-      document.getElementById("emptyFavoriteState")?.classList.add("hidden");
-      showGuestInfo(
-        document.querySelector("main"),
-        "Favorit tidak disimpan dalam mode Guest",
-        "Kamu tetap bisa scan bahan, membuat resep, melihat detail, dan mengikuti langkah memasak. Untuk menyimpan resep ke daftar favorit, masuk atau buat akun.",
-        "/login/?next=%2Ffavorites%2F",
-        "Masuk untuk menyimpan resep",
-      );
-      return;
+      status.hidden = true;
+      document.getElementById("recipeCounterBadge").hidden = true;
+      document.querySelector(".collection-toolbar").hidden = true;
+      showGuestInfo(document.querySelector("main"), "Koleksi resep favoritmu", "Masuk untuk menyimpan resep dan membukanya kembali kapan saja.", "/login/?next=%2Ffavorites%2F", "Masuk untuk menyimpan resep"); return;
     }
-    const template = grid.querySelector(".recipe-item");
-    grid.replaceChildren();
-    const empty = document.getElementById("emptyFavoriteState");
-    if (empty) empty.classList.add("hidden");
-    let favorites;
-    try {
-      favorites = await api("/recipes/favorites");
-    } catch (error) {
-      setNotice(error.message);
-      return;
-    }
-    if (empty) empty.classList.toggle("hidden", favorites.length > 0);
-    const badge = document.getElementById("recipeCounterBadge");
-    if (badge) badge.textContent = `${favorites.length} Resep Tersimpan`;
-    const allCount = document.getElementById("count-all");
-    if (allCount) allCount.textContent = String(favorites.length);
-    grid.style.display = favorites.length ? "" : "none";
-    favorites.forEach((favorite) => {
-      if (!template) return;
-      const card = template.cloneNode(true);
-      card.classList.remove("hidden");
-      card.dataset.title = favorite.title;
-      card.dataset.entryId = favorite.id;
-      card.dataset.category = "tersimpan";
-      card.dataset.match = "0";
-      card.dataset.rating = "0";
-      card.dataset.time = "0";
-
-      const image = card.querySelector("img");
-      renderRecipePhoto(image, favorite, true);
-      const badge = card.querySelector(".absolute.top-space-sm.left-space-sm");
-      if (badge) badge.textContent = "Tersimpan";
-      const content = Array.from(card.querySelectorAll("div"))
-        .find((element) => element.classList.contains("p-space-md") && element.classList.contains("flex-col"));
-      const heading = content?.querySelector("h2, h3, h4");
-      if (content && heading) {
-        const title = document.createElement(heading.tagName.toLowerCase());
-        title.className = heading.className;
-        title.textContent = favorite.title;
-        const summary = document.createElement("p");
-        summary.className = "font-body-sm text-body-sm text-on-surface-variant";
-        summary.textContent = favorite.ingredients?.length
-          ? `Bahan: ${favorite.ingredients.join(", ")}`
-          : "Resep tersimpan di akunmu.";
-        content.replaceChildren(title, summary);
-      }
-      const buttons = Array.from(card.querySelectorAll("button"));
-      buttons.forEach((button, index) => {
-        button.removeAttribute("onclick");
-        if (index === 0) {
-          button.setAttribute("aria-label", "Hapus dari resep tersimpan");
-          button.addEventListener("click", async () => {
-            try {
-              await api(`/recipes/favorites/${favorite.id}`, { method: "DELETE" });
-              card.remove();
-              const count = grid.querySelectorAll(".recipe-item").length;
-              if (badge) badge.textContent = `${count} Resep Tersimpan`;
-              if (empty && !count) empty.classList.remove("hidden");
-            } catch (error) {
-              setNotice(error.message);
-            }
-          });
-          return;
-        }
-        button.addEventListener("click", () => {
-          sessionStorage.setItem(recipeKey, JSON.stringify({
-            id: favorite.id,
-            title: favorite.title,
-            text: favorite.recipe_text,
-            ingredients: favorite.ingredients,
-          }));
-          location.assign("/recipes/1/");
-        });
-      });
-      grid.append(card);
+    let saved;
+    try { saved = await api("/recipes/favorites"); } catch (error) { status.textContent = "Koleksi belum dapat dimuat."; setNotice(error.message); return; }
+    const favorites = new Map(saved.map((value) => [value.title, value]));
+    const records = [];
+    let refresh = () => {};
+    const updateCounts = () => { document.getElementById("recipeCounterBadge").textContent = `${records.length} resep tersimpan`; updateSavedCount(records.length); };
+    const remove = async (recipe, button) => {
+      const existing = favorites.get(recipe.title); if (!existing) return;
+      button.disabled = true;
+      try {
+        await api(`/recipes/favorites/${existing.id}`, { method: "DELETE" });
+        favorites.delete(recipe.title);
+        const index = records.findIndex((value) => value.recipe.id === recipe.id);
+        if (index >= 0) { records[index].node.remove(); records.splice(index, 1); }
+        updateCounts(); refresh(); setNotice("Resep dihapus dari favorit.", true);
+      } catch (error) { setNotice(error.message); button.disabled = false; }
+    };
+    saved.forEach((value) => {
+      const recipe = normalizeRecipe(value);
+      const node = recipeCard(recipe, { favorite: remove, favorites, label: "RESEP FAVORIT" });
+      grid.append(node); records.push({ recipe, node, created: value.created_at });
     });
-    window.toggleFavorite = (button) => button?.closest(".recipe-item")?.querySelector("button")?.click();
+    status.hidden = true; updateCounts();
+    refresh = bindCollectionFilters(records, grid, document.getElementById("emptyFavoriteState"));
   }
 
   async function setupHistory() {
-    const grid = document.getElementById("activityGrid");
-    if (!grid) return;
+    const grid = document.getElementById("activityGrid"); if (!grid) return;
+    const status = document.getElementById("collectionStatus");
     if (isGuest()) {
-      grid.replaceChildren();
-      grid.style.display = "none";
-      document.getElementById("emptyStateView")?.classList.add("hidden");
-      showGuestInfo(
-        document.querySelector("main"),
-        "Riwayat Guest tidak disimpan",
-        "Aktivitas selama mode Guest hanya dipakai sementara untuk menyelesaikan proses scan dan memasak. Setelah sesi browser ditutup, data sementara tersebut akan hilang.",
-        "/login/?next=%2Fhistory%2F",
-        "Masuk untuk menyimpan riwayat",
-      );
-      return;
+      status.hidden = true; document.querySelector(".collection-toolbar").hidden = true;
+      showGuestInfo(document.querySelector("main"), "Riwayat Guest tidak disimpan", "Hasil scan dan resep pada mode Guest hanya digunakan selama sesi ini. Masuk agar aktivitas berikutnya tersimpan ke akun.", "/login/?next=%2Fhistory%2F", "Masuk untuk menyimpan riwayat"); return;
     }
-    const cards = Array.from(grid.querySelectorAll(".activity-card"));
-    const template = cards[0];
-    const empty = document.getElementById("emptyStateView");
-    cards.forEach((card) => card.remove());
-    let history;
-    let uploads;
-    try {
-      [history, uploads] = await Promise.all([
-        api("/recipes/history"),
-        api("/uploads"),
-      ]);
-    } catch (error) {
-      setNotice(error.message);
-      return;
-    }
-    const entries = [
-      ...history.map((entry) => ({ ...entry, kind: "recipe" })),
-      ...uploads.map((upload) => ({ ...upload, kind: "upload", title: `Scan: ${upload.original_filename}` })),
-    ].sort((left, right) => new Date(right.created_at).getTime() - new Date(left.created_at).getTime());
-    grid.style.display = entries.length ? "" : "none";
-    entries.forEach((entry) => {
-      if (!template) return;
-      const card = template.cloneNode(true);
-      card.classList.remove("hidden");
-      const title = card.querySelector("h2, h3, h4, [data-title]");
-      if (title) title.textContent = entry.title;
-      card.setAttribute("data-title", entry.title);
-      card.setAttribute("data-type", entry.kind === "recipe" ? "resep" : "scan");
-      card.setAttribute("data-status", entry.kind === "upload" ? entry.status : "selesai");
-      const text = card.querySelector("p");
-      if (text) text.textContent = new Date(entry.created_at).toLocaleString("id-ID");
-      const image = card.querySelector("img");
-      if (image) {
-        image.removeAttribute("src");
-        image.alt = entry.kind === "recipe" ? `Resep ${entry.title}` : "Foto bahan yang diunggah";
-      }
-      const badge = card.querySelector(".absolute.top-3.left-3");
-      if (badge) badge.textContent = entry.kind === "recipe" ? "Resep tersimpan" : `Scan ${entry.status}`;
-      const body = Array.from(card.querySelectorAll("div"))
-        .find((element) => element.classList.contains("p-space-md") && element.classList.contains("flex-col"));
-      const bodyTitle = body?.querySelector("h2, h3, h4");
-      if (body && bodyTitle) {
-        const dynamicTitle = document.createElement(bodyTitle.tagName.toLowerCase());
-        dynamicTitle.className = bodyTitle.className;
-        dynamicTitle.textContent = entry.title;
-        const summary = document.createElement("p");
-        summary.className = "font-body-sm text-body-sm text-on-surface-variant";
-        summary.textContent = entry.kind === "recipe"
-          ? (entry.ingredients?.length ? `Bahan: ${entry.ingredients.join(", ")}` : "Resep buatan NakEna")
-          : `Status scan: ${entry.status}`;
-        body.replaceChildren(dynamicTitle, summary);
-      }
-      card.querySelectorAll("[onclick]").forEach((button) => button.removeAttribute("onclick"));
-      card.addEventListener("click", (event) => {
-        if (event.target.closest("button")) return;
-        if (entry.kind === "recipe") {
-          sessionStorage.setItem(recipeKey, JSON.stringify({
-            id: entry.id,
-            title: entry.title,
-            text: entry.recipe_text,
-            ingredients: entry.ingredients,
-          }));
-          location.assign("/recipes/1/");
-        }
-      });
-      card.querySelectorAll("button").forEach((button) => {
-        button.textContent = entry.kind === "recipe" ? "Lihat resep" : "Scan ulang";
-        button.addEventListener("click", (event) => {
-          event.preventDefault();
-          event.stopPropagation();
-          if (entry.kind === "recipe") {
-            sessionStorage.setItem(recipeKey, JSON.stringify({
-              id: entry.id,
-              title: entry.title,
-              text: entry.recipe_text,
-              ingredients: entry.ingredients,
-            }));
-            location.assign("/recipes/1/");
-          } else {
-            location.assign("/scan/");
-          }
-        });
-      });
-      grid.append(card);
+    let history, uploads;
+    try { [history, uploads] = await Promise.all([api("/recipes/history"), api("/uploads")]); }
+    catch (error) { status.textContent = "Riwayat belum dapat dimuat."; setNotice(error.message); return; }
+    const summary = document.getElementById("historySummary");
+    summary.append(uiElement("span", "small-badge", `${history.length} resep`), uiElement("span", "small-badge", `${uploads.length} hasil scan`));
+    const records = [];
+    history.forEach((entry) => {
+      const recipe = normalizeRecipe(entry);
+      const node = recipeCard(recipe, { label: `RESEP DIBUAT · ${dateLabel(entry.created_at)}` });
+      grid.append(node); records.push({ recipe, node, kind: "recipe", created: entry.created_at });
     });
-    if (empty) empty.classList.toggle("hidden", entries.length > 0);
+    const latest = storedJSON(uploadKey);
+    uploads.forEach((entry) => {
+      const node = uiElement("article", "recipe-other-card");
+      const visual = uiElement("div", "recipe-visual scan-history-art");
+      const preview = latest?.id === entry.id ? sessionStorage.getItem("nakena_preview_image") : null;
+      if (preview) { const image = uiElement("img"); image.src = preview; image.alt = "Foto bahan yang kamu unggah"; visual.append(image); } else visual.append(uiIcon("camera"));
+      const body = uiElement("div", "recipe-card-body");
+      const statusLabel = { detected: "Selesai dipindai", no_detections: "Belum ada bahan terdeteksi", uploaded: "Foto diunggah", pending: "Menunggu proses", failed: "Pemindaian gagal" }[entry.status] || "Foto tersimpan";
+      body.append(uiElement("span", "small-label warm", `HASIL SCAN · ${dateLabel(entry.created_at)}`), uiElement("h3", "", entry.original_filename), uiElement("p", "", statusLabel));
+      const link = uiElement("a", "btn btn-primary", "Scan bahan baru"); link.href = "/scan/"; body.append(link); node.append(visual, body); grid.append(node);
+      records.push({ recipe: { title: entry.original_filename, ingredients: [] }, node, kind: "upload", created: entry.created_at });
+    });
+    status.hidden = true; bindCollectionFilters(records, grid, document.getElementById("emptyState"), { kind: true });
   }
 
-  function setupRecipeDetail() {
-    if (!location.pathname.match(/^\/recipes\/\d+\/$/)) return;
-    let recipe;
-    try {
-      recipe = JSON.parse(sessionStorage.getItem(recipeKey) || "null");
-    } catch {
-      sessionStorage.removeItem(recipeKey);
-    }
-    if (!recipe?.text && !recipe?.recipe_text) {
-      location.replace("/recipes/");
-      return;
-    }
-    if (!recipe.text) recipe.text = recipe.recipe_text;
-    const main = document.querySelector("main");
-    if (!main) return;
+  async function setupRecipeDetail() {
+    const title = document.getElementById("detailRecipeTitle"); if (!title) return;
+    const value = storedJSON(recipeKey);
+    if (!value?.text && !value?.recipe_text) { location.replace("/recipes/"); return; }
+    const recipe = normalizeRecipe(value);
     const parsed = parseRecipeContent(recipe.text, recipe.ingredients);
     const instructions = recipeInstructions(parsed, recipe.title);
-    const preview = document.getElementById("recipe-step-preview");
-    renderRecipeStepPreview(preview, instructions);
-    const previewCount = document.getElementById("recipe-step-preview-count");
-    if (previewCount) previewCount.textContent = `${instructions.length} langkah`;
-    const previewEmpty = document.getElementById("recipe-step-preview-empty");
-    if (previewEmpty) previewEmpty.hidden = instructions.length > 0;
-    const previewCard = document.getElementById("recipe-step-preview-card");
-    if (previewCard) previewCard.hidden = false;
-    const coachTip = document.getElementById("recipe-coach-tip");
-    const coachCard = document.getElementById("recipe-coach-card");
-    const tips = parsed.sections.filter((section) => section.kind === "tips");
-    if (coachTip) coachTip.textContent = tips.map((section) => section.text).join("\n\n");
-    if (coachCard) coachCard.hidden = tips.length === 0;
-    const heading = main.querySelector("h1, h2");
-    if (heading) heading.textContent = recipe.title;
-    const description = heading?.parentElement.querySelector("p");
-    if (description) {
-      description.textContent = recipe.ingredients?.length
-        ? `Bahan: ${recipe.ingredients.join(", ")}`
-        : "Resep yang dibuat khusus untukmu oleh NakEna.";
-    }
-    renderRecipePhoto(main.querySelector("img"), recipe);
-    const checklist = document.getElementById("ingredient-checklist");
-    if (checklist) {
-      checklist.replaceChildren();
-      (recipe.ingredients || []).forEach((ingredient) => {
-        const item = document.createElement("li");
-        item.className = "flex items-center justify-between p-space-sm rounded-lg bg-surface-container-low";
-        const label = document.createElement("span");
-        label.className = "font-body-md text-body-md text-on-surface";
-        label.textContent = ingredient;
-        item.append(label);
-        checklist.append(item);
+    title.textContent = recipe.title;
+    document.title = `${recipe.title} — NakEna`;
+    const description = document.getElementById("detailRecipeDescription");
+    description.textContent = String(recipe.description || (parsed.intro.toLowerCase() !== recipe.title.toLowerCase() ? parsed.intro : "") || "");
+    description.hidden = !description.textContent;
+    document.getElementById("detailRecipeMeta").replaceChildren(...recipeMeta(recipe).children);
+    renderRecipePhoto(document.getElementById("detailRecipePhoto"), recipe);
+    const list = document.getElementById("ingredient-checklist"); list.replaceChildren();
+    const groups = parsed.sections.filter((section) => section.kind === "ingredients");
+    groups.forEach((group) => {
+      if (groups.length > 1) list.append(uiElement("li", "detail-ingredient-group", group.label.charAt(0).toUpperCase() + group.label.slice(1)));
+      group.items.forEach((text) => {
+        const item = uiElement("li"), label = uiElement("label"), input = uiElement("input"); input.type = "checkbox";
+        label.append(input, uiElement("span", "", text)); item.append(label); list.append(item);
       });
+    });
+    document.getElementById("detailIngredientCount").textContent = `${parsed.ingredients.length} bahan`;
+    renderRecipeStepPreview(document.getElementById("recipe-step-preview"), instructions);
+    document.getElementById("recipe-step-preview-count").textContent = `${instructions.length} langkah`;
+    document.getElementById("recipe-step-preview-empty").hidden = instructions.length > 0;
+    document.getElementById("recipe-step-preview-card").hidden = false;
+    const tips = parsed.sections.filter((section) => section.kind === "tips");
+    document.getElementById("recipe-coach-tip").textContent = tips.map((section) => section.text).join("\n\n");
+    document.getElementById("recipe-coach-card").hidden = !tips.length;
+    const notes = parsed.sections.filter((section) => section.kind === "text");
+    if (notes.length) {
+      notes.forEach((section) => document.getElementById("detailNotesContent").append(uiElement("p", "", section.text)));
+      document.getElementById("detailNotes").hidden = false;
     }
-    const details = createRecipeContent(recipe);
-    description?.after(details);
-
-    const saveButton = document.getElementById("btn-save-recipe");
-    if (saveButton) saveButton.addEventListener("click", async (event) => {
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      if (isGuest()) {
-        setNotice("Mode Guest tidak menyimpan favorit. Masuk atau daftar untuk menyimpan resep ini.");
-        return;
-      }
+    const button = document.getElementById("btn-save-recipe");
+    let favorite = null;
+    const update = () => {
+      const text = button.querySelector("span"); text.textContent = favorite ? "Tersimpan" : "Simpan resep";
+      button.setAttribute("aria-pressed", String(Boolean(favorite)));
+    };
+    if (!isGuest()) {
+      button.disabled = true;
+      try { const favorites = await api("/recipes/favorites"); favorite = favorites.find((entry) => entry.title === recipe.title); updateSavedCount(favorites.length); update(); }
+      catch (error) { setNotice(error.message); }
+      finally { button.disabled = false; }
+    }
+    button.addEventListener("click", async () => {
+      if (isGuest()) { location.assign("/login/?next=%2Frecipes%2F1%2F"); return; }
+      button.disabled = true;
       try {
-        const favorites = await api("/recipes/favorites");
-        const favorite = favorites.find((entry) => entry.title === recipe.title);
-        if (favorite) {
-          await api(`/recipes/favorites/${favorite.id}`, { method: "DELETE" });
-          setNotice("Resep dihapus dari favorit.");
-        } else {
-          await api("/recipes/favorites", {
-            method: "POST",
-            body: JSON.stringify({
-              title: recipe.title,
-              recipe_text: recipe.text,
-              ingredients: recipe.ingredients || [],
-            }),
-          });
-          setNotice("Resep disimpan ke favorit.", true);
-        }
-      } catch (error) {
-        setNotice(error.message);
-      }
-    }, true);
-    const shareButton = document.getElementById("share-btn");
-    if (shareButton) shareButton.addEventListener("click", async (event) => {
-      event.preventDefault();
-      event.stopImmediatePropagation();
+        if (favorite) { await api(`/recipes/favorites/${favorite.id}`, { method: "DELETE" }); favorite = null; }
+        else favorite = await api("/recipes/favorites", { method: "POST", body: JSON.stringify({ title: recipe.title, recipe_text: recipe.text, ingredients: recipe.ingredients }) });
+        update(); setNotice(favorite ? "Resep tersimpan di favorit." : "Resep dihapus dari favorit.", true);
+      } catch (error) { setNotice(error.message); }
+      finally { button.disabled = false; }
+    });
+    document.getElementById("share-btn").addEventListener("click", async () => {
       try {
-        await navigator.clipboard.writeText(`${recipe.title}\n${location.href}`);
-        setNotice("Tautan resep berhasil disalin.", true);
-      } catch (error) {
-        setNotice(`Gagal menyalin tautan: ${error.message}`);
-      }
-    }, true);
-    main.querySelectorAll("h2").forEach((sectionTitle) => {
-      if (/Nutrisi per Porsi|Ulasan|Komentar/i.test(sectionTitle.textContent)) {
-        sectionTitle.closest("section")?.classList.add("hidden");
-      }
+        // Recipe content is session-bound, so share the actual recipe as well as the title.
+        const text = `${recipe.title}\n\n${recipe.text}`;
+        if (navigator.share) await navigator.share({ title: recipe.title, text });
+        else { await navigator.clipboard.writeText(text); setNotice("Teks resep disalin.", true); }
+      } catch (error) { if (error.name !== "AbortError") setNotice("Resep belum dapat dibagikan. Coba lagi."); }
     });
   }
 
@@ -1739,6 +1533,9 @@
           year: "numeric",
         });
       }
+      document.querySelectorAll("[data-profile-initial]").forEach((element) => {
+        element.textContent = Array.from(user.full_name.trim())[0]?.toLocaleUpperCase("id-ID") || "N";
+      });
       const fullNameInput = document.getElementById("input-fullname");
       if (fullNameInput) fullNameInput.value = user.full_name || "";
       const emailInput = document.getElementById("input-email");
