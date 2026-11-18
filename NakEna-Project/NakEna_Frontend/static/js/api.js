@@ -6,6 +6,7 @@
   const uploadKey = "nakena_last_upload";
   const recipeKey = "nakena_latest_recipe";
   const recipeNoticeKey = "nakena_recipe_notice";
+  const moreRecipesKey = "nakena_more_recipe_request";
   const apiBaseUrl = (document.currentScript?.dataset.apiBase || "http://127.0.0.1:8000").replace(/\/+$/, "");
   const token = () => sessionStorage.getItem(tokenKey);
   let currentRole = "guest";
@@ -416,12 +417,9 @@
         nav.append(link);
       };
       if (role === "user") {
-        addLink("Scan Bahan", "/scan/");
         if (!["/scan", "/scan/"].includes(location.pathname)) {
           addLink("Resep", "/recipes/");
         }
-        addLink("Riwayat", "/history/");
-        addLink("Favorit", "/favorites/");
         addLink("Preferensi", "/profile/");
       } else if (role === "admin") {
         addLink("Admin Dashboard", "/admin-dashboard/");
@@ -469,7 +467,7 @@
     const path = location.pathname;
     const publicPath = path === "/" || /^\/(login|register)\/?$/.test(path);
     if (currentRole === "guest" && !publicPath) {
-      [uploadKey, recipeKey, recipeNoticeKey, "nakena_preview_image", "nakena_guest_mode"]
+      [uploadKey, recipeKey, recipeNoticeKey, moreRecipesKey, "nakena_preview_image", "nakena_guest_mode"]
         .forEach((key) => sessionStorage.removeItem(key));
       showAccessWarning(
         "Anda harus login terlebih dahulu untuk memindai bahan makanan dan membuat resep.",
@@ -1379,6 +1377,49 @@
     if (!raw?.text && !raw?.recipe_text) {
       try { raw = (await api("/recipes/history"))[0] || null; } catch (error) { setNotice(error.message); }
     }
+    let generatedMore = false;
+    if (new URLSearchParams(location.search).get("more") === "1") {
+      const pending = storedJSON(moreRecipesKey);
+      sessionStorage.removeItem(moreRecipesKey);
+      history.replaceState(null, "", location.pathname);
+      if (pending?.request && Array.isArray(pending.request.ingredients) && pending.request.ingredients.length) {
+        const request = {
+          ...pending.request,
+          count: 5,
+          exclude_titles: Array.isArray(pending.excludeTitles) ? pending.excludeTitles : [],
+        };
+        try {
+          setNotice("Sedang menyiapkan 5 resep alternatif baru...");
+          const result = await api("/recipes/generate", { method: "POST", body: JSON.stringify(request) });
+          const saved = await saveGeneratedRecipes(result, request.ingredients, request.category);
+          const excludedTitles = [...new Set([
+            ...request.exclude_titles,
+            ...saved.recipes.map((recipe) => recipe.title),
+          ])];
+          saved.recipes.forEach((recipe) => {
+            recipe.request = pending.request;
+            recipe.category = request.category;
+            recipe.excludedTitles = excludedTitles;
+          });
+          raw = {
+            ...saved.recipes[0],
+            options: saved.recipes,
+            request: pending.request,
+            category: request.category,
+            excludedTitles,
+          };
+          sessionStorage.setItem(recipeKey, JSON.stringify(raw));
+          if (saved.errors.length) {
+            sessionStorage.setItem(recipeNoticeKey, "Resep dibuat, tetapi belum semuanya tersimpan. " + saved.errors.join(" "));
+          }
+          generatedMore = true;
+        } catch (error) {
+          setNotice(`Resep alternatif belum dapat dibuat. ${error.message}`);
+        }
+      } else {
+        setNotice("Data resep sebelumnya tidak tersedia. Silakan buat rekomendasi resep terlebih dahulu.");
+      }
+    }
     const empty = document.getElementById("recipeEmptyState");
     if (!raw?.text && !raw?.recipe_text) {
       featured.replaceChildren(); featured.hidden = true; empty.hidden = false;
@@ -1450,6 +1491,12 @@
     }));
     document.getElementById("recipe-sort").addEventListener("change", filter); filter();
     const notice = sessionStorage.getItem(recipeNoticeKey); if (notice) { setNotice(notice); sessionStorage.removeItem(recipeNoticeKey); }
+    if (new URLSearchParams(location.search).get("review") === "saved") {
+      setNotice("Review tersimpan. Berikut resep alternatif yang sudah direkomendasikan.", true);
+      history.replaceState(null, "", `${location.pathname}${location.hash}`);
+      if (!otherSection.hidden) otherSection.scrollIntoView({ block: "start" });
+    }
+    if (generatedMore && !otherSection.hidden) otherSection.scrollIntoView({ block: "start" });
     let generating = false;
     const regenerate = async (extra = "") => {
       if (generating) return;
@@ -1553,6 +1600,12 @@
     history.forEach((entry) => {
       const recipe = normalizeRecipe(entry);
       const node = recipeCard(recipe, { label: `RESEP DIBUAT · ${dateLabel(entry.created_at)}` });
+      if (entry.review) {
+        const body = node.querySelector(".recipe-card-body");
+        const stars = "★".repeat(entry.review.rating) + "☆".repeat(5 - entry.review.rating);
+        body?.append(uiElement("span", "small-badge", `Review kamu: ${stars}`));
+        if (entry.review.comment) body?.append(uiElement("p", "muted", entry.review.comment));
+      }
       grid.append(node); records.push({ recipe, node, kind: "recipe", created: entry.created_at });
     });
     const latest = storedJSON(uploadKey);
@@ -1648,8 +1701,57 @@
       location.replace("/recipes/");
       return;
     }
+    document.getElementById("show-more-recipes-btn")?.addEventListener("click", (event) => {
+      event.preventDefault();
+      const originalRequest = recipe.request || {};
+      const ingredients = Array.isArray(originalRequest.ingredients)
+        ? originalRequest.ingredients
+        : Array.isArray(recipe.ingredients) ? recipe.ingredients : [];
+      if (!ingredients.length) {
+        setNotice("Bahan resep sebelumnya tidak tersedia untuk membuat alternatif.");
+        return;
+      }
+      const options = Array.isArray(recipe.options) ? recipe.options : [recipe];
+      const excludeTitles = [...new Set([
+        ...(Array.isArray(recipe.excludedTitles) ? recipe.excludedTitles : []),
+        ...options.map((item) => item.title),
+        recipe.title,
+      ].filter((title) => typeof title === "string" && title.trim()))];
+      const request = {
+        ingredients,
+        preferences: originalRequest.preferences || "",
+        allergies: Array.isArray(originalRequest.allergies) ? originalRequest.allergies : [],
+        servings: originalRequest.servings || 2,
+        category: originalRequest.category || recipe.category || "Rumahan",
+      };
+      sessionStorage.setItem(moreRecipesKey, JSON.stringify({ request, excludeTitles }));
+      location.assign("/recipes/?more=1");
+    });
     const parsed = parseRecipeContent(recipeText, recipe.ingredients);
     const instructions = recipeInstructions(parsed, recipe.title);
+    window.addEventListener("nakena:submit-cooking-review", async (event) => {
+      const rating = Number(event.detail?.rating);
+      if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+        window.dispatchEvent(new CustomEvent("nakena:cooking-review-error", {
+          detail: { message: "Pilih rating bintang dari 1 sampai 5." },
+        }));
+        return;
+      }
+      try {
+        await api(`/recipes/history/${encodeURIComponent(recipe.id)}/review`, {
+          method: "POST",
+          body: JSON.stringify({
+            rating,
+            comment: String(event.detail?.comment || "").trim(),
+          }),
+        });
+        window.dispatchEvent(new CustomEvent("nakena:cooking-review-saved"));
+      } catch (error) {
+        window.dispatchEvent(new CustomEvent("nakena:cooking-review-error", {
+          detail: { message: error.message },
+        }));
+      }
+    });
     window.dispatchEvent(new CustomEvent("nakena:guided-recipe", {
       detail: {
         title: recipe.title || "Resep pilihanmu",
@@ -1658,6 +1760,7 @@
           .map((item) => ({ label: item.label, items: item.items })),
         time: parsed.time,
         tips: parsed.sections.filter((item) => item.kind === "tips").map((item) => item.text),
+        id: recipe.id,
       },
     }));
   }
@@ -1737,76 +1840,541 @@
       }
       main.replaceChildren();
       const section = document.createElement("section");
-      section.className = "mx-auto my-8 max-w-6xl rounded-3xl border border-white/10 bg-surface-container-low p-6 sm:p-8";
+      section.className = "admin-dashboard-shell";
 
       const header = document.createElement("div");
-      header.className = "mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between";
+      header.className = "admin-dashboard-header";
       const titleGroup = document.createElement("div");
       const heading = document.createElement("h1");
-      heading.className = "text-2xl font-bold text-on-surface";
-      heading.textContent = "Kelola Pengguna";
+      heading.textContent = "Dashboard Admin";
       const detail = document.createElement("p");
-      detail.className = "mt-2 text-sm text-on-surface-variant";
-      detail.textContent = "Lihat akun terdaftar dan hapus akun pengguna yang tidak diperlukan.";
+      detail.textContent = "Pantau pertumbuhan pengguna, resep, dan pengalaman memasak.";
       titleGroup.append(heading, detail);
 
       const refreshButton = document.createElement("button");
       refreshButton.type = "button";
-      refreshButton.className = "rounded-lg bg-surface-container-high px-4 py-2 text-sm font-semibold text-on-surface hover:bg-secondary-container";
-      refreshButton.textContent = "Muat ulang";
+      refreshButton.className = "admin-refresh-button";
+      refreshButton.textContent = "Perbarui data";
       header.append(titleGroup, refreshButton);
 
       const status = document.createElement("p");
-      status.className = "mb-4 text-sm text-on-surface-variant";
+      status.className = "admin-dashboard-status";
       status.setAttribute("role", "status");
+      const analyticsStatus = document.createElement("p");
+      analyticsStatus.className = "admin-dashboard-status";
+      analyticsStatus.setAttribute("role", "status");
+
+      const statsGrid = document.createElement("div");
+      statsGrid.className = "admin-stats-grid";
+      const chartsGrid = document.createElement("div");
+      chartsGrid.className = "admin-charts-grid";
+      const makePanel = (title, description = "") => {
+        const panel = document.createElement("section");
+        panel.className = "admin-dashboard-card";
+        const panelHeading = document.createElement("div");
+        panelHeading.className = "admin-card-heading";
+        const panelTitle = document.createElement("h2");
+        panelTitle.textContent = title;
+        panelHeading.append(panelTitle);
+        if (description) {
+          const panelDescription = document.createElement("p");
+          panelDescription.textContent = description;
+          panelHeading.append(panelDescription);
+        }
+        panel.append(panelHeading);
+        return panel;
+      };
+      const makeView = (id, title, description) => {
+        const view = document.createElement("section");
+        view.id = id;
+        view.className = "admin-view";
+        view.hidden = id !== "admin-view-overview";
+        const viewHeading = document.createElement("div");
+        viewHeading.className = "admin-view-heading";
+        const viewTitle = document.createElement("h2");
+        viewTitle.textContent = title;
+        const viewDescription = document.createElement("p");
+        viewDescription.textContent = description;
+        viewHeading.append(viewTitle, viewDescription);
+        view.append(viewHeading);
+        return view;
+      };
+      const makeReadOnlyTable = (headers) => {
+        const wrap = document.createElement("div");
+        wrap.className = "admin-users-table-wrap";
+        const table = document.createElement("table");
+        table.className = "admin-users-table admin-data-table";
+        const head = document.createElement("thead");
+        const row = document.createElement("tr");
+        headers.forEach((label) => {
+          const cell = document.createElement("th");
+          cell.scope = "col";
+          cell.textContent = label;
+          row.append(cell);
+        });
+        head.append(row);
+        const body = document.createElement("tbody");
+        table.append(head, body);
+        wrap.append(table);
+        return { wrap, body };
+      };
+      const addTableRow = (body, values) => {
+        const row = document.createElement("tr");
+        values.forEach((value) => {
+          const cell = document.createElement("td");
+          cell.textContent = String(value);
+          row.append(cell);
+        });
+        body.append(row);
+      };
+
+      const activityPanel = makePanel("Aktivitas 7 hari", "Pengguna baru dan resep yang tersimpan.");
+      const activityChart = document.createElement("div");
+      activityChart.className = "admin-activity-chart";
+      activityPanel.append(activityChart);
+      const activityLegend = document.createElement("div");
+      activityLegend.className = "admin-chart-legend";
+      [["Pengguna baru", "user"], ["Resep tersimpan", "recipe"]].forEach(([label, kind]) => {
+        const item = document.createElement("span");
+        item.className = "admin-legend-item";
+        const marker = document.createElement("i");
+        marker.className = `admin-legend-marker is-${kind}`;
+        item.append(marker, document.createTextNode(label));
+        activityLegend.append(item);
+      });
+      activityPanel.append(activityLegend);
+      chartsGrid.append(activityPanel);
+
+      const ratingPanel = makePanel("Distribusi rating", "Jumlah review pada setiap nilai bintang.");
+      const ratingChart = document.createElement("div");
+      ratingChart.className = "admin-rating-chart";
+      ratingPanel.append(ratingChart);
+      chartsGrid.append(ratingPanel);
+
+      const reviewPanel = makePanel("Review terbaru", "Komentar yang diberikan pengguna setelah memasak.");
+      reviewPanel.classList.add("admin-reviews-panel");
+      const reviewList = document.createElement("div");
+      reviewList.className = "admin-review-list";
+      reviewPanel.append(reviewList);
+
+      const usersHeading = document.createElement("div");
+      usersHeading.className = "admin-users-heading";
+      const usersTitle = document.createElement("h2");
+      usersTitle.textContent = "Daftar Pengguna";
+      const usersDescription = document.createElement("p");
+      usersDescription.textContent = "Kelola akun pengguna yang terdaftar.";
+      usersHeading.append(usersTitle, usersDescription);
+
       const tableWrap = document.createElement("div");
-      tableWrap.className = "overflow-x-auto rounded-xl border border-white/10";
+      tableWrap.className = "admin-users-table-wrap";
       const table = document.createElement("table");
-      table.className = "w-full min-w-[640px] text-left text-sm";
+      table.className = "admin-users-table";
       const tableHead = document.createElement("thead");
-      tableHead.className = "bg-surface-container-high text-xs uppercase tracking-wide text-on-surface-variant";
       const headRow = document.createElement("tr");
       ["Nama", "Email", "Role", "Terdaftar", "Aksi"].forEach((label) => {
         const cell = document.createElement("th");
-        cell.className = "px-4 py-3 font-semibold";
         cell.scope = "col";
         cell.textContent = label;
         headRow.append(cell);
       });
       tableHead.append(headRow);
       const tableBody = document.createElement("tbody");
-      tableBody.className = "divide-y divide-white/10";
       table.append(tableHead, tableBody);
       tableWrap.append(table);
 
+      const overviewView = makeView(
+        "admin-view-overview",
+        "Ringkasan",
+        "Ringkasan data yang tersimpan pada NakEna.",
+      );
+      overviewView.append(statsGrid, chartsGrid);
+
+      const detectionView = makeView(
+        "admin-view-detection-monitoring",
+        "Pemantauan Scan Bahan",
+        "Status pemindaian dan unggahan terbaru dari pengguna.",
+      );
+      const uploadStatusGrid = document.createElement("div");
+      uploadStatusGrid.className = "admin-upload-status-grid";
+      const uploadTable = makeReadOnlyTable(["Waktu", "Nama file", "Pengguna", "Status", "Foto"]);
+      detectionView.append(uploadStatusGrid, uploadTable.wrap);
+
+      const recipeView = makeView(
+        "admin-view-recipe-monitoring",
+        "Pemantauan Resep",
+        "Resep yang baru disimpan pengguna.",
+      );
+      const recipeTable = makeReadOnlyTable(["Waktu", "Resep", "Pengguna"]);
+      recipeView.append(recipeTable.wrap);
+
+      const userView = makeView(
+        "admin-view-user-activity",
+        "Aktivitas Pengguna",
+        "Akun pengguna dan tanggal mereka bergabung.",
+      );
+      userView.append(usersHeading, status, tableWrap);
+
+      const feedbackView = makeView(
+        "admin-view-feedback",
+        "Feedback Pengguna",
+        "Review yang diberikan setelah pengguna menyelesaikan resep.",
+      );
+      feedbackView.append(reviewPanel);
+
+      const logsView = makeView(
+        "admin-view-system-logs",
+        "System Logs",
+        "Log teknis belum disimpan oleh aplikasi saat ini.",
+      );
+      const logsEmpty = document.createElement("p");
+      logsEmpty.className = "admin-empty-state admin-logs-empty";
+      logsEmpty.textContent = "Belum ada log sistem yang tersedia untuk ditampilkan.";
+      logsView.append(logsEmpty);
+
+      const imageDialog = document.createElement("dialog");
+      imageDialog.className = "admin-image-dialog";
+      const imageDialogContent = document.createElement("div");
+      imageDialogContent.className = "admin-image-dialog-content";
+      const imageDialogHeader = document.createElement("div");
+      imageDialogHeader.className = "admin-image-dialog-header";
+      const imageDialogTitle = document.createElement("h2");
+      imageDialogTitle.textContent = "Foto unggahan";
+      const closeImageButton = document.createElement("button");
+      closeImageButton.type = "button";
+      closeImageButton.className = "admin-image-close";
+      closeImageButton.textContent = "Tutup";
+      closeImageButton.addEventListener("click", () => imageDialog.close());
+      imageDialogHeader.append(imageDialogTitle, closeImageButton);
+      const imageStatus = document.createElement("p");
+      imageStatus.className = "admin-image-status";
+      imageStatus.setAttribute("role", "status");
+      const imagePreview = document.createElement("img");
+      imagePreview.className = "admin-upload-preview";
+      imagePreview.alt = "Pratinjau foto bahan yang diunggah pengguna";
+      imagePreview.hidden = true;
+      imageDialogContent.append(imageDialogHeader, imageStatus, imagePreview);
+      imageDialog.append(imageDialogContent);
+
       const pagination = document.createElement("div");
-      pagination.className = "mt-5 flex items-center justify-between gap-3";
+      pagination.className = "admin-pagination";
       const pageLabel = document.createElement("span");
-      pageLabel.className = "text-sm text-on-surface-variant";
       const previousButton = document.createElement("button");
       previousButton.type = "button";
-      previousButton.className = "rounded-lg border border-white/10 px-4 py-2 text-sm text-on-surface disabled:cursor-not-allowed disabled:opacity-40";
+      previousButton.className = "admin-page-button";
       previousButton.textContent = "Sebelumnya";
       const nextButton = document.createElement("button");
       nextButton.type = "button";
       nextButton.className = previousButton.className;
       nextButton.textContent = "Berikutnya";
       const pageActions = document.createElement("div");
-      pageActions.className = "flex gap-2";
+      pageActions.className = "admin-page-actions";
       pageActions.append(previousButton, nextButton);
       pagination.append(pageLabel, pageActions);
-      section.append(header, status, tableWrap, pagination);
+      userView.append(pagination);
+      section.append(header, analyticsStatus, overviewView, detectionView, recipeView, userView, feedbackView, logsView, imageDialog);
       main.append(section);
       main.classList.remove("hidden");
+
+      const adminViews = new Map([
+        ["overview", overviewView],
+        ["detection-monitoring", detectionView],
+        ["recipe-monitoring", recipeView],
+        ["user-activity", userView],
+        ["feedback", feedbackView],
+        ["system-logs", logsView],
+      ]);
+      const operationsNav = [...document.querySelectorAll("aside nav")].find(
+        (nav) => nav.querySelector('a[data-path="overview"]'),
+      );
+      if (operationsNav) {
+        const activeClasses = (operationsNav.dataset.activeClasses || "").split(/\s+/).filter(Boolean);
+        const operationLinks = [...operationsNav.querySelectorAll("a[data-path]")];
+        const activateAdminView = (key, updateHistory = true) => {
+          const activeView = adminViews.get(key);
+          if (!activeView) return;
+          adminViews.forEach((view) => { view.hidden = view !== activeView; });
+          operationLinks.forEach((link) => {
+            link.classList.remove(...activeClasses);
+            link.removeAttribute("aria-current");
+            if (link.dataset.path === key) {
+              link.classList.add(...activeClasses);
+              link.setAttribute("aria-current", "page");
+            }
+          });
+          if (updateHistory) history.replaceState(null, "", `#${key}`);
+        };
+        operationLinks.forEach((link) => {
+          if (!adminViews.has(link.dataset.path)) return;
+          link.href = `#${link.dataset.path}`;
+          link.setAttribute("aria-controls", adminViews.get(link.dataset.path).id);
+          link.addEventListener("click", (event) => {
+            event.preventDefault();
+            activateAdminView(link.dataset.path);
+          });
+        });
+        activateAdminView(location.hash.slice(1) || "overview", false);
+      }
 
       const pageSize = 50;
       let offset = 0;
       let loading = false;
       let currentPageCount = 0;
+      let imageObjectUrl = null;
+      const clearImagePreview = () => {
+        if (imageObjectUrl) URL.revokeObjectURL(imageObjectUrl);
+        imageObjectUrl = null;
+        imagePreview.removeAttribute("src");
+        imagePreview.hidden = true;
+      };
+      imageDialog.addEventListener("close", clearImagePreview);
+      const openUploadImage = async (upload) => {
+        clearImagePreview();
+        imageDialogTitle.textContent = upload.filename;
+        imageStatus.textContent = "Memuat foto…";
+        imageDialog.showModal();
+        try {
+          const headers = new Headers();
+          const accessToken = token();
+          if (accessToken) headers.set("Authorization", `Bearer ${accessToken}`);
+          const response = await fetch(
+            `${apiBaseUrl}/admin/uploads/${encodeURIComponent(upload.id)}/image`,
+            { headers },
+          );
+          if (!response.ok) {
+            const data = await response.json().catch(() => ({}));
+            const detail = data?.detail;
+            throw new Error(typeof detail === "string" ? detail : "Foto tidak dapat dimuat.");
+          }
+          const blob = await response.blob();
+          if (!["image/jpeg", "image/png"].includes(blob.type)) {
+            throw new Error("Respons server bukan file gambar yang didukung.");
+          }
+          if (!imageDialog.open) return;
+          imageObjectUrl = URL.createObjectURL(blob);
+          imagePreview.src = imageObjectUrl;
+          imagePreview.hidden = false;
+          imageStatus.textContent = `Unggahan oleh ${upload.user_name} (${upload.user_email}).`;
+        } catch (error) {
+          imageStatus.textContent = `Foto tidak dapat dibuka: ${error.message}`;
+        }
+      };
+      const renderAnalytics = (data) => {
+        const totals = data.totals;
+        const metrics = [
+          ["Pengguna", totals.users, "Akun pengguna terdaftar", "users"],
+          ["Resep", totals.recipes, "Resep tersimpan di riwayat", "recipes"],
+          ["Review", totals.reviews, "Ulasan dari hasil memasak", "reviews"],
+          ["Scan", totals.uploads, "Foto bahan yang diunggah", "uploads"],
+          ["Rata-rata rating", `${Number(totals.average_rating).toFixed(1)} / 5`, "Dari seluruh review", "rating"],
+        ];
+        statsGrid.replaceChildren();
+        metrics.forEach(([label, value, caption, kind]) => {
+          const card = document.createElement("article");
+          card.className = "admin-stat-card";
+          card.classList.add(`is-${kind}`);
+          const cardLabel = document.createElement("span");
+          cardLabel.className = "admin-stat-label";
+          cardLabel.textContent = label;
+          const cardValue = document.createElement("strong");
+          cardValue.className = "admin-stat-value";
+          cardValue.textContent = String(value);
+          const cardCaption = document.createElement("span");
+          cardCaption.className = "admin-stat-caption";
+          cardCaption.textContent = caption;
+          card.append(cardLabel, cardValue, cardCaption);
+          statsGrid.append(card);
+        });
+
+        const svgNs = "http://www.w3.org/2000/svg";
+        const svgElement = (tag, attributes = {}, text = "") => {
+          const element = document.createElementNS(svgNs, tag);
+          Object.entries(attributes).forEach(([name, value]) => element.setAttribute(name, String(value)));
+          if (text) element.textContent = text;
+          return element;
+        };
+        const dailyActivity = data.daily_activity || [];
+        const chart = svgElement("svg", {
+          viewBox: "0 0 720 235",
+          role: "img",
+          "aria-label": "Grafik aktivitas pengguna baru dan resep selama tujuh hari",
+        });
+        const maxValue = Math.max(1, ...dailyActivity.flatMap((day) => [day.users, day.recipes]));
+        [0, 0.5, 1].forEach((ratio) => {
+          const y = 174 - ratio * 126;
+          chart.append(svgElement("line", { x1: 34, y1: y, x2: 706, y2: y, class: "admin-chart-gridline" }));
+          if (ratio > 0) {
+            chart.append(svgElement("text", { x: 25, y: y + 4, class: "admin-chart-axis-label", "text-anchor": "end" }, String(Math.ceil(maxValue * ratio))));
+          }
+        });
+        dailyActivity.forEach((day, index) => {
+          const x = 56 + index * 94;
+          const date = new Date(`${day.date}T12:00:00`);
+          const label = Number.isNaN(date.getTime()) ? "" : date.toLocaleDateString("id-ID", { weekday: "short" });
+          [
+            { value: day.users, x, className: "admin-chart-bar is-user" },
+            { value: day.recipes, x: x + 27, className: "admin-chart-bar is-recipe" },
+          ].forEach((bar) => {
+            const height = bar.value ? Math.max(4, (bar.value / maxValue) * 126) : 0;
+            chart.append(svgElement("rect", {
+              x: bar.x,
+              y: 174 - height,
+              width: 19,
+              height,
+              rx: 5,
+              class: bar.className,
+            }));
+          });
+          chart.append(svgElement("text", { x: x + 23, y: 204, class: "admin-chart-day-label", "text-anchor": "middle" }, label));
+        });
+        activityChart.replaceChildren(chart);
+
+        const ratingCounts = data.rating_distribution || [];
+        const maxRatingCount = Math.max(1, ...ratingCounts.map((item) => item.count));
+        ratingChart.replaceChildren();
+        ratingCounts.slice().reverse().forEach((item) => {
+          const row = document.createElement("div");
+          row.className = "admin-rating-row";
+          const label = document.createElement("span");
+          label.className = "admin-rating-label";
+          label.textContent = `${item.rating} ★`;
+          const track = document.createElement("div");
+          track.className = "admin-rating-track";
+          const fill = document.createElement("span");
+          fill.className = "admin-rating-fill";
+          fill.style.width = `${(item.count / maxRatingCount) * 100}%`;
+          track.append(fill);
+          const count = document.createElement("span");
+          count.className = "admin-rating-count";
+          count.textContent = String(item.count);
+          row.append(label, track, count);
+          ratingChart.append(row);
+        });
+
+        uploadStatusGrid.replaceChildren();
+        const statusLabels = {
+          uploaded: "Menunggu deteksi",
+          detected: "Bahan terdeteksi",
+          no_detections: "Tidak terdeteksi",
+          failed: "Gagal",
+        };
+        (data.upload_status_counts || []).forEach((item) => {
+          const statusCard = document.createElement("div");
+          statusCard.className = "admin-upload-status";
+          const statusCount = document.createElement("strong");
+          statusCount.textContent = String(item.count);
+          const statusName = document.createElement("span");
+          statusName.textContent = statusLabels[item.status] || item.status;
+          statusCard.append(statusCount, statusName);
+          uploadStatusGrid.append(statusCard);
+        });
+        uploadTable.body.replaceChildren();
+        if (!data.recent_uploads.length) {
+          const row = document.createElement("tr");
+          const cell = document.createElement("td");
+          cell.colSpan = 5;
+          cell.className = "admin-table-empty";
+          cell.textContent = "Belum ada unggahan bahan.";
+          row.append(cell);
+          uploadTable.body.append(row);
+        } else {
+          data.recent_uploads.forEach((upload) => {
+            const row = document.createElement("tr");
+            [
+              dateLabel(upload.created_at),
+              upload.filename,
+              `${upload.user_name} (${upload.user_email})`,
+              statusLabels[upload.status] || upload.status,
+            ].forEach((value) => {
+              const cell = document.createElement("td");
+              cell.textContent = value;
+              row.append(cell);
+            });
+            const actionCell = document.createElement("td");
+            const openButton = document.createElement("button");
+            openButton.type = "button";
+            openButton.className = "admin-view-upload-button";
+            openButton.textContent = "Lihat foto";
+            openButton.setAttribute("aria-label", `Lihat foto ${upload.filename}`);
+            openButton.addEventListener("click", () => openUploadImage(upload));
+            actionCell.append(openButton);
+            row.append(actionCell);
+            uploadTable.body.append(row);
+          });
+        }
+
+        recipeTable.body.replaceChildren();
+        if (!data.recent_recipes.length) {
+          const row = document.createElement("tr");
+          const cell = document.createElement("td");
+          cell.colSpan = 3;
+          cell.className = "admin-table-empty";
+          cell.textContent = "Belum ada resep yang tersimpan.";
+          row.append(cell);
+          recipeTable.body.append(row);
+        } else {
+          data.recent_recipes.forEach((recipe) => {
+            addTableRow(recipeTable.body, [
+              dateLabel(recipe.created_at),
+              recipe.title,
+              `${recipe.user_name} (${recipe.user_email})`,
+            ]);
+          });
+        }
+
+        reviewList.replaceChildren();
+        if (!data.recent_reviews.length) {
+          const empty = document.createElement("p");
+          empty.className = "admin-empty-state";
+          empty.textContent = "Belum ada review dari pengguna.";
+          reviewList.append(empty);
+          return;
+        }
+        data.recent_reviews.forEach((review) => {
+          const item = document.createElement("article");
+          item.className = "admin-review-item";
+          const details = document.createElement("div");
+          details.className = "admin-review-details";
+          const identity = document.createElement("div");
+          identity.className = "admin-review-identity";
+          const name = document.createElement("strong");
+          name.textContent = review.user_name;
+          const email = document.createElement("span");
+          email.textContent = review.user_email;
+          identity.append(name, email);
+          const recipe = document.createElement("p");
+          recipe.className = "admin-review-recipe";
+          recipe.textContent = `Resep: ${review.recipe_title}`;
+          details.append(identity, recipe);
+
+          const rating = document.createElement("div");
+          rating.className = "admin-review-rating";
+          rating.setAttribute("aria-label", `Rating ${review.rating} dari 5`);
+          rating.textContent = `${"★".repeat(review.rating)}${"☆".repeat(5 - review.rating)}`;
+          const date = document.createElement("time");
+          date.className = "admin-review-date";
+          date.dateTime = review.created_at;
+          date.textContent = dateLabel(review.created_at);
+          const comment = document.createElement("p");
+          comment.className = "admin-review-comment";
+          comment.textContent = review.comment || "Pengguna tidak menambahkan komentar.";
+          item.append(details, rating, date, comment);
+          reviewList.append(item);
+        });
+      };
+      const loadDashboardAnalytics = async () => {
+        analyticsStatus.textContent = "Memuat statistik dan review…";
+        try {
+          const data = await api("/admin/dashboard");
+          renderAnalytics(data);
+          analyticsStatus.textContent = "Statistik diperbarui dari data tersimpan.";
+        } catch (error) {
+          analyticsStatus.textContent = `Statistik tidak dapat dimuat: ${error.message}`;
+        }
+      };
       const loadUsers = async () => {
         if (loading) return;
         loading = true;
-        refreshButton.disabled = previousButton.disabled = nextButton.disabled = true;
+        previousButton.disabled = nextButton.disabled = true;
         status.textContent = "Memuat daftar pengguna…";
         try {
           const users = await api(`/admin/users?limit=${pageSize}&offset=${offset}`);
@@ -1872,10 +2440,14 @@
           nextButton.disabled = true;
         } finally {
           loading = false;
-          refreshButton.disabled = false;
         }
       };
-      refreshButton.addEventListener("click", loadUsers);
+      const refreshDashboard = async () => {
+        refreshButton.disabled = true;
+        await Promise.all([loadDashboardAnalytics(), loadUsers()]);
+        refreshButton.disabled = false;
+      };
+      refreshButton.addEventListener("click", refreshDashboard);
       previousButton.addEventListener("click", () => {
         offset = Math.max(0, offset - pageSize);
         loadUsers();
@@ -1884,7 +2456,7 @@
         offset += pageSize;
         loadUsers();
       });
-      await loadUsers();
+      await Promise.all([loadDashboardAnalytics(), loadUsers()]);
     } catch (error) {
       setNotice(error.message);
     }
@@ -1892,7 +2464,7 @@
 
   function setupLogout() {
     const clearSession = () => {
-      [tokenKey, emailKey, userNameKey, uploadKey, recipeKey, recipeNoticeKey,
+      [tokenKey, emailKey, userNameKey, uploadKey, recipeKey, recipeNoticeKey, moreRecipesKey,
         userRoleKey, "nakena_preview_image", "nakena_guest_mode"].forEach((key) => sessionStorage.removeItem(key));
       currentRole = "guest";
       currentUser = null;
@@ -1953,7 +2525,7 @@
       currentRole = "guest";
       currentUser = null;
       sessionStorage.removeItem(userRoleKey);
-      [uploadKey, recipeKey, recipeNoticeKey, "nakena_preview_image", "nakena_guest_mode"]
+      [uploadKey, recipeKey, recipeNoticeKey, moreRecipesKey, "nakena_preview_image", "nakena_guest_mode"]
         .forEach((key) => sessionStorage.removeItem(key));
     }
 

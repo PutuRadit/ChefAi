@@ -95,3 +95,26 @@ class RecipeEntry(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
     user: Mapped["User"] = relationship(back_populates="recipes")
+    review: Mapped[Optional["RecipeReview"]] = relationship(
+        back_populates="recipe", uselist=False, cascade="all, delete-orphan"
+    )
+
+
+class RecipeReview(Base):
+    __tablename__ = "recipe_reviews"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    recipe_entry_id: Mapped[str] = mapped_column(
+        ForeignKey("recipe_entries.id", ondelete="CASCADE"), unique=True, index=True
+    )
+    rating: Mapped[int] = mapped_column(Integer)
+    comment: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow, onupdate=utcnow
+    )
+
+    recipe: Mapped["RecipeEntry"] = relationship(back_populates="review")

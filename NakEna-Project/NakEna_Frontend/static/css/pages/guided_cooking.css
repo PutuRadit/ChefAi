@@ -117,6 +117,21 @@
 .gc-finish-dialog { text-align: center; }
 .gc-finish-dialog .gc-dialog-actions { justify-content: center; }
 .gc-finish-dialog .gc-text-button { margin-top: 20px; }
+.gc-review-dialog h2 { margin-bottom: 8px; }
+.gc-review-dialog form { margin-top: 24px; }
+.gc-review-rating { margin: 0 0 20px; padding: 0; border: 0; }
+.gc-review-rating legend, .gc-review-comment { display: block; margin-bottom: 10px; color: #e4e9f6; font-size: 12px; font-weight: 700; }
+.gc-rating-options { display: flex; gap: 7px; }
+.gc-rating-option { position: relative; display: grid; place-items: center; width: 44px; height: 44px; border: 1px solid #7897bd40; border-radius: 10px; background: #101e31; color: #8192aa; cursor: pointer; }
+.gc-rating-option input { position: absolute; width: 1px; height: 1px; margin: 0; opacity: 0; }
+.gc-rating-option>span:first-of-type { font-size: 25px; line-height: 1; }
+.gc-rating-option.is-selected { border-color: #efa04380; background: #e7a04417; color: #ffc178; }
+.gc-rating-option:focus-within { outline: 2px solid #ffb37d; outline-offset: 3px; }
+.gc-review-comment+textarea { display: block; width: 100%; min-height: 100px; resize: vertical; padding: 11px 12px; border: 1px solid #7897bd40; border-radius: 10px; background: #0a1729; color: var(--gc-text); font: inherit; }
+.gc-review-comment+textarea:focus-visible { outline: 2px solid #ffb37d; outline-offset: 2px; }
+.gc-review-error { margin-top: 12px !important; color: #ffb8a2 !important; }
+.gc-visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+.gc-dialog-actions button:disabled { cursor: wait; opacity: .65; }
 .gc-finish-icon { display: grid; place-items: center; width: 56px; height: 56px; margin: 0 auto 20px; border: 1px solid #efa04366; border-radius: 18px; background: #e7a04417; color: #ffc178; }
 .gc-finish-icon .gc-icon { width: 27px; height: 27px; stroke-width: 2.5; }
 .gc-skip { position: fixed; left: 20px; top: -100px; z-index: 40; padding: 10px 16px; border-radius: 8px; color: #fff !important; background: #c45a1f; }

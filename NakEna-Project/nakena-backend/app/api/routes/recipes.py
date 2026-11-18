@@ -1,5 +1,7 @@
 import json
 import logging
+import re
+import unicodedata
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -10,10 +12,11 @@ from sqlalchemy.orm import Session
 from app.api.deps import require_regular_user
 from app.core.config import settings
 from app.core.database import get_db
-from app.models import RecipeEntry, User
+from app.models import RecipeEntry, RecipeReview, User
 from app.schemas.recipe import RecipeEntryCreate, RecipeEntryRead
 
 from app.schemas.recipe import GeneratedRecipe, RecipeRequest, RecipeResponse
+from app.schemas.recipe_review import RecipeReviewCreate, RecipeReviewRead
 from app.services.llm import (
     GeminiConfigurationError,
     GeminiResponseError,
@@ -26,6 +29,11 @@ router = APIRouter(
     prefix="/recipes",
     tags=["recipes"]
 )
+
+
+def normalize_recipe_title(title: str) -> str:
+    normalized = unicodedata.normalize("NFKD", title).casefold()
+    return re.sub(r"[\W_]+", "", normalized)
 
 
 @router.get("/history", response_model=list[RecipeEntryRead])
@@ -58,6 +66,43 @@ def save_recipe_history(
     db.commit()
     db.refresh(entry)
     return entry
+
+
+@router.post(
+    "/history/{entry_id}/review",
+    response_model=RecipeReviewRead,
+)
+def save_recipe_review(
+    entry_id: str,
+    payload: RecipeReviewCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_regular_user),
+):
+    entry = db.get(RecipeEntry, entry_id)
+    if entry is None or entry.user_id != current_user.id or not entry.is_history:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Resep riwayat tidak ditemukan")
+
+    review = db.scalar(
+        select(RecipeReview).where(RecipeReview.recipe_entry_id == entry_id)
+    )
+    if review is None:
+        review = RecipeReview(
+            id=uuid4().hex,
+            user_id=current_user.id,
+            recipe_entry_id=entry_id,
+            rating=payload.rating,
+            comment=payload.comment,
+        )
+        db.add(review)
+    else:
+        if review.user_id != current_user.id:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Ulasan tidak ditemukan")
+        review.rating = payload.rating
+        review.comment = payload.comment
+
+    db.commit()
+    db.refresh(review)
+    return review
 
 
 @router.get("/favorites", response_model=list[RecipeEntryRead])
@@ -132,6 +177,10 @@ def generate_recipe_endpoint(
     ingredients = ", ".join(request.ingredients)
     preferences = request.preferences or "Tidak ada"
     allergies = ", ".join(request.allergies) or "Tidak ada"
+    excluded_titles = {normalize_recipe_title(title) for title in request.exclude_titles if title.strip()}
+    excluded_list = "\n".join(f"- {title}" for title in request.exclude_titles if title.strip())
+    if not excluded_list:
+        excluded_list = "Tidak ada"
 
     prompt = f"""
 Kamu adalah NakEna, asisten rekomendasi resep makanan.
@@ -151,8 +200,12 @@ Jumlah porsi:
 Kategori masakan yang wajib diikuti:
 {request.category}
 
-Buat tepat 3 pilihan resep yang berbeda, mudah dimasak, dan semuanya sesuai kategori tersebut.
+Judul resep yang sudah pernah ditampilkan dan tidak boleh diulang:
+{excluded_list}
+
+Buat tepat {request.count} pilihan resep baru yang berbeda satu sama lain, mudah dimasak, dan semuanya sesuai kategori tersebut.
 Jangan menggabungkan kategori lain. Beri variasi nama dan cara memasak untuk setiap pilihan.
+Jangan gunakan kembali judul atau variasi kecil dari judul yang dikecualikan.
 Balas hanya dengan JSON valid menggunakan format:
 {{"recipes":[{{"title":"Nama resep","description":"Deskripsi singkat","recipe":"Rincian bahan, langkah memasak, waktu, dan tips penyajian"}}]}}
 
@@ -176,8 +229,14 @@ Gunakan bahasa Indonesia yang mudah dipahami.
             result = result.removeprefix("```json").removeprefix("```").removesuffix("```").strip()
         generated = json.loads(result)
         recipes = [GeneratedRecipe.model_validate(item) for item in generated["recipes"]]
-        if len(recipes) != 3:
-            raise ValueError("Gemini harus mengembalikan tepat 3 pilihan resep.")
+        if len(recipes) != request.count:
+            raise ValueError(f"Gemini harus mengembalikan tepat {request.count} pilihan resep.")
+        seen_titles = set()
+        for recipe in recipes:
+            normalized_title = normalize_recipe_title(recipe.title)
+            if normalized_title in excluded_titles or normalized_title in seen_titles:
+                raise ValueError("Gemini mengembalikan judul resep yang berulang.")
+            seen_titles.add(normalized_title)
         return RecipeResponse(success=True, recipe=recipes[0].recipe, recipes=recipes)
     except GeminiConfigurationError as error:
         logger.error("Gemini is not configured: %s", error)
@@ -195,7 +254,7 @@ Gunakan bahasa Indonesia yang mudah dipahami.
         logger.warning("Gemini returned invalid recipe data: %s", error)
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="Gemini tidak mengembalikan 3 resep dengan format yang benar. Silakan coba lagi.",
+            detail=f"Gemini tidak mengembalikan {request.count} resep unik dengan format yang benar. Silakan coba lagi.",
         ) from error
     except Exception as error:
         logger.exception("Gemini recipe generation failed")

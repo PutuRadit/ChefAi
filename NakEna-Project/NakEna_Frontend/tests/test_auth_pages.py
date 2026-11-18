@@ -42,9 +42,49 @@ def test_routes_and_local_page_assets(route, page):
         if target and target.startswith('/static/'):
             assert client.get(target).status_code == 200, target
     assert f'/static/css/pages/{page}.css' in response.text
-    assert response.text.count('/static/js/api.js?v=28') == 1
+    assert response.text.count('/static/js/api.js?v=33') == 1
     if page not in ('home', 'login', 'register'):
         assert 'style="visibility:hidden"' in response.text
+
+
+def test_guided_cooking_loads_shared_styles_for_site_header():
+    response = client.get('/recipes/1/guided-cooking/')
+    assert '/static/css/nakena.css?v=20' in response.text
+
+
+def test_recipe_detail_has_one_guided_cooking_cta_in_the_hero():
+    response = client.get('/recipes/1/')
+    assert response.text.count('href="/recipes/1/guided-cooking/"') == 1
+    assert response.text.index('class="guided-cta panel"') < response.text.index('class="detail-grid"')
+
+
+def test_user_navigation_adds_only_links_missing_from_static_navigation():
+    api_js = (STATIC_DIR / 'js' / 'api.js').read_text(encoding='utf-8')
+    user_navigation = api_js.split('if (role === "user") {', 1)[1].split('} else if (role === "admin")', 1)[0]
+    assert 'addLink("Resep", "/recipes/")' in user_navigation
+    assert 'addLink("Preferensi", "/profile/")' in user_navigation
+    assert 'addLink("Scan Bahan"' not in user_navigation
+    assert 'addLink("Riwayat"' not in user_navigation
+    assert 'addLink("Favorit"' not in user_navigation
+
+
+def test_admin_dashboard_loads_live_analytics_reviews_and_activity_chart():
+    api_js = (STATIC_DIR / 'js' / 'api.js').read_text(encoding='utf-8')
+    assert 'api("/admin/dashboard")' in api_js
+    assert 'admin-activity-chart' in api_js
+    assert 'admin-rating-chart' in api_js
+    assert 'admin-review-item' in api_js
+    assert 'Lihat foto' in api_js
+    assert '/admin/uploads/${encodeURIComponent(upload.id)}/image' in api_js
+    for view in (
+        "overview",
+        "detection-monitoring",
+        "recipe-monitoring",
+        "user-activity",
+        "feedback",
+        "system-logs",
+    ):
+        assert f'["{view}",' in api_js
 
 
 @pytest.mark.parametrize('page', [p for p in ROUTES.values() if p != 'admin_dashboard'])
@@ -133,6 +173,31 @@ def test_scan_camera_manually_captures_photo_for_preview_and_scan():
     assert "canvas.toBlob" in app_ui
     assert "setFile(new File([blob]" in app_ui
     assert "camera.accept = 'image/*'" in app_ui
+
+
+def test_guided_cooking_review_form_saves_and_continues_to_existing_recommendations():
+    response = client.get('/recipes/1/guided-cooking/')
+    tags = parse(response.text)
+    ratings = [
+        attrs for tag, attrs in tags
+        if tag == 'input' and attrs.get('name') == 'rating'
+    ]
+    assert [attrs['value'] for attrs in ratings] == ['1', '2', '3', '4', '5']
+    assert 'required' in ratings[0]
+    assert 'Review hasil masakan' in response.text
+    assert 'Simpan review &amp; lihat rekomendasi' in response.text
+
+    guided_js = (STATIC_DIR / 'js' / 'pages' / 'guided_cooking.js').read_text(encoding='utf-8')
+    api_js = (STATIC_DIR / 'js' / 'api.js').read_text(encoding='utf-8')
+    assert 'nakena:submit-cooking-review' in guided_js
+    assert 'nakena:cooking-review-saved' in api_js
+    assert 'nakena:cooking-review-error' in api_js
+    assert '/recipes/?review=saved#other-recipes' in guided_js
+    assert 'id="show-more-recipes-btn"' in response.text
+    assert 'Lihat 5 resep lainnya' in response.text
+    assert 'location.assign("/recipes/?more=1")' in api_js
+    assert 'count: 5' in api_js
+    assert 'exclude_titles: Array.isArray(pending.excludeTitles)' in api_js
 
 
 def test_scan_limits_detected_ingredients_and_empty_results_require_retake():

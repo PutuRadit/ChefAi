@@ -71,11 +71,14 @@
     const timer = { remaining: 60, duration: 60, deadline: 0, running: false, touched: false, source: 0 };
     const exitDialog = byId("exit-modal-overlay");
     const finishDialog = byId("celebration-overlay");
+    const reviewDialog = byId("cooking-review-dialog");
+    const reviewForm = byId("cooking-review-form");
     const minutes = byId("timer-minutes-input");
 
     document.title = `${recipe.title} — Panduan memasak | NakEna`;
     byId("recipe-title-display").textContent = recipe.title;
     byId("recipe-step-total").textContent = `${total} langkah`;
+    byId("review-recipe-title").textContent = recipe.title;
     if (recipe.time) {
       byId("recipe-total-time").textContent = `Total ${recipe.time}`;
       byId("recipe-total-time").hidden = false;
@@ -248,6 +251,56 @@
       }
       const next = current + 1 < total ? current + 1 : instructions.findIndex((_, index) => !completed.has(index));
       goToStep(next);
+    });
+    byId("open-cooking-review-btn").addEventListener("click", () => {
+      finishDialog.close();
+      reviewDialog.showModal();
+    });
+    byId("cancel-cooking-review-btn").addEventListener("click", () => {
+      reviewDialog.close();
+      finishDialog.showModal();
+    });
+    reviewForm.addEventListener("change", (event) => {
+      if (event.target.name !== "rating") return;
+      const rating = Number(event.target.value);
+      reviewForm.querySelectorAll(".gc-rating-option").forEach((option, index) => {
+        option.classList.toggle("is-selected", index < rating);
+      });
+    });
+    reviewForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const rating = Number(new FormData(reviewForm).get("rating"));
+      const error = byId("cooking-review-error");
+      const submit = byId("submit-cooking-review-btn");
+      if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+        error.textContent = "Pilih rating bintang terlebih dahulu.";
+        error.hidden = false;
+        return;
+      }
+      if (!recipe.id || String(recipe.id).startsWith("pending-")) {
+        error.textContent = "Resep belum tersimpan di riwayat akun, jadi review belum bisa disimpan.";
+        error.hidden = false;
+        return;
+      }
+      error.hidden = true;
+      submit.disabled = true;
+      submit.textContent = "Menyimpan review…";
+      window.addEventListener("nakena:cooking-review-saved", () => {
+        reviewDialog.close();
+        location.assign("/recipes/?review=saved#other-recipes");
+      }, { once: true });
+      window.addEventListener("nakena:cooking-review-error", (saveEvent) => {
+        error.textContent = saveEvent.detail?.message || "Review belum tersimpan. Coba lagi.";
+        error.hidden = false;
+        submit.disabled = false;
+        submit.textContent = "Simpan review & lihat rekomendasi";
+      }, { once: true });
+      window.dispatchEvent(new CustomEvent("nakena:submit-cooking-review", {
+        detail: {
+          rating,
+          comment: byId("cooking-review-comment").value.trim(),
+        },
+      }));
     });
     byId("prev-step-btn").addEventListener("click", () => goToStep(current - 1));
     byId("trigger-exit-modal-btn").addEventListener("click", () => { stopSpeaking(); exitDialog.showModal(); });

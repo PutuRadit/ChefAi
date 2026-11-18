@@ -31,7 +31,7 @@ def render_frontend(template_name: str) -> HTMLResponse:
     if template_name not in {"home", "login", "register"}:
         html = re.sub(r"<body(?=[\s>])", '<body style="visibility:hidden"', html, count=1)
     integration_script = (
-        f'<script src="/static/js/api.js?v=28" '
+        f'<script src="/static/js/api.js?v=33" '
         f'data-api-base="{escape(API_BASE_URL, quote=True)}" defer></script>'
     )
     if "</body>" in html:

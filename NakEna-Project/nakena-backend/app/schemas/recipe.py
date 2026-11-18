@@ -3,6 +3,8 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.schemas.recipe_review import RecipeReviewRead
+
 
 class RecipeRequest(BaseModel):
     ingredients: list[str] = Field(
@@ -28,6 +30,8 @@ class RecipeRequest(BaseModel):
         default="Rumahan",
         description="Kategori masakan untuk rekomendasi resep"
     )
+    count: int = Field(default=3, ge=1, le=5)
+    exclude_titles: list[str] = Field(default_factory=list, max_length=30)
 
 
 class GeneratedRecipe(BaseModel):
@@ -57,3 +61,4 @@ class RecipeEntryRead(BaseModel):
     ingredients: list[str]
     is_favorite: bool
     created_at: datetime
+    review: RecipeReviewRead | None = None

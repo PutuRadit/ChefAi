@@ -1,14 +1,15 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <html><head><link rel="stylesheet" href="/static/css/nakena.css?v=20"></head></html><meta charset="utf-8">
+  <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Panduan memasak — NakEna</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/css/pages/guided_cooking.css?v=19">
-  <script src="/static/js/pages/guided_cooking.js?v=19" defer></script>
+  <link rel="stylesheet" href="/static/css/nakena.css?v=20">
+  <link rel="stylesheet" href="/static/css/pages/guided_cooking.css?v=20">
+  <script src="/static/js/pages/guided_cooking.js?v=20" defer></script>
 </head>
 <body class="guided-cooking-page nakena-page page-guided_cooking">
   <a class="gc-skip" href="#cooking-main">Langsung ke panduan</a>
@@ -60,6 +61,45 @@
     </div>
   </main>
   <dialog id="exit-modal-overlay" class="gc-dialog" aria-labelledby="exit-dialog-title"><div class="gc-dialog-content"><p class="gc-eyebrow">PANDUAN MEMASAK</p><h2 id="exit-dialog-title">Keluar dari panduan?</h2><p>Kamu sedang di langkah <span id="modal-step-display">1</span>. Kembali ke detail resep?</p><div class="gc-dialog-actions"><button id="cancel-exit-btn" class="gc-button gc-button-secondary" type="button">Lanjut memasak</button><a class="gc-button gc-button-primary" href="/recipes/1/">Keluar</a></div></div></dialog>
-  <dialog id="celebration-overlay" class="gc-dialog gc-finish-dialog" aria-labelledby="finish-dialog-title"><div class="gc-dialog-content"><span class="gc-finish-icon" aria-hidden="true"><svg class="gc-icon" viewbox="0 0 24 24"><path d="m5 12 4 4L19 6"></path></svg></span><p class="gc-eyebrow">SEMUA LANGKAH SELESAI</p><h2 id="finish-dialog-title">Siap disajikan.</h2><p id="finished-recipe-title"></p><div class="gc-dialog-actions"><a class="gc-button gc-button-secondary" href="/recipes/1/">Detail resep</a><a class="gc-button gc-button-primary" href="/recipes/">Lihat resep lainnya</a></div><button id="restart-cooking-btn" class="gc-text-button" type="button">Ulangi dari awal</button></div></dialog>
+  <dialog id="celebration-overlay" class="gc-dialog gc-finish-dialog" aria-labelledby="finish-dialog-title">
+    <div class="gc-dialog-content">
+      <span class="gc-finish-icon" aria-hidden="true"><svg class="gc-icon" viewbox="0 0 24 24"><path d="m5 12 4 4L19 6"></path></svg></span>
+      <p class="gc-eyebrow">SEMUA LANGKAH SELESAI</p>
+      <h2 id="finish-dialog-title">Siap disajikan.</h2>
+      <p id="finished-recipe-title"></p>
+      <div class="gc-dialog-actions">
+        <a class="gc-button gc-button-secondary" href="/recipes/1/">Detail resep</a>
+        <button id="open-cooking-review-btn" class="gc-button gc-button-secondary" type="button">Review hasil masakan</button>
+        <a id="show-more-recipes-btn" class="gc-button gc-button-primary" href="/recipes/">Lihat 5 resep lainnya</a>
+      </div>
+      <button id="restart-cooking-btn" class="gc-text-button" type="button">Ulangi dari awal</button>
+    </div>
+  </dialog>
+  <dialog id="cooking-review-dialog" class="gc-dialog gc-review-dialog" aria-labelledby="cooking-review-title">
+    <div class="gc-dialog-content">
+      <p class="gc-eyebrow">BAGIKAN PENGALAMANMU</p>
+      <h2 id="cooking-review-title">Bagaimana hasil masakannya?</h2>
+      <p id="review-recipe-title"></p>
+      <form id="cooking-review-form">
+        <fieldset class="gc-review-rating">
+          <legend>Beri rating 1 sampai 5 bintang</legend>
+          <div class="gc-rating-options">
+            <label class="gc-rating-option"><input type="radio" name="rating" value="1" required><span aria-hidden="true">★</span><span class="gc-visually-hidden">1 bintang</span></label>
+            <label class="gc-rating-option"><input type="radio" name="rating" value="2"><span aria-hidden="true">★</span><span class="gc-visually-hidden">2 bintang</span></label>
+            <label class="gc-rating-option"><input type="radio" name="rating" value="3"><span aria-hidden="true">★</span><span class="gc-visually-hidden">3 bintang</span></label>
+            <label class="gc-rating-option"><input type="radio" name="rating" value="4"><span aria-hidden="true">★</span><span class="gc-visually-hidden">4 bintang</span></label>
+            <label class="gc-rating-option"><input type="radio" name="rating" value="5"><span aria-hidden="true">★</span><span class="gc-visually-hidden">5 bintang</span></label>
+          </div>
+        </fieldset>
+        <label class="gc-review-comment" for="cooking-review-comment">Komentar (opsional)</label>
+        <textarea id="cooking-review-comment" name="comment" maxlength="1000" rows="4" placeholder="Apa yang kamu suka atau ingin ubah?"></textarea>
+        <p id="cooking-review-error" class="gc-review-error" role="alert" hidden></p>
+        <div class="gc-dialog-actions">
+          <button id="cancel-cooking-review-btn" class="gc-button gc-button-secondary" type="button">Kembali</button>
+          <button id="submit-cooking-review-btn" class="gc-button gc-button-primary" type="submit">Simpan review &amp; lihat rekomendasi</button>
+        </div>
+      </form>
+    </div>
+  </dialog>
 <div class="app-notice" id="appNotice" role="status" hidden></div></body>
 </html>

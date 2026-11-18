@@ -69,6 +69,8 @@ Frontend: `http://127.0.0.1:8001`. `CORS_ORIGINS` pada `.env` backend harus memu
 |---|---|---|
 | POST | `/auth/register` | Registrasi pengguna |
 | POST | `/auth/login` | Login dan penerbitan JWT |
+| GET | `/admin/dashboard` | Statistik pengguna/resep/scan, distribusi rating, serta review dan aktivitas terbaru (khusus admin) |
+| GET | `/admin/uploads/{upload_id}/image` | Pratinjau gambar scan (khusus admin) |
 | GET | `/admin/users` | Daftar user (khusus admin; mendukung limit dan offset) |
 | DELETE | `/admin/users/{user_id}` | Hapus user beserta resep, preferensi, dan file upload (khusus admin) |
 | GET/PATCH | `/users/me` | Baca/perbarui profil |
@@ -77,8 +79,9 @@ Frontend: `http://127.0.0.1:8001`. `CORS_ORIGINS` pada `.env` backend harus memu
 | POST | `/uploads/guest/detect` | Endpoint kompatibilitas untuk User; Guest ditolak dengan 401 (tidak dipakai frontend) |
 | POST | `/uploads/{id}/detect` | Deteksi bahan dengan YOLO |
 | GET/DELETE | `/uploads` dan `/uploads/{id}` | Daftar/detail/hapus upload |
-| POST | `/recipes/generate` | Generate tiga opsi resep dengan Gemini |
+| POST | `/recipes/generate` | Generate resep dengan Gemini; default tiga opsi, maksimal lima opsi dengan `count`, serta `exclude_titles` untuk menghindari judul yang sudah ditampilkan |
 | GET/POST | `/recipes/history` | Riwayat resep |
+| POST | `/recipes/history/{id}/review` | Simpan atau perbarui rating dan komentar pada resep milik pengguna |
 | GET/POST/DELETE | `/recipes/favorites` | Resep favorit |
 | GET | `/recipes/image` | Foto makanan Pixabay untuk pengguna yang login |
 

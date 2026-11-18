@@ -1,4 +1,68 @@
+import json
+
 from tests.conftest import register_and_login
+
+
+def test_recipe_generation_supports_five_new_exclusive_options(client, monkeypatch):
+    headers = register_and_login(client)
+    prompts = []
+
+    def fake_generate_recipe(prompt):
+        prompts.append(prompt)
+        return json.dumps({
+            "recipes": [
+                {"title": f"Menu alternatif {number}", "description": "Praktis", "recipe": f"Resep {number}"}
+                for number in range(1, 6)
+            ],
+        })
+
+    monkeypatch.setattr("app.api.routes.recipes.generate_recipe", fake_generate_recipe)
+
+    response = client.post(
+        "/recipes/generate",
+        headers=headers,
+        json={
+            "ingredients": ["nasi", "telur"],
+            "category": "Rumahan",
+            "count": 5,
+            "exclude_titles": ["Nasi Telur pertama", "Nasi Telur kedua"],
+        },
+    )
+
+    assert response.status_code == 200
+    assert len(response.json()["recipes"]) == 5
+    assert "tepat 5 pilihan resep baru" in prompts[0]
+    assert "Nasi Telur pertama" in prompts[0]
+    assert "Nasi Telur kedua" in prompts[0]
+
+
+def test_recipe_generation_rejects_repeated_excluded_titles(client, monkeypatch):
+    headers = register_and_login(client)
+    monkeypatch.setattr(
+        "app.api.routes.recipes.generate_recipe",
+        lambda prompt: json.dumps({
+            "recipes": [
+                {"title": "RESEP-SEBELUMNYA!", "description": "Sama", "recipe": "Resep 1"},
+                {"title": "Alternatif dua", "description": "Baru", "recipe": "Resep 2"},
+                {"title": "Alternatif tiga", "description": "Baru", "recipe": "Resep 3"},
+                {"title": "Alternatif empat", "description": "Baru", "recipe": "Resep 4"},
+                {"title": "Alternatif lima", "description": "Baru", "recipe": "Resep 5"},
+            ],
+        }),
+    )
+
+    response = client.post(
+        "/recipes/generate",
+        headers=headers,
+        json={
+            "ingredients": ["telur"],
+            "count": 5,
+            "exclude_titles": ["Resep sebelumnya"],
+        },
+    )
+
+    assert response.status_code == 502
+    assert "5 resep unik" in response.json()["detail"]
 
 
 def test_recipe_generation_uses_llm_service(client, monkeypatch):
@@ -150,3 +214,58 @@ def test_recipe_history_and_favorites_are_user_owned(client):
     assert client.delete(f"/recipes/favorites/{favorite_id}", headers=headers).status_code == 204
     assert client.get("/recipes/favorites", headers=headers).json() == []
     assert client.get("/recipes/history", headers=headers).json()[0]["id"] == entry_id
+
+
+def test_recipe_review_is_owner_scoped_and_can_be_updated(client):
+    headers = register_and_login(client, email="review-owner@example.com")
+    other_headers = register_and_login(client, email="review-other@example.com")
+    recipe = client.post(
+        "/recipes/history",
+        headers=headers,
+        json={"title": "Sup Sayur", "recipe_text": "Rebus sayuran.", "ingredients": ["wortel"]},
+    ).json()
+    entry_id = recipe["id"]
+
+    created = client.post(
+        f"/recipes/history/{entry_id}/review",
+        headers=headers,
+        json={"rating": 5, "comment": "  Enak dan mudah dibuat.  "},
+    )
+
+    assert created.status_code == 200
+    assert created.json()["recipe_entry_id"] == entry_id
+    assert created.json()["rating"] == 5
+    assert created.json()["comment"] == "Enak dan mudah dibuat."
+
+    updated = client.post(
+        f"/recipes/history/{entry_id}/review",
+        headers=headers,
+        json={"rating": 4, "comment": "Cukup praktis."},
+    )
+    assert updated.status_code == 200
+    assert updated.json()["id"] == created.json()["id"]
+    assert updated.json()["rating"] == 4
+    assert updated.json()["comment"] == "Cukup praktis."
+    history = client.get("/recipes/history", headers=headers).json()
+    assert history[0]["review"]["id"] == updated.json()["id"]
+    assert history[0]["review"]["rating"] == 4
+
+    unauthorized = client.post(
+        f"/recipes/history/{entry_id}/review",
+        headers=other_headers,
+        json={"rating": 1},
+    )
+    assert unauthorized.status_code == 404
+
+
+def test_recipe_review_requires_login_and_valid_rating(client):
+    headers = register_and_login(client, email="review-rating@example.com")
+    saved = client.post(
+        "/recipes/history",
+        headers=headers,
+        json={"title": "Telur Dadar", "recipe_text": "Goreng telur.", "ingredients": ["telur"]},
+    ).json()
+    endpoint = f"/recipes/history/{saved['id']}/review"
+
+    assert client.post(endpoint, json={"rating": 5}).status_code == 401
+    assert client.post(endpoint, headers=headers, json={"rating": 6}).status_code == 422

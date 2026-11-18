@@ -22,7 +22,7 @@ Jika frontend memakai virtual environment sendiri, gunakan interpreter `.venv` f
 - `static/css/recipe_images.css`: foto, atribusi Pixabay, skeleton dan tipografi resep.
 - `static/js/app_ui.js`: password visibility, pilihan form, input kamera, drag-and-drop dan unggah foto.
 - `static/js/api.js`: komunikasi backend, status akun, deteksi, resep, riwayat, favorit dan preferensi.
-- `static/js/pages/guided_cooking.js`: langkah memasak, checklist, timer dan pembacaan suara.
+- `static/js/pages/guided_cooking.js`: langkah memasak, checklist, timer, pembacaan suara, dan form review setelah memasak.
 - `static/assets/`: maskot dan aset lokal.
 
 ## Perilaku data
@@ -36,6 +36,8 @@ Pada halaman Scan, tombol Ambil foto membuka pratinjau kamera langsung (izin kam
 Kartu rekomendasi muncul setelah gambar selesai dimuat/decode atau placeholder lokal siap. Foto makanan resep berasal dari Pixabay melalui backend, disimpan pada cache lokal, dan ditampilkan dengan atribusi Pixabay. Tidak ada foto, rating atau statistik contoh yang diisi sebagai data pengguna.
 
 Resep dihasilkan Gemini, dan bagian bahan/langkah/waktu/tips diurai bersama untuk detail dan guided cooking. Permintaan ulang mempertahankan data diet, alergi dan porsi pada resep dari sesi tersebut. Preferensi akun yang tersimpan diterapkan sebagai pilihan awal pada konfirmasi; perubahan manual pengguna didahulukan.
+
+Setelah menyelesaikan panduan memasak, User dapat memberi rating 1–5 bintang dan komentar opsional. Review disimpan pada akun dan ditampilkan pada kartu resep di riwayat; setelah tersimpan, halaman resep menampilkan pilihan lain dari rekomendasi sebelumnya.
 
 Preferensi memasak dan konfirmasi bahan menyediakan pilihan pola diet serta alergi yang dihindari. Waktu, porsi, jenis masakan, dan bahan dapur tetap dapat disesuaikan; pilihan tingkat kesulitan telah dihapus dari formulir konfirmasi. Pilihan diet umum mencakup halal, vegetarian/vegan, bebas gluten/laktosa, pescatarian, dan pola rendah gula/garam/karbohidrat/lemak. Opsi alergi mencakup kacang tanah/pohon, seafood, udang/kerang/ikan, susu/telur, kedelai, gandum, dan wijen.
 
