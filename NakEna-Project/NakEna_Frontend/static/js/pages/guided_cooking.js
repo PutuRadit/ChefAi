@@ -70,6 +70,7 @@
     let speech = null;
     let voiceNoticeTimer = null;
     let waitingForVoice = false;
+    let voiceMode = "auto";
     const timer = { remaining: 60, duration: 60, deadline: 0, running: false, touched: false, source: 0 };
     const exitDialog = byId("exit-modal-overlay");
     const finishDialog = byId("celebration-overlay");
@@ -97,7 +98,9 @@
     function stopSpeaking() {
       speech = null;
       if ("speechSynthesis" in window) window.speechSynthesis.cancel();
-      byId("voice-text").textContent = "Bacakan langkah";
+      byId("voice-text").textContent = voiceMode === "english"
+        ? "Bacakan dengan suara Inggris"
+        : voiceMode === "silent" ? "Suara dimatikan" : "Bacakan langkah";
       byId("toggle-voice-btn").setAttribute("aria-pressed", "false");
     }
 
@@ -105,6 +108,10 @@
       const voices = window.speechSynthesis.getVoices();
       return voices.find((voice) => voice.lang.toLowerCase() === "id-id")
         || voices.find((voice) => /^id(?:-|$)/i.test(voice.lang));
+    }
+
+    function findEnglishVoice() {
+      return window.speechSynthesis.getVoices().find((voice) => /^en(?:-|$)/i.test(voice.lang));
     }
 
     function waitForIndonesianVoice() {
@@ -124,6 +131,15 @@
         };
         timeout = setTimeout(() => finish(findIndonesianVoice()), 1500);
         window.speechSynthesis.addEventListener("voiceschanged", onVoicesChanged);
+      });
+    }
+
+    function requestVoiceFallback() {
+      const dialog = byId("voice-fallback-dialog");
+      dialog.returnValue = "";
+      return new Promise((resolve) => {
+        dialog.addEventListener("close", () => resolve(dialog.returnValue || null), { once: true });
+        dialog.showModal();
       });
     }
 
@@ -405,46 +421,79 @@
       updateTimer();
     });
 
-    if (total && "speechSynthesis" in window && "SpeechSynthesisUtterance" in window) {
+    if (total) {
       byId("toggle-voice-btn").hidden = false;
       byId("toggle-voice-btn").setAttribute("aria-pressed", "false");
-      byId("toggle-voice-btn").addEventListener("click", async () => {
-        if (speech) { stopSpeaking(); return; }
-        if (waitingForVoice) return;
-        waitingForVoice = true;
-        byId("toggle-voice-btn").disabled = true;
-        try {
-          const voice = await waitForIndonesianVoice();
-          if (!voice) {
-            showVoiceNotice("Suara Bahasa Indonesia belum tersedia. Pasang fitur teks-ke-ucapan Bahasa Indonesia di pengaturan perangkat, lalu muat ulang halaman.");
-            return;
-          }
-          const utterance = new window.SpeechSynthesisUtterance(`Langkah ${current + 1}. ${instructions[current]}`);
-          utterance.lang = "id-ID";
-          utterance.voice = voice;
-          utterance.rate = 0.9;
-          utterance.onend = () => { if (speech === utterance) stopSpeaking(); };
-          utterance.onerror = (event) => {
-            if (speech !== utterance) return;
-            stopSpeaking();
-            if (!["canceled", "interrupted"].includes(event.error)) {
-              showVoiceNotice(`Bacaan tidak dapat diputar: ${event.error}.`);
+      if (!("speechSynthesis" in window) || !("SpeechSynthesisUtterance" in window)) {
+        byId("toggle-voice-btn").addEventListener("click", () => {
+          showVoiceNotice("Browser ini tidak mendukung fitur bacakan langkah. Coba gunakan browser versi terbaru.");
+        });
+      } else {
+        byId("toggle-voice-btn").addEventListener("click", async () => {
+          if (speech) { stopSpeaking(); return; }
+          if (waitingForVoice || voiceMode === "silent") return;
+          waitingForVoice = true;
+          byId("toggle-voice-btn").disabled = true;
+          try {
+            let voice;
+            let language;
+            if (voiceMode === "auto") {
+              voice = await waitForIndonesianVoice();
+              if (voice) {
+                voiceMode = "indonesian";
+              } else {
+                const choice = await requestVoiceFallback();
+                if (choice === "silent") {
+                  voiceMode = "silent";
+                  byId("voice-text").textContent = "Suara dimatikan";
+                  showVoiceNotice("Baik, langkah tetap bisa diikuti dengan membaca teks di layar.");
+                  return;
+                }
+                if (choice !== "english") return;
+                voiceMode = "english";
+              }
             }
-          };
-          speech = utterance;
-          byId("voice-text").textContent = "Hentikan bacaan";
-          byId("toggle-voice-btn").setAttribute("aria-pressed", "true");
-          window.speechSynthesis.speak(utterance);
-        } catch (error) {
-          speech = null;
-          byId("voice-text").textContent = "Bacakan langkah";
-          byId("toggle-voice-btn").setAttribute("aria-pressed", "false");
-          showVoiceNotice(`Bacaan gagal dimulai: ${error instanceof Error ? error.message : String(error)}`);
-        } finally {
-          waitingForVoice = false;
-          byId("toggle-voice-btn").disabled = false;
-        }
-      });
+            if (voiceMode === "indonesian") {
+              voice = voice || findIndonesianVoice();
+              if (!voice) {
+                voiceMode = "auto";
+                showVoiceNotice("Suara Bahasa Indonesia tidak lagi tersedia. Coba tekan Bacakan langkah lagi untuk memilih opsi lain.");
+                return;
+              }
+              language = "id-ID";
+            } else if (voiceMode === "english") {
+              voice = findEnglishVoice();
+              language = voice?.lang || "en-US";
+            }
+
+            const utterance = new window.SpeechSynthesisUtterance(`Langkah ${current + 1}. ${instructions[current]}`);
+            utterance.lang = language;
+            if (voice) utterance.voice = voice;
+            utterance.rate = 0.9;
+            utterance.onend = () => { if (speech === utterance) stopSpeaking(); };
+            utterance.onerror = (event) => {
+              if (speech !== utterance) return;
+              stopSpeaking();
+              if (!["canceled", "interrupted"].includes(event.error)) {
+                showVoiceNotice(`Bacaan tidak dapat diputar: ${event.error}.`);
+              }
+            };
+            speech = utterance;
+            byId("voice-text").textContent = "Hentikan bacaan";
+            byId("toggle-voice-btn").setAttribute("aria-pressed", "true");
+            window.speechSynthesis.speak(utterance);
+          } catch (error) {
+            speech = null;
+            byId("voice-text").textContent = voiceMode === "english"
+              ? "Bacakan dengan suara Inggris" : "Bacakan langkah";
+            byId("toggle-voice-btn").setAttribute("aria-pressed", "false");
+            showVoiceNotice(`Bacaan gagal dimulai: ${error instanceof Error ? error.message : String(error)}`);
+          } finally {
+            waitingForVoice = false;
+            byId("toggle-voice-btn").disabled = voiceMode === "silent";
+          }
+        });
+      }
     }
     document.addEventListener("visibilitychange", tickTimer);
     window.addEventListener("pagehide", () => { pauseTimer(); stopSpeaking(); });

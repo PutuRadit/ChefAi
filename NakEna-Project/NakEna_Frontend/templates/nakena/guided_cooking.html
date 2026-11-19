@@ -9,7 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/css/nakena.css?v=22">
   <link rel="stylesheet" href="/static/css/pages/guided_cooking.css?v=20">
-  <script src="/static/js/pages/guided_cooking.js?v=21" defer></script>
+  <script src="/static/js/pages/guided_cooking.js?v=22" defer></script>
 </head>
 <body class="guided-cooking-page nakena-page page-guided_cooking">
   <a class="gc-skip" href="#cooking-main">Langsung ke panduan</a>
@@ -61,6 +61,18 @@
     </div>
   </main>
   <dialog id="exit-modal-overlay" class="gc-dialog" aria-labelledby="exit-dialog-title"><div class="gc-dialog-content"><p class="gc-eyebrow">PANDUAN MEMASAK</p><h2 id="exit-dialog-title">Keluar dari panduan?</h2><p>Kamu sedang di langkah <span id="modal-step-display">1</span>. Kembali ke detail resep?</p><div class="gc-dialog-actions"><button id="cancel-exit-btn" class="gc-button gc-button-secondary" type="button">Lanjut memasak</button><a class="gc-button gc-button-primary" href="/recipes/1/">Keluar</a></div></div></dialog>
+  <dialog id="voice-fallback-dialog" class="gc-dialog" aria-labelledby="voice-fallback-title">
+    <div class="gc-dialog-content">
+      <p class="gc-eyebrow">PENGATURAN SUARA</p>
+      <h2 id="voice-fallback-title">Suara Bahasa Indonesia tidak tersedia</h2>
+      <p>Browser atau perangkatmu belum menyediakan suara Bahasa Indonesia. Kamu bisa tetap memakai suara bawaan (biasanya Inggris), tetapi pelafalan bahasa Indonesia mungkin terdengar kurang jelas, atau lanjut tanpa suara.</p>
+      <p>Untuk memasang suara Indonesia di Windows: buka <strong>Pengaturan → Waktu &amp; bahasa → Bahasa &amp; wilayah → Bahasa Indonesia → Opsi bahasa</strong>, lalu pasang fitur teks-ke-ucapan. Setelah itu muat ulang halaman.</p>
+      <form method="dialog" class="gc-dialog-actions">
+        <button class="gc-button gc-button-secondary" value="english">Tetap lanjut dengan suara bawaan</button>
+        <button class="gc-button gc-button-primary" value="silent">Lanjut tanpa suara</button>
+      </form>
+    </div>
+  </dialog>
   <dialog id="celebration-overlay" class="gc-dialog gc-finish-dialog" aria-labelledby="finish-dialog-title">
     <div class="gc-dialog-content">
       <span class="gc-finish-icon" aria-hidden="true"><svg class="gc-icon" viewbox="0 0 24 24"><path d="m5 12 4 4L19 6"></path></svg></span>
