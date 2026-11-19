@@ -20,3 +20,17 @@
 
 .other-recipes .recipe-card-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 @media(max-width:680px){.other-recipes .recipe-card-grid{grid-template-columns:1fr}}
+
+.profile-menu{position:relative;flex:0 0 auto}
+button.account-profile[data-header-profile]{padding:0;font:inherit;cursor:pointer}
+.profile-menu-panel{position:absolute;top:calc(100% + 10px);right:0;z-index:90;display:grid;min-width:180px;gap:3px;padding:7px;border:1px solid #1b2d4f;border-radius:12px;background:#0d1b32;box-shadow:0 14px 34px #0008}
+.profile-menu-panel[hidden]{display:none!important}
+.profile-menu-item{display:flex;align-items:center;gap:10px;width:100%;min-height:42px;padding:10px 12px;border:0;border-radius:9px;background:transparent;color:#bac7e3;font:600 12px/1.3 'Plus Jakarta Sans',sans-serif;text-align:left;text-decoration:none;cursor:pointer}
+.profile-menu-item:hover,.profile-menu-item:focus-visible{outline:none;background:#ffffff0d;color:#fff}
+.profile-menu-item[data-action="logout"]{color:#ffb6a8}
+.profile-menu-item .icon{width:18px;height:18px}
+
+@media(max-width:900px){
+  .page-home .header-inner{display:grid}
+  .page-home .site-nav{display:flex}
+}

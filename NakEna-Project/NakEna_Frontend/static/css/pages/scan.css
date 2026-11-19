@@ -14,3 +14,11 @@
 .detection-warning-dialog p{font-size:13px}
 .detection-warning-dialog .button-row{justify-content:flex-end;margin-top:8px}
 @media(max-width:520px){.detection-warning-dialog section{padding:18px}.detection-warning-dialog .button-row .btn{flex:1}}
+@media(max-width:680px){
+  .page-scan .workflow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-column:1/-1;grid-row:2;justify-self:stretch;width:100%;gap:4px;padding:4px;border-radius:14px}
+  .page-scan .workflow>i{display:none}
+  .page-scan .workflow .workflow-step{min-width:0;justify-content:center;gap:4px;padding:7px 4px;font-size:clamp(9px,2.7vw,11px);text-align:center;white-space:normal}
+  .page-scan .workflow .workflow-step>span{flex:0 0 18px}
+  .page-scan .workflow b{overflow-wrap:anywhere}
+}
+@media(max-width:380px){.page-scan .workflow .workflow-step{flex-direction:column;gap:3px}}

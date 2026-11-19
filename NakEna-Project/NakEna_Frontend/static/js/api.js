@@ -30,6 +30,9 @@
       close: "M6 6l12 12M6 18 18 6",
       heart: "M20.8 4.6a5.5 5.5 0 0 0-7.8 0l-1 1-1-1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z",
       camera: "M14 4h-4L8 7H4a2 2 0 0 0-2 2v10h20V9a2 2 0 0 0-2-2h-4l-2-3ZM16 13a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z",
+      person: "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM4 21a8 8 0 0 1 16 0",
+      home: "m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1V10Z",
+      logout: "M10 17l5-5-5-5m5 5H3m9-9h7a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-7",
     };
     const icon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     for (const [key, value] of Object.entries({ class: "icon", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", "stroke-width": "1.8", "stroke-linecap": "round", "stroke-linejoin": "round", "aria-hidden": "true" })) icon.setAttribute(key, value);
@@ -118,6 +121,87 @@
     return Number.isFinite(date.getTime()) ? date.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }) : "";
   }
 
+  function initializeProfileMenu(profile, index) {
+    if (profile.dataset.profileMenuReady) return;
+
+    const wrapper = uiElement("div", "profile-menu");
+    const toggle = uiElement("button", "account-profile");
+    toggle.type = "button";
+    toggle.dataset.headerProfile = "";
+    toggle.dataset.profileMenuReady = "true";
+    toggle.hidden = profile.hidden;
+    toggle.setAttribute("aria-label", "Buka menu profil");
+    toggle.setAttribute("aria-expanded", "false");
+
+    const panel = uiElement("div", "profile-menu-panel");
+    panel.id = `profile-menu-${index + 1}`;
+    panel.hidden = true;
+    panel.setAttribute("aria-label", "Menu akun");
+    toggle.setAttribute("aria-controls", panel.id);
+
+    const avatar = profile.querySelector("[data-user-avatar]");
+    if (avatar) toggle.append(avatar);
+    else toggle.append(...profile.childNodes);
+
+    const homeLink = uiElement("a", "profile-menu-item");
+    homeLink.href = "/";
+    homeLink.append(uiIcon("home"), document.createTextNode("Beranda"));
+
+    const navigationLinks = [
+      ["Scan bahan", "/scan/", "camera"],
+      ["Riwayat", "/history/", "clock"],
+      ["Favorit", "/favorites/", "heart"],
+    ];
+    const additionalLinks = navigationLinks.map(([label, href, icon]) => {
+      const link = uiElement("a", "profile-menu-item");
+      link.href = href;
+      link.append(uiIcon(icon), document.createTextNode(label));
+      return link;
+    });
+
+    const profileLink = uiElement("a", "profile-menu-item");
+    profileLink.href = "/profile/";
+    const profileIcon = uiIcon("person");
+    profileLink.append(profileIcon, document.createTextNode("Profil"));
+
+    const logoutButton = uiElement("button", "profile-menu-item", "Keluar");
+    logoutButton.type = "button";
+    logoutButton.dataset.action = "logout";
+    logoutButton.prepend(uiIcon("logout"));
+
+    panel.append(homeLink, ...additionalLinks, profileLink, logoutButton);
+    wrapper.append(toggle, panel);
+    profile.replaceWith(wrapper);
+
+    const close = (restoreFocus = false) => {
+      panel.hidden = true;
+      toggle.setAttribute("aria-expanded", "false");
+      if (restoreFocus) toggle.focus();
+    };
+
+    toggle.addEventListener("click", () => {
+      const open = panel.hidden;
+      panel.hidden = !open;
+      toggle.setAttribute("aria-expanded", String(open));
+      if (open) profileLink.focus();
+    });
+    panel.addEventListener("click", (event) => {
+      if (event.target.closest("a, button")) close();
+    });
+    document.addEventListener("click", (event) => {
+      if (!wrapper.contains(event.target)) close();
+    });
+    document.addEventListener("focusin", (event) => {
+      if (!wrapper.contains(event.target)) close();
+    });
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && !panel.hidden) {
+        event.stopPropagation();
+        close(true);
+      }
+    });
+  }
+
   function setupHeaderAccount() {
     const accounts = document.querySelectorAll("[data-header-account]");
     if (!accounts.length) return;
@@ -126,11 +210,15 @@
       const next = encodeURIComponent(`${location.pathname}${location.search}`);
       accounts.forEach((account) => {
         const guest = account.querySelector("[data-header-guest]");
-        const profile = account.querySelector("[data-header-profile]");
+        let profile = account.querySelector("[data-header-profile]");
+        if (profile && profile.tagName !== "BUTTON") {
+          initializeProfileMenu(profile, [...accounts].indexOf(account));
+          profile = account.querySelector("[data-header-profile]");
+        }
         if (guest) guest.hidden = authenticated;
         if (profile) profile.hidden = !authenticated || (detail.role || currentRole) === "admin";
         account.querySelectorAll("[data-header-member-only]").forEach((element) => {
-          element.hidden = !authenticated || (detail.role || currentRole) !== "user";
+          element.hidden = true;
         });
         const login = account.querySelector("[data-header-login]");
         const register = account.querySelector("[data-header-register]");
@@ -416,20 +504,12 @@
         link.dataset.roleGenerated = "true";
         nav.append(link);
       };
-      if (role === "user") {
-        if (!["/scan", "/scan/"].includes(location.pathname)) {
-          addLink("Resep", "/recipes/");
-        }
-        addLink("Preferensi", "/profile/");
-      } else if (role === "admin") {
-        addLink("Admin Dashboard", "/admin-dashboard/");
+      nav.hidden = role === "user" && location.pathname !== "/";
+      if (role === "user" && /^\/scan\/?$/.test(location.pathname)) {
+        document.querySelector(".page-scan .breadcrumb")?.remove();
       }
-      if (role === "user" || role === "admin") {
-        const logout = uiElement("button", "", "Keluar");
-        logout.type = "button";
-        logout.dataset.roleGenerated = "true";
-        logout.dataset.action = "logout";
-        nav.append(logout);
+      if (role === "admin") {
+        addLink("Admin Dashboard", "/admin-dashboard/");
       }
       nav.querySelectorAll("a[href]").forEach((link) => {
         const path = new URL(link.href, location.origin).pathname;
@@ -1600,10 +1680,11 @@
     history.forEach((entry) => {
       const recipe = normalizeRecipe(entry);
       const node = recipeCard(recipe, { label: `RESEP DIBUAT · ${dateLabel(entry.created_at)}` });
-      if (entry.review) {
+      const rating = Number(entry.review?.rating);
+      if (Number.isInteger(rating) && rating >= 1 && rating <= 5) {
         const body = node.querySelector(".recipe-card-body");
-        const stars = "★".repeat(entry.review.rating) + "☆".repeat(5 - entry.review.rating);
-        body?.append(uiElement("span", "small-badge", `Review kamu: ${stars}`));
+        const stars = "★".repeat(rating) + "☆".repeat(5 - rating);
+        body?.append(uiElement("span", "small-badge", `Rating kamu: ${rating}/5 · ${stars}`));
         if (entry.review.comment) body?.append(uiElement("p", "muted", entry.review.comment));
       }
       grid.append(node); records.push({ recipe, node, kind: "recipe", created: entry.created_at });
@@ -1855,7 +1936,19 @@
       refreshButton.type = "button";
       refreshButton.className = "admin-refresh-button";
       refreshButton.textContent = "Perbarui data";
-      header.append(titleGroup, refreshButton);
+      const exportButton = document.createElement("button");
+      exportButton.type = "button";
+      exportButton.className = "admin-export-button";
+      exportButton.disabled = true;
+      const exportIcon = document.createElement("span");
+      exportIcon.className = "material-symbols-outlined";
+      exportIcon.setAttribute("aria-hidden", "true");
+      exportIcon.textContent = "download";
+      exportButton.append(exportIcon, document.createTextNode("Ekspor CSV"));
+      const headerActions = document.createElement("div");
+      headerActions.className = "admin-dashboard-actions";
+      headerActions.append(exportButton, refreshButton);
+      header.append(titleGroup, headerActions);
 
       const status = document.createElement("p");
       status.className = "admin-dashboard-status";
@@ -2119,6 +2212,7 @@
       let offset = 0;
       let loading = false;
       let currentPageCount = 0;
+      let dashboardData = null;
       let imageObjectUrl = null;
       const clearImagePreview = () => {
         if (imageObjectUrl) URL.revokeObjectURL(imageObjectUrl);
@@ -2365,11 +2459,46 @@
         analyticsStatus.textContent = "Memuat statistik dan review…";
         try {
           const data = await api("/admin/dashboard");
+          dashboardData = data;
+          exportButton.disabled = false;
           renderAnalytics(data);
           analyticsStatus.textContent = "Statistik diperbarui dari data tersimpan.";
         } catch (error) {
           analyticsStatus.textContent = `Statistik tidak dapat dimuat: ${error.message}`;
         }
+      };
+      const exportDashboardCsv = () => {
+        if (!dashboardData) return;
+        const rows = [
+          ["Kategori", "Metrik", "Nilai", "Tanggal"],
+          ["Ringkasan", "Pengguna", dashboardData.totals.users, ""],
+          ["Ringkasan", "Resep", dashboardData.totals.recipes, ""],
+          ["Ringkasan", "Review", dashboardData.totals.reviews, ""],
+          ["Ringkasan", "Scan", dashboardData.totals.uploads, ""],
+          ["Ringkasan", "Rata-rata rating", dashboardData.totals.average_rating, ""],
+        ];
+        dashboardData.daily_activity.forEach((day) => {
+          rows.push(
+            ["Aktivitas harian", "Pengguna baru", day.users, day.date],
+            ["Aktivitas harian", "Resep tersimpan", day.recipes, day.date],
+          );
+        });
+        dashboardData.rating_distribution.forEach((rating) => {
+          rows.push(["Distribusi rating", `${rating.rating} bintang`, rating.count, ""]);
+        });
+        dashboardData.upload_status_counts.forEach((upload) => {
+          rows.push(["Status scan", upload.status, upload.count, ""]);
+        });
+
+        const csv = rows
+          .map((row) => row.map((value) => `"${String(value ?? "").replace(/"/g, '""')}"`).join(","))
+          .join("\r\n");
+        const url = URL.createObjectURL(new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8" }));
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `nakena-dashboard-${new Date().toISOString().slice(0, 10)}.csv`;
+        link.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
       };
       const loadUsers = async () => {
         if (loading) return;
@@ -2448,6 +2577,7 @@
         refreshButton.disabled = false;
       };
       refreshButton.addEventListener("click", refreshDashboard);
+      exportButton.addEventListener("click", exportDashboardCsv);
       previousButton.addEventListener("click", () => {
         offset = Math.max(0, offset - pageSize);
         loadUsers();

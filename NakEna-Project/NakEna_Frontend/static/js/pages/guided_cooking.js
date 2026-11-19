@@ -68,6 +68,8 @@
     };
     let interval = null;
     let speech = null;
+    let voiceNoticeTimer = null;
+    let waitingForVoice = false;
     const timer = { remaining: 60, duration: 60, deadline: 0, running: false, touched: false, source: 0 };
     const exitDialog = byId("exit-modal-overlay");
     const finishDialog = byId("celebration-overlay");
@@ -97,6 +99,42 @@
       if ("speechSynthesis" in window) window.speechSynthesis.cancel();
       byId("voice-text").textContent = "Bacakan langkah";
       byId("toggle-voice-btn").setAttribute("aria-pressed", "false");
+    }
+
+    function findIndonesianVoice() {
+      const voices = window.speechSynthesis.getVoices();
+      return voices.find((voice) => voice.lang.toLowerCase() === "id-id")
+        || voices.find((voice) => /^id(?:-|$)/i.test(voice.lang));
+    }
+
+    function waitForIndonesianVoice() {
+      const available = findIndonesianVoice();
+      if (available) return Promise.resolve(available);
+
+      return new Promise((resolve) => {
+        let timeout;
+        const finish = (voice) => {
+          clearTimeout(timeout);
+          window.speechSynthesis.removeEventListener("voiceschanged", onVoicesChanged);
+          resolve(voice);
+        };
+        const onVoicesChanged = () => {
+          const voice = findIndonesianVoice();
+          if (voice) finish(voice);
+        };
+        timeout = setTimeout(() => finish(findIndonesianVoice()), 1500);
+        window.speechSynthesis.addEventListener("voiceschanged", onVoicesChanged);
+      });
+    }
+
+    function showVoiceNotice(message) {
+      const notice = byId("appNotice");
+      if (!notice) return;
+      clearTimeout(voiceNoticeTimer);
+      notice.textContent = message;
+      notice.hidden = false;
+      notice.setAttribute("role", "status");
+      voiceNoticeTimer = setTimeout(() => { notice.hidden = true; }, 9000);
     }
 
     function updateTimer() {
@@ -370,18 +408,42 @@
     if (total && "speechSynthesis" in window && "SpeechSynthesisUtterance" in window) {
       byId("toggle-voice-btn").hidden = false;
       byId("toggle-voice-btn").setAttribute("aria-pressed", "false");
-      byId("toggle-voice-btn").addEventListener("click", () => {
+      byId("toggle-voice-btn").addEventListener("click", async () => {
         if (speech) { stopSpeaking(); return; }
-        const utterance = new window.SpeechSynthesisUtterance(`Langkah ${current + 1}. ${instructions[current]}`);
-        utterance.lang = "id-ID";
-        const voice = window.speechSynthesis.getVoices().find((item) => item.lang.toLowerCase().startsWith("id"));
-        if (voice) utterance.voice = voice;
-        utterance.rate = 0.9;
-        utterance.onend = utterance.onerror = () => { if (speech === utterance) stopSpeaking(); };
-        speech = utterance;
-        byId("voice-text").textContent = "Hentikan bacaan";
-        byId("toggle-voice-btn").setAttribute("aria-pressed", "true");
-        window.speechSynthesis.speak(utterance);
+        if (waitingForVoice) return;
+        waitingForVoice = true;
+        byId("toggle-voice-btn").disabled = true;
+        try {
+          const voice = await waitForIndonesianVoice();
+          if (!voice) {
+            showVoiceNotice("Suara Bahasa Indonesia belum tersedia. Pasang fitur teks-ke-ucapan Bahasa Indonesia di pengaturan perangkat, lalu muat ulang halaman.");
+            return;
+          }
+          const utterance = new window.SpeechSynthesisUtterance(`Langkah ${current + 1}. ${instructions[current]}`);
+          utterance.lang = "id-ID";
+          utterance.voice = voice;
+          utterance.rate = 0.9;
+          utterance.onend = () => { if (speech === utterance) stopSpeaking(); };
+          utterance.onerror = (event) => {
+            if (speech !== utterance) return;
+            stopSpeaking();
+            if (!["canceled", "interrupted"].includes(event.error)) {
+              showVoiceNotice(`Bacaan tidak dapat diputar: ${event.error}.`);
+            }
+          };
+          speech = utterance;
+          byId("voice-text").textContent = "Hentikan bacaan";
+          byId("toggle-voice-btn").setAttribute("aria-pressed", "true");
+          window.speechSynthesis.speak(utterance);
+        } catch (error) {
+          speech = null;
+          byId("voice-text").textContent = "Bacakan langkah";
+          byId("toggle-voice-btn").setAttribute("aria-pressed", "false");
+          showVoiceNotice(`Bacaan gagal dimulai: ${error instanceof Error ? error.message : String(error)}`);
+        } finally {
+          waitingForVoice = false;
+          byId("toggle-voice-btn").disabled = false;
+        }
       });
     }
     document.addEventListener("visibilitychange", tickTimer);
