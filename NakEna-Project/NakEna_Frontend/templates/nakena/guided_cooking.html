@@ -9,7 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/css/nakena.css?v=22">
   <link rel="stylesheet" href="/static/css/pages/guided_cooking.css?v=20">
-  <script src="/static/js/pages/guided_cooking.js?v=22" defer></script>
+  <script src="/static/js/pages/guided_cooking.js?v=25" defer></script>
 </head>
 <body class="guided-cooking-page nakena-page page-guided_cooking">
   <a class="gc-skip" href="#cooking-main">Langsung ke panduan</a>
@@ -66,9 +66,10 @@
       <p class="gc-eyebrow">PENGATURAN SUARA</p>
       <h2 id="voice-fallback-title">Suara Bahasa Indonesia tidak tersedia</h2>
       <p>Browser atau perangkatmu belum menyediakan suara Bahasa Indonesia. Kamu bisa tetap memakai suara bawaan (biasanya Inggris), tetapi pelafalan bahasa Indonesia mungkin terdengar kurang jelas, atau lanjut tanpa suara.</p>
-      <p>Untuk memasang suara Indonesia di Windows: buka <strong>Pengaturan → Waktu &amp; bahasa → Bahasa &amp; wilayah → Bahasa Indonesia → Opsi bahasa</strong>, lalu pasang fitur teks-ke-ucapan. Setelah itu muat ulang halaman.</p>
+      <p>Di Android, buka <strong>Setelan → Aksesibilitas atau Sistem → Keluaran teks-ke-ucapan</strong>, pilih mesin suara seperti Speech Recognition &amp; Synthesis dari Google, lalu buka pemasangan data suara dan unduh Bahasa Indonesia. Nama menu bisa berbeda menurut merek ponsel. Di Windows, buka <strong>Pengaturan → Waktu &amp; bahasa → Bahasa &amp; wilayah → Bahasa Indonesia → Opsi bahasa</strong>, lalu pasang fitur teks-ke-ucapan. Setelah pemasangan, muat ulang panduan memasak.</p>
       <form method="dialog" class="gc-dialog-actions">
-        <button class="gc-button gc-button-secondary" value="english">Tetap lanjut dengan suara bawaan</button>
+        <button id="voice-fallback-english" class="gc-button gc-button-secondary" value="english">Tetap lanjut dengan suara bawaan</button>
+        <button id="voice-install-data" class="gc-button gc-button-secondary" value="install" hidden>Pasang suara Indonesia</button>
         <button class="gc-button gc-button-primary" value="silent">Lanjut tanpa suara</button>
       </form>
     </div>

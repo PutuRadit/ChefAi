@@ -2,6 +2,7 @@ import json
 import logging
 import re
 import unicodedata
+from datetime import datetime, timezone
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -61,10 +62,48 @@ def save_recipe_history(
         title=payload.title.strip(),
         recipe_text=payload.recipe_text,
         ingredients=payload.ingredients,
+        is_history=False,
     )
     db.add(entry)
     db.commit()
     db.refresh(entry)
+    return entry
+
+
+@router.post("/history/complete", response_model=RecipeEntryRead, status_code=status.HTTP_201_CREATED)
+def create_completed_recipe_history(
+    payload: RecipeEntryCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_regular_user),
+):
+    entry = RecipeEntry(
+        id=uuid4().hex,
+        user_id=current_user.id,
+        title=payload.title.strip(),
+        recipe_text=payload.recipe_text,
+        ingredients=payload.ingredients,
+        is_history=True,
+    )
+    db.add(entry)
+    db.commit()
+    db.refresh(entry)
+    return entry
+
+
+@router.post("/history/{entry_id}/complete", response_model=RecipeEntryRead)
+def complete_recipe_history(
+    entry_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_regular_user),
+):
+    entry = db.get(RecipeEntry, entry_id)
+    if entry is None or entry.user_id != current_user.id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Resep tidak ditemukan")
+    if not entry.is_history:
+        entry.is_history = True
+        entry.created_at = datetime.now(timezone.utc)
+        db.commit()
+        db.refresh(entry)
     return entry
 
 
@@ -135,8 +174,8 @@ def save_favorite_recipe(
             select(RecipeEntry).where(
                 RecipeEntry.user_id == current_user.id,
                 RecipeEntry.title == payload.title.strip(),
-                RecipeEntry.is_history.is_(True),
             )
+            .order_by(RecipeEntry.created_at.desc())
         )
     if entry is None:
         entry = RecipeEntry(

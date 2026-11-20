@@ -7,11 +7,33 @@
   const recipeKey = "nakena_latest_recipe";
   const recipeNoticeKey = "nakena_recipe_notice";
   const moreRecipesKey = "nakena_more_recipe_request";
+  const appAuthStorage = window.NakEnaTts ? window.localStorage : null;
+  const getAuthItem = (key) => {
+    const sessionValue = sessionStorage.getItem(key);
+    if (sessionValue && appAuthStorage && !appAuthStorage.getItem(key)) {
+      appAuthStorage.setItem(key, sessionValue);
+    }
+    return sessionValue || appAuthStorage?.getItem(key) || null;
+  };
+  const setAuthItem = (key, value) => {
+    sessionStorage.setItem(key, value);
+    appAuthStorage?.setItem(key, value);
+  };
+  const removeAuthItem = (key) => {
+    sessionStorage.removeItem(key);
+    appAuthStorage?.removeItem(key);
+  };
+  if (window.NakEnaTts && /^\/login\/?$/.test(location.pathname)
+    && new URLSearchParams(location.search).get("app_start") === "1") {
+    [tokenKey, emailKey, userNameKey, userRoleKey].forEach(removeAuthItem);
+    [uploadKey, recipeKey, recipeNoticeKey, moreRecipesKey].forEach((key) => sessionStorage.removeItem(key));
+    history.replaceState(history.state, "", location.pathname);
+  }
   const apiBaseUrl = (document.currentScript?.dataset.apiBase || "http://127.0.0.1:8000").replace(/\/+$/, "");
-  const token = () => sessionStorage.getItem(tokenKey);
+  const token = () => getAuthItem(tokenKey);
   let currentRole = "guest";
   let currentUser = null;
-  const email = () => sessionStorage.getItem(emailKey) || "guest";
+  const email = () => getAuthItem(emailKey) || "guest";
   const storageKey = (name) => `nakena_${name}_${email()}`;
 
   function uiElement(tag, className = "", text = "") {
@@ -252,10 +274,7 @@
     const data = response.status === 204 ? null : await response.json().catch(() => ({}));
     if (!response.ok) {
       if (response.status === 401) {
-        sessionStorage.removeItem(tokenKey);
-        sessionStorage.removeItem(emailKey);
-        sessionStorage.removeItem(userNameKey);
-        sessionStorage.removeItem(userRoleKey);
+        [tokenKey, emailKey, userNameKey, userRoleKey].forEach(removeAuthItem);
         currentRole = "guest";
         currentUser = null;
         window.dispatchEvent(new CustomEvent("nakena:auth-changed", { detail: { authenticated: false, role: "guest" } }));
@@ -375,10 +394,10 @@
   }
 
   function saveToken(data, userEmail, user) {
-    sessionStorage.setItem(tokenKey, data.access_token);
-    sessionStorage.setItem(emailKey, userEmail);
-    sessionStorage.setItem(userNameKey, user.full_name);
-    sessionStorage.setItem(userRoleKey, user.role);
+    setAuthItem(tokenKey, data.access_token);
+    setAuthItem(emailKey, userEmail);
+    setAuthItem(userNameKey, user.full_name);
+    setAuthItem(userRoleKey, user.role);
     currentRole = user.role;
     currentUser = user;
     sessionStorage.removeItem("nakena_guest_mode");
@@ -387,8 +406,116 @@
     }));
   }
 
+  function setupRememberedLogin(form) {
+    if (!form) return null;
+    const emailInput = form.querySelector('input[name="email"]');
+    const passwordInput = form.querySelector('input[name="password"]');
+    const passwordField = passwordInput?.closest(".field");
+    if (!emailInput || !passwordInput || !passwordField) return null;
+
+    emailInput.autocomplete = "username";
+    passwordInput.autocomplete = "current-password";
+
+    const label = document.createElement("label");
+    label.className = "choice-chip remember-login";
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.name = "remember_login";
+    checkbox.id = "remember-login";
+    const icon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    icon.setAttribute("class", "icon");
+    icon.setAttribute("viewBox", "0 0 24 24");
+    icon.setAttribute("fill", "none");
+    icon.setAttribute("stroke", "currentColor");
+    icon.setAttribute("stroke-width", "1.8");
+    icon.setAttribute("stroke-linecap", "round");
+    icon.setAttribute("stroke-linejoin", "round");
+    icon.setAttribute("aria-hidden", "true");
+    const iconPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    iconPath.setAttribute("d", "M12 5v14M5 12h14");
+    icon.append(iconPath);
+    const text = document.createElement("span");
+    text.textContent = "Ingat email & kata sandi";
+    label.append(checkbox, icon, text);
+    passwordField.after(label);
+
+    const updateIcon = () => {
+      iconPath.setAttribute("d", checkbox.checked ? "m5 12 4 4L19 6" : "M12 5v14M5 12h14");
+    };
+    checkbox.addEventListener("change", () => {
+      updateIcon();
+      if (!checkbox.checked && typeof window.NakEnaTts?.saveRememberedCredentials === "function"
+        && !window.NakEnaTts.saveRememberedCredentials("", "", false)) {
+        setNotice("Login tersimpan tidak dapat dihapus dari perangkat ini.");
+      }
+    });
+
+    const applyCredentials = (credentials) => {
+      if (!credentials || typeof credentials.email !== "string" || !credentials.email
+        || typeof credentials.password !== "string" || !credentials.password
+        || emailInput.value || passwordInput.value) return;
+      emailInput.value = credentials.email;
+      passwordInput.value = credentials.password;
+      checkbox.checked = true;
+      updateIcon();
+    };
+
+    if (typeof window.NakEnaTts?.getRememberedCredentials === "function") {
+      try {
+        const saved = window.NakEnaTts.getRememberedCredentials();
+        if (saved) {
+          const credentials = JSON.parse(saved);
+          if (credentials.error) setNotice("Login tersimpan tidak dapat dibaca. Silakan masukkan kembali.");
+          else applyCredentials(credentials);
+        }
+      } catch {
+        setNotice("Login tersimpan tidak dapat dibaca. Silakan masukkan kembali.");
+      }
+    } else if (window.PasswordCredential && navigator.credentials?.get) {
+      navigator.credentials.get({ password: true, mediation: "silent" })
+        .then((credential) => {
+          if (credential?.type === "password") {
+            applyCredentials({ email: credential.id, password: credential.password });
+          }
+        })
+        .catch((error) => {
+          if (!["NotAllowedError", "NotSupportedError"].includes(error.name)) {
+            setNotice("Browser tidak dapat membaca login tersimpan.");
+          }
+        });
+    }
+
+    return checkbox;
+  }
+
+  async function persistRememberedLogin(checkbox, userEmail, password) {
+    const remember = checkbox?.checked === true;
+    try {
+      if (typeof window.NakEnaTts?.saveRememberedCredentials === "function") {
+        if (!window.NakEnaTts.saveRememberedCredentials(userEmail, password, remember)) {
+          setNotice("Login berhasil, tetapi kata sandi tidak dapat disimpan di perangkat ini.");
+        }
+        return;
+      }
+      if (!remember) {
+        await navigator.credentials?.preventSilentAccess?.();
+        return;
+      }
+      if (window.PasswordCredential && navigator.credentials?.store) {
+        await navigator.credentials.store(new window.PasswordCredential({
+          id: userEmail,
+          password,
+          name: userEmail,
+        }));
+      }
+    } catch {
+      setNotice("Login berhasil, tetapi browser tidak dapat menyimpan kata sandi.");
+    }
+  }
+
   function setupAuth() {
     const loginForm = document.getElementById("login-form");
+    const rememberLogin = setupRememberedLogin(loginForm);
     captureSubmit(loginForm, async () => {
       const userEmail = String(new FormData(loginForm).get("email") || "").trim().toLowerCase();
       const password = String(new FormData(loginForm).get("password") || "");
@@ -402,6 +529,7 @@
         });
         const user = await api("/users/me", { accessToken: data.access_token });
         saveToken(data, userEmail, user);
+        await persistRememberedLogin(rememberLogin, userEmail, password);
         const next = new URLSearchParams(location.search).get("next");
         const target = next?.startsWith("/") && !next.startsWith("//")
           ? next
@@ -942,7 +1070,7 @@
       const button = document.getElementById("btn-save-account"); button.disabled = true;
       try {
         const user = await api("/users/me", { method: "PATCH", body: JSON.stringify({ full_name: name }) });
-        sessionStorage.setItem(userNameKey, user.full_name);
+        setAuthItem(userNameKey, user.full_name);
         document.querySelectorAll("[data-user-name]").forEach((element) => { element.textContent = user.full_name; });
         document.querySelectorAll("[data-profile-initial]").forEach((element) => { element.textContent = Array.from(user.full_name.trim())[0].toLocaleUpperCase("id-ID"); });
         window.dispatchEvent(new CustomEvent("nakena:auth-changed", { detail: { authenticated: true, fullName: user.full_name, email: user.email } }));
@@ -1365,11 +1493,15 @@
     const photo = (await recipePhotoData(recipe)) || {};
     if (image.dataset.recipePhotoKey !== key || settled || fallbackStarted) return;
     let valid = false;
+    let imageUrl;
     try {
-      const url = new URL(photo.image_url);
-      const apiOrigin = new URL(apiBaseUrl).origin;
-      valid = url.origin === apiOrigin
-        && /^\/recipes\/image\/assets\/[a-f0-9]{64}\.(?:jpg|png|webp)$/.test(url.pathname);
+      const assetKey = String(photo.asset_key || "");
+      const apiUrl = new URL(apiBaseUrl);
+      const apiPath = apiUrl.pathname.replace(/\/+$/, "");
+      imageUrl = new URL(`recipes/image/assets/${assetKey}`, `${apiBaseUrl}/`);
+      valid = /^[a-f0-9]{64}\.(?:jpg|png|webp)$/.test(assetKey)
+        && imageUrl.origin === apiUrl.origin
+        && imageUrl.pathname === `${apiPath}/recipes/image/assets/${assetKey}`;
     } catch {}
     if (photo.status !== "ok" || !valid) {
       fallback();
@@ -1402,7 +1534,7 @@
     };
     image.onerror = fallback;
     image.alt = photo.alt || ("Ilustrasi " + recipe.title);
-    image.src = photo.image_url;
+    image.src = imageUrl.href;
   }
 
   function prepareRecipeReveal(card, loader) {
@@ -1671,15 +1803,20 @@
   async function setupHistory() {
     const grid = document.getElementById("activityGrid"); if (!grid) return;
     const status = document.getElementById("collectionStatus");
-    let history, uploads;
-    try { [history, uploads] = await Promise.all([api("/recipes/history"), api("/uploads")]); }
+    const description = document.querySelector(".page-banner p");
+    if (description) description.textContent = "Di sini hanya ada resep yang sudah selesai kamu masak.";
+    document.getElementById("historyTypeFilter")?.remove();
+    const emptyDescription = document.querySelector("#emptyState p");
+    if (emptyDescription) emptyDescription.textContent = "Resep yang selesai dimasak akan muncul di sini.";
+    let history;
+    try { history = await api("/recipes/history"); }
     catch (error) { status.textContent = "Riwayat belum dapat dimuat."; setNotice(error.message); return; }
     const summary = document.getElementById("historySummary");
-    summary.append(uiElement("span", "small-badge", `${history.length} resep`), uiElement("span", "small-badge", `${uploads.length} hasil scan`));
+    summary.append(uiElement("span", "small-badge", `${history.length} resep dimasak`));
     const records = [];
     history.forEach((entry) => {
       const recipe = normalizeRecipe(entry);
-      const node = recipeCard(recipe, { label: `RESEP DIBUAT · ${dateLabel(entry.created_at)}` });
+      const node = recipeCard(recipe, { label: `SUDAH DIMASAK · ${dateLabel(entry.created_at)}` });
       const rating = Number(entry.review?.rating);
       if (Number.isInteger(rating) && rating >= 1 && rating <= 5) {
         const body = node.querySelector(".recipe-card-body");
@@ -1689,19 +1826,7 @@
       }
       grid.append(node); records.push({ recipe, node, kind: "recipe", created: entry.created_at });
     });
-    const latest = storedJSON(uploadKey);
-    uploads.forEach((entry) => {
-      const node = uiElement("article", "recipe-other-card");
-      const visual = uiElement("div", "recipe-visual scan-history-art");
-      const preview = latest?.id === entry.id ? sessionStorage.getItem("nakena_preview_image") : null;
-      if (preview) { const image = uiElement("img"); image.src = preview; image.alt = "Foto bahan yang kamu unggah"; visual.append(image); } else visual.append(uiIcon("camera"));
-      const body = uiElement("div", "recipe-card-body");
-      const statusLabel = { detected: "Selesai dipindai", no_detections: "Belum ada bahan terdeteksi", uploaded: "Foto diunggah", pending: "Menunggu proses", failed: "Pemindaian gagal" }[entry.status] || "Foto tersimpan";
-      body.append(uiElement("span", "small-label warm", `HASIL SCAN · ${dateLabel(entry.created_at)}`), uiElement("h3", "", entry.original_filename), uiElement("p", "", statusLabel));
-      const link = uiElement("a", "btn btn-primary", "Scan bahan baru"); link.href = "/scan/"; body.append(link); node.append(visual, body); grid.append(node);
-      records.push({ recipe: { title: entry.original_filename, ingredients: [] }, node, kind: "upload", created: entry.created_at });
-    });
-    status.hidden = true; bindCollectionFilters(records, grid, document.getElementById("emptyState"), { kind: true });
+    status.hidden = true; bindCollectionFilters(records, grid, document.getElementById("emptyState"));
   }
 
   async function setupRecipeDetail() {
@@ -1810,6 +1935,30 @@
     });
     const parsed = parseRecipeContent(recipeText, recipe.ingredients);
     const instructions = recipeInstructions(parsed, recipe.title);
+    window.addEventListener("nakena:save-cooked-recipe", async (event) => {
+      const resolve = event.detail?.resolve;
+      if (typeof resolve !== "function") return;
+      try {
+        const entryId = String(recipe.id || "");
+        const saved = entryId.startsWith("pending-")
+          ? await api("/recipes/history/complete", {
+            method: "POST",
+            body: JSON.stringify({
+              title: recipe.title,
+              recipe_text: recipeText,
+              ingredients: recipe.ingredients,
+            }),
+          })
+          : await api(`/recipes/history/${encodeURIComponent(entryId)}/complete`, { method: "POST" });
+        recipe.id = saved.id;
+        recipe.is_history = true;
+        recipe.createdAt = saved.created_at;
+        sessionStorage.setItem(recipeKey, JSON.stringify(recipe));
+        resolve({ success: true });
+      } catch (error) {
+        resolve({ success: false, message: error.message });
+      }
+    });
     window.addEventListener("nakena:submit-cooking-review", async (event) => {
       const rating = Number(event.detail?.rating);
       if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
@@ -1848,7 +1997,7 @@
 
   function renderProfileAvatar(avatar, user = {}) {
     if (!avatar) return;
-    const fullName = [user.full_name, sessionStorage.getItem(userNameKey), sessionStorage.getItem(emailKey), "NakEna"]
+    const fullName = [user.full_name, getAuthItem(userNameKey), getAuthItem(emailKey), "NakEna"]
       .find((value) => typeof value === "string" && value.trim())?.trim() || "NakEna";
     const initial = Array.from(fullName)[0].toLocaleUpperCase("id-ID");
     const avatarUrl = user.profile_image_url || user.avatar_url || user.photo_url;
@@ -1898,7 +2047,7 @@
       if (fullNameInput) fullNameInput.value = user.full_name || "";
       const emailInput = document.getElementById("input-email");
       if (emailInput) emailInput.value = user.email || "";
-      sessionStorage.setItem(userNameKey, String(user.full_name || ""));
+      setAuthItem(userNameKey, String(user.full_name || ""));
       renderProfileAvatar(avatar, user);
       window.dispatchEvent(new CustomEvent("nakena:auth-changed", {
         detail: { authenticated: true, fullName: user.full_name || "", email: user.email || "" },
@@ -2594,8 +2743,9 @@
 
   function setupLogout() {
     const clearSession = () => {
-      [tokenKey, emailKey, userNameKey, uploadKey, recipeKey, recipeNoticeKey, moreRecipesKey,
-        userRoleKey, "nakena_preview_image", "nakena_guest_mode"].forEach((key) => sessionStorage.removeItem(key));
+      [tokenKey, emailKey, userNameKey, userRoleKey].forEach(removeAuthItem);
+      [uploadKey, recipeKey, recipeNoticeKey, moreRecipesKey, "nakena_preview_image", "nakena_guest_mode"]
+        .forEach((key) => sessionStorage.removeItem(key));
       currentRole = "guest";
       currentUser = null;
       window.dispatchEvent(new CustomEvent("nakena:auth-changed", {
@@ -2607,13 +2757,13 @@
       if (button) {
         event.preventDefault();
         clearSession();
-        location.assign("/");
+        location.assign(window.NakEnaTts ? "/login/" : "/");
       }
     });
     document.querySelector("#logout-modal a[data-path='beranda']")?.addEventListener("click", (event) => {
       event.preventDefault();
       clearSession();
-      location.assign("/");
+      location.assign(window.NakEnaTts ? "/login/" : "/");
     });
   }
 
@@ -2628,8 +2778,8 @@
       try {
         currentUser = await api("/users/me", { quietAccessFailure: true });
         currentRole = currentUser.role;
-        sessionStorage.setItem(userRoleKey, currentRole);
-        sessionStorage.setItem(userNameKey, currentUser.full_name || "");
+        setAuthItem(userRoleKey, currentRole);
+        setAuthItem(userNameKey, currentUser.full_name || "");
         window.dispatchEvent(new CustomEvent("nakena:auth-changed", {
           detail: {
             authenticated: true,
@@ -2654,9 +2804,14 @@
     } else {
       currentRole = "guest";
       currentUser = null;
-      sessionStorage.removeItem(userRoleKey);
+      removeAuthItem(userRoleKey);
       [uploadKey, recipeKey, recipeNoticeKey, moreRecipesKey, "nakena_preview_image", "nakena_guest_mode"]
         .forEach((key) => sessionStorage.removeItem(key));
+    }
+
+    if (window.NakEnaTts && currentRole !== "guest" && /^\/login\/?$/.test(location.pathname)) {
+      location.replace(currentRole === "admin" ? "/admin-dashboard/" : "/scan/");
+      return;
     }
 
     configureRoleNavigation(currentRole);

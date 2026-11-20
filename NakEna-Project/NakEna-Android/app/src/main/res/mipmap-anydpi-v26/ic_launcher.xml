@@ -1,0 +1,4 @@
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@color/nakena_orange" />
+    <foreground android:drawable="@drawable/nakena_mark" />
+</adaptive-icon>

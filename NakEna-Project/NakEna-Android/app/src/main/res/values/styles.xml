@@ -1,0 +1,17 @@
+<resources>
+    <style name="Theme.NakEna" parent="android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:colorAccent">@color/nakena_orange</item>
+        <item name="android:statusBarColor">@color/nakena_navy</item>
+        <item name="android:navigationBarColor">@color/nakena_navy</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowActionModeOverlay">true</item>
+        <item name="android:windowBackground">@color/nakena_navy</item>
+    </style>
+
+    <style name="Theme.NakEna.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/nakena_orange</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/nakena_mark</item>
+        <item name="postSplashScreenTheme">@style/Theme.NakEna</item>
+    </style>
+</resources>

@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">NakEna</string>
+    <string name="loading_nakena">Menyiapkan dapur NakEna…</string>
+    <string name="connection_error">NakEna belum dapat terhubung. Periksa koneksi internet, lalu coba lagi.</string>
+    <string name="retry">Coba lagi</string>
+    <string name="choose_photo">Pilih atau ambil foto bahan</string>
+    <string name="photo_picker_unavailable">Pemilih foto tidak dapat dibuka di perangkat ini.</string>
+    <string name="link_unavailable">Tautan ini tidak dapat dibuka.</string>
+    <string name="tts_install_unavailable">Pemasangan data suara tidak tersedia. Buka Setelan Android lalu cari Keluaran teks-ke-ucapan.</string>
+</resources>

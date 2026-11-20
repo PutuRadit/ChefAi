@@ -202,18 +202,46 @@ def test_recipe_history_and_favorites_are_user_owned(client):
     created = client.post("/recipes/history", headers=headers, json=recipe)
     assert created.status_code == 201
     entry_id = created.json()["id"]
-    assert client.get("/recipes/history", headers=headers).json()[0]["title"] == "Tumis Tomat"
+    assert created.json()["is_history"] is False
+    assert client.get("/recipes/history", headers=headers).json() == []
     assert client.get("/recipes/history", headers=other_headers).json() == []
 
     favorite = client.post("/recipes/favorites", headers=headers, json=recipe)
     assert favorite.status_code == 201
     favorite_id = favorite.json()["id"]
+    assert favorite_id == entry_id
+    assert favorite.json()["is_history"] is False
     assert client.get("/recipes/favorites", headers=headers).json()[0]["is_favorite"] is True
     assert client.get("/recipes/favorites", headers=other_headers).json() == []
+    assert client.post(
+        f"/recipes/history/{entry_id}/complete",
+        headers=other_headers,
+    ).status_code == 404
+    completed = client.post(f"/recipes/history/{entry_id}/complete", headers=headers)
+    assert completed.status_code == 200
+    assert completed.json()["is_history"] is True
+    assert client.get("/recipes/history", headers=headers).json()[0]["title"] == "Tumis Tomat"
     assert client.delete(f"/recipes/favorites/{favorite_id}", headers=other_headers).status_code == 404
     assert client.delete(f"/recipes/favorites/{favorite_id}", headers=headers).status_code == 204
     assert client.get("/recipes/favorites", headers=headers).json() == []
     assert client.get("/recipes/history", headers=headers).json()[0]["id"] == entry_id
+
+
+def test_recipe_history_creation_requires_cooking_completion(client):
+    headers = register_and_login(client)
+    recipe = {"title": "Sup Sayur", "recipe_text": "Rebus sayuran.", "ingredients": ["wortel"]}
+
+    pending = client.post(
+        "/recipes/history",
+        headers=headers,
+        json={**recipe, "is_history": True},
+    )
+    assert pending.status_code == 201
+    assert pending.json()["is_history"] is False
+
+    completed = client.post("/recipes/history/complete", headers=headers, json=recipe)
+    assert completed.status_code == 201
+    assert completed.json()["is_history"] is True
 
 
 def test_recipe_review_is_owner_scoped_and_can_be_updated(client):
@@ -225,6 +253,12 @@ def test_recipe_review_is_owner_scoped_and_can_be_updated(client):
         json={"title": "Sup Sayur", "recipe_text": "Rebus sayuran.", "ingredients": ["wortel"]},
     ).json()
     entry_id = recipe["id"]
+    assert client.post(
+        f"/recipes/history/{entry_id}/review",
+        headers=headers,
+        json={"rating": 5},
+    ).status_code == 404
+    assert client.post(f"/recipes/history/{entry_id}/complete", headers=headers).status_code == 200
 
     created = client.post(
         f"/recipes/history/{entry_id}/review",

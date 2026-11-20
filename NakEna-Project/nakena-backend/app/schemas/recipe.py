@@ -59,6 +59,7 @@ class RecipeEntryRead(BaseModel):
     title: str
     recipe_text: str
     ingredients: list[str]
+    is_history: bool
     is_favorite: bool
     created_at: datetime
     review: RecipeReviewRead | None = None

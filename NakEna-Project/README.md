@@ -23,6 +23,11 @@ Arsip ini sengaja tidak menyertakan `.env`, database lokal, virtual environment,
 - Backend tidak lagi menyajikan halaman HTML atau aset frontend; backend hanya menyediakan endpoint JSON.
 - Salinan template lama, file frontend backend yang duplikat, dan penanda konflik Git sudah dibersihkan.
 
+## Aplikasi Android
+
+Proyek Android WebView berada di `NakEna-Android/`. Aplikasi membuka layanan yang sama di `https://nakena.iet-polinela.my.id/scan/` tanpa bilah alamat browser. Data, autentikasi, dan pemrosesan tetap menggunakan server NakEna; aplikasi Android tidak membuat database baru.
+
+Ikon, splash screen, izin pilih foto/kamera, persyaratan Android Studio, dan langkah membuat APK dijelaskan di `NakEna-Android/README.md`.
 
 ## Mode Guest (tanpa login)
 

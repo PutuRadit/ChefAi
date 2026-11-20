@@ -96,12 +96,19 @@
     }
 
     function stopSpeaking() {
+      const wasNative = speech?.native === true;
       speech = null;
-      if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+      if (wasNative) window.NakEnaTts?.stop();
+      else if ("speechSynthesis" in window) window.speechSynthesis.cancel();
       byId("voice-text").textContent = voiceMode === "english"
         ? "Bacakan dengan suara Inggris"
         : voiceMode === "silent" ? "Suara dimatikan" : "Bacakan langkah";
       byId("toggle-voice-btn").setAttribute("aria-pressed", "false");
+    }
+
+    function nativeIndonesianVoiceAvailable() {
+      try { return Boolean(window.NakEnaTts?.isIndonesianAvailable()); }
+      catch { return false; }
     }
 
     function findIndonesianVoice() {
@@ -136,6 +143,10 @@
 
     function requestVoiceFallback() {
       const dialog = byId("voice-fallback-dialog");
+      byId("voice-fallback-english").hidden = !(
+        "speechSynthesis" in window && "SpeechSynthesisUtterance" in window
+      );
+      byId("voice-install-data").hidden = !window.NakEnaTts;
       dialog.returnValue = "";
       return new Promise((resolve) => {
         dialog.addEventListener("close", () => resolve(dialog.returnValue || null), { once: true });
@@ -151,6 +162,33 @@
       notice.hidden = false;
       notice.setAttribute("role", "status");
       voiceNoticeTimer = setTimeout(() => { notice.hidden = true; }, 9000);
+    }
+
+    function showCookingNotice(message) {
+      const notice = byId("appNotice");
+      if (!notice) return;
+      notice.textContent = message;
+      notice.hidden = false;
+      notice.setAttribute("role", "alert");
+    }
+
+    function saveCookedRecipe() {
+      return new Promise((resolve) => {
+        let settled = false;
+        const finish = (result) => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timeout);
+          resolve(result);
+        };
+        const timeout = setTimeout(
+          () => finish({ success: false, message: "Server belum merespons. Tekan coba lagi untuk menyimpan." }),
+          15000,
+        );
+        window.dispatchEvent(new CustomEvent("nakena:save-cooked-recipe", {
+          detail: { resolve: finish },
+        }));
+      });
     }
 
     function updateTimer() {
@@ -292,13 +330,27 @@
       byId("cooking-grid").hidden = false;
       renderStep(true);
     });
-    byId("next-step-btn").addEventListener("click", () => {
+    byId("next-step-btn").addEventListener("click", async () => {
+      if (!started) {
+        showCookingNotice("Mulai memasak terlebih dahulu sebelum menyelesaikan resep.");
+        return;
+      }
       completed.add(current);
       saveProgress();
       if (completed.size === total) {
         stopSpeaking();
         pauseTimer();
         renderStep();
+        const nextButton = byId("next-step-btn");
+        nextButton.disabled = true;
+        byId("next-btn-text").textContent = "Menyimpan ke riwayat…";
+        const result = await saveCookedRecipe();
+        nextButton.disabled = false;
+        if (!result.success) {
+          byId("next-btn-text").textContent = "Coba simpan lagi";
+          showCookingNotice(`Resep belum masuk riwayat. ${result.message || "Coba lagi."}`);
+          return;
+        }
         byId("finished-recipe-title").textContent = recipe.title;
         finishDialog.showModal();
         return;
@@ -424,9 +476,29 @@
     if (total) {
       byId("toggle-voice-btn").hidden = false;
       byId("toggle-voice-btn").setAttribute("aria-pressed", "false");
-      if (!("speechSynthesis" in window) || !("SpeechSynthesisUtterance" in window)) {
-        byId("toggle-voice-btn").addEventListener("click", () => {
-          showVoiceNotice("Browser ini tidak mendukung fitur bacakan langkah. Coba gunakan browser versi terbaru.");
+      const supportsSpeechSynthesis = "speechSynthesis" in window
+        && "SpeechSynthesisUtterance" in window;
+      window.addEventListener("nakena-native-tts-ended", () => {
+        if (speech?.native) stopSpeaking();
+      });
+      window.addEventListener("nakena-native-tts-error", () => {
+        if (!speech?.native) return;
+        stopSpeaking();
+        showVoiceNotice("Suara Android gagal diputar. Periksa atau pasang data suara Bahasa Indonesia di Setelan.");
+      });
+      if (!supportsSpeechSynthesis && !nativeIndonesianVoiceAvailable()) {
+        byId("toggle-voice-btn").addEventListener("click", async () => {
+          if (voiceMode === "silent") return;
+          const choice = await requestVoiceFallback();
+          if (choice === "install") {
+            window.NakEnaTts?.installIndonesianVoiceData();
+            showVoiceNotice("Ikuti petunjuk Android untuk memasang suara Indonesia, lalu coba lagi.");
+          } else if (choice === "silent") {
+            voiceMode = "silent";
+            byId("voice-text").textContent = "Suara dimatikan";
+            byId("toggle-voice-btn").disabled = true;
+            showVoiceNotice("Baik, langkah tetap bisa diikuti dengan membaca teks di layar.");
+          }
         });
       } else {
         byId("toggle-voice-btn").addEventListener("click", async () => {
@@ -438,11 +510,19 @@
             let voice;
             let language;
             if (voiceMode === "auto") {
-              voice = await waitForIndonesianVoice();
-              if (voice) {
-                voiceMode = "indonesian";
-              } else {
+              if (nativeIndonesianVoiceAvailable()) {
+                voiceMode = "native";
+              } else if (supportsSpeechSynthesis) {
+                voice = await waitForIndonesianVoice();
+                if (voice) voiceMode = "indonesian";
+              }
+              if (voiceMode === "auto") {
                 const choice = await requestVoiceFallback();
+                if (choice === "install") {
+                  window.NakEnaTts?.installIndonesianVoiceData();
+                  showVoiceNotice("Ikuti petunjuk Android untuk memasang suara Indonesia, lalu coba lagi.");
+                  return;
+                }
                 if (choice === "silent") {
                   voiceMode = "silent";
                   byId("voice-text").textContent = "Suara dimatikan";
@@ -452,6 +532,25 @@
                 if (choice !== "english") return;
                 voiceMode = "english";
               }
+            }
+            if (voiceMode === "native") {
+              if (!nativeIndonesianVoiceAvailable()) {
+                voiceMode = "auto";
+                showVoiceNotice("Suara Indonesia belum siap. Periksa data suara di Setelan Android, lalu coba lagi.");
+                return;
+              }
+              const accepted = window.NakEnaTts.speakIndonesian(
+                `Langkah ${current + 1}. ${instructions[current]}`,
+              );
+              if (!accepted) {
+                voiceMode = "auto";
+                showVoiceNotice("Suara Indonesia belum siap. Periksa data suara di Setelan Android, lalu coba lagi.");
+                return;
+              }
+              speech = { native: true };
+              byId("voice-text").textContent = "Hentikan bacaan";
+              byId("toggle-voice-btn").setAttribute("aria-pressed", "true");
+              return;
             }
             if (voiceMode === "indonesian") {
               voice = voice || findIndonesianVoice();

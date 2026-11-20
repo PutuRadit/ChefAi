@@ -42,7 +42,7 @@ def test_routes_and_local_page_assets(route, page):
         if target and target.startswith('/static/'):
             assert client.get(target).status_code == 200, target
     assert f'/static/css/pages/{page}.css' in response.text
-    assert response.text.count('/static/js/api.js?v=33') == 1
+    assert len(re.findall(r'/static/js/api\.js\?v=\d+', response.text)) == 1
     if page not in ('home', 'login', 'register'):
         assert 'style="visibility:hidden"' in response.text
 
