@@ -1956,7 +1956,10 @@
         sessionStorage.setItem(recipeKey, JSON.stringify(recipe));
         resolve({ success: true });
       } catch (error) {
-        resolve({ success: false, message: error.message });
+        const message = error.status === 404 && error.message === "Not Found"
+          ? "Backend server belum diperbarui untuk menyimpan resep yang selesai. Perbarui backend lalu coba lagi."
+          : error.message;
+        resolve({ success: false, message });
       }
     });
     window.addEventListener("nakena:submit-cooking-review", async (event) => {
