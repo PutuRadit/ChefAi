@@ -25,3 +25,193 @@
  .recipe-step-preview > li { gap: 11px; }
  .recipe-preview-body p { font-size: 13px; }
 }
+
+/* Motion and interaction polish for the recipe detail page.
+   Classes and --i indexes come from /static/js/pages/recipe_detail_motion.js.
+   Reduced-motion users are covered by the global rule in nakena.css. */
+
+.page-recipe_detail {
+  --ease-out: cubic-bezier(.2, .7, .2, 1);
+}
+
+@keyframes rd-rise {
+  from { opacity: 0; translate: 0 18px; }
+  to { opacity: 1; translate: 0 0; }
+}
+@keyframes rd-photo {
+  from { opacity: .4; scale: 1.08; }
+  to { opacity: 1; scale: 1; }
+}
+@keyframes rd-float {
+  0%, 100% { transform: translateY(0) rotate(0); }
+  50% { transform: translateY(-6px) rotate(-3deg); }
+}
+@keyframes rd-item-in {
+  from { opacity: 0; translate: -12px 0; }
+  to { opacity: 1; translate: 0 0; }
+}
+@keyframes rd-check {
+  0% { scale: 1; }
+  40% { scale: 1.35; }
+  100% { scale: 1; }
+}
+@keyframes rd-pop {
+  0% { scale: 1; }
+  40% { scale: 1.25; }
+  100% { scale: 1; }
+}
+@keyframes rd-glow {
+  0%, 100% { box-shadow: 0 4px 18px #ff6c1920; }
+  50% { box-shadow: 0 4px 26px #ff6c1955, 0 0 0 4px #ff8a2a14; }
+}
+
+/* Entrance */
+.page-recipe_detail .breadcrumb,
+.page-recipe_detail .detail-hero,
+.page-recipe_detail .detail-context > *,
+.page-recipe_detail .detail-grid > aside > *,
+.page-recipe_detail .detail-grid > div > * {
+  animation: rd-rise .7s var(--ease-out) both;
+}
+.page-recipe_detail .detail-hero { animation-delay: .05s; }
+.page-recipe_detail .detail-context > :nth-child(1) { animation-delay: .15s; }
+.page-recipe_detail .detail-context > :nth-child(2) { animation-delay: .21s; }
+.page-recipe_detail .detail-context > :nth-child(3) { animation-delay: .27s; }
+.page-recipe_detail .detail-context > :nth-child(4) { animation-delay: .33s; }
+.page-recipe_detail .detail-context > :nth-child(5) { animation-delay: .39s; }
+.page-recipe_detail .detail-context > :nth-child(6) { animation-delay: .45s; }
+.page-recipe_detail .detail-context > :nth-child(7) { animation-delay: .51s; }
+.page-recipe_detail .detail-grid > aside > :nth-child(1) { animation-delay: .3s; }
+.page-recipe_detail .detail-grid > aside > :nth-child(2) { animation-delay: .4s; }
+.page-recipe_detail .detail-grid > div > :nth-child(1) { animation-delay: .38s; }
+
+/* Photo settles from a slight zoom once it has loaded. */
+.page-recipe_detail .detail-photo { overflow: hidden; }
+.page-recipe_detail .detail-photo.recipe-photo-host:not(.is-photo-loading) > img.recipe-photo {
+  animation: rd-photo 1.2s var(--ease-out) both;
+}
+
+.page-recipe_detail .cta-mascot {
+  animation: rd-float 4.5s ease-in-out 1s infinite;
+}
+.page-recipe_detail .guided-cta .btn-primary {
+  animation: rd-glow 2.8s ease-in-out 1.5s infinite;
+}
+.page-recipe_detail .guided-cta .btn-primary:hover {
+  animation: none;
+}
+
+/* Ingredient checklist */
+.page-recipe_detail .detail-ingredients > li {
+  animation: rd-item-in .45s var(--ease-out) both;
+  animation-delay: calc(.45s + var(--i, 0) * 45ms);
+}
+.page-recipe_detail .detail-ingredients label {
+  transition: background-color .25s ease, color .25s ease;
+}
+.page-recipe_detail .detail-ingredients label:hover {
+  background-color: #17233a;
+}
+.page-recipe_detail .detail-ingredients label:has(input:checked) {
+  background-color: #0e1726;
+}
+.page-recipe_detail .detail-ingredients input + span {
+  text-decoration: line-through;
+  text-decoration-color: transparent;
+  transition: color .3s ease, text-decoration-color .3s ease;
+}
+.page-recipe_detail .detail-ingredients input:checked + span {
+  text-decoration-color: #7f94ae;
+}
+.page-recipe_detail .detail-ingredients input:checked {
+  animation: rd-check .3s var(--ease-out);
+}
+
+.page-recipe_detail .ingredient-progress {
+  height: 5px;
+  margin: -8px 0 8px;
+  overflow: hidden;
+  border-radius: 99px;
+  background: #ffffff0d;
+}
+.page-recipe_detail .ingredient-progress > span {
+  display: block;
+  width: var(--progress, 0%);
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #ff671c, #ffbd5d);
+  transition: width .45s var(--ease-out);
+}
+.page-recipe_detail .ingredient-progress-text {
+  margin: 0 0 14px;
+  color: #93a8c2;
+  font-size: 11px;
+  transition: color .3s ease;
+}
+.page-recipe_detail .is-complete .ingredient-progress-text {
+  color: #4fd1ae;
+  font-weight: 600;
+}
+.page-recipe_detail .is-complete .ingredient-progress > span {
+  background: linear-gradient(90deg, #2fbf95, #7ee8c6);
+}
+
+/* Step preview: steps slide in as they scroll into view. */
+.motion-ready .page-recipe_detail .recipe-step-preview > li.rd-reveal {
+  opacity: 0;
+  translate: 0 16px;
+  transition: opacity .55s ease, translate .6s var(--ease-out);
+}
+.motion-ready .page-recipe_detail .recipe-step-preview > li.rd-reveal.is-visible {
+  opacity: 1;
+  translate: 0 0;
+}
+.page-recipe_detail .recipe-preview-number {
+  transition: background-color .25s ease, border-color .25s ease, transform .25s var(--ease-out);
+}
+.page-recipe_detail .recipe-step-preview > li:hover .recipe-preview-number {
+  transform: scale(1.08);
+  background-color: #e17c2230;
+  border-color: #ec954b80;
+}
+
+/* Save and share */
+.page-recipe_detail #btn-save-recipe[aria-pressed=true] {
+  color: #ffc08f;
+  border-color: #ff9a4a66;
+  background: #ff7a1a14;
+}
+.page-recipe_detail #btn-save-recipe[aria-pressed=true] svg {
+  fill: currentColor;
+  animation: rd-pop .4s var(--ease-out);
+}
+.page-recipe_detail #share-btn {
+  transition: background-color .2s ease, color .2s ease, transform .25s var(--ease-out);
+}
+.page-recipe_detail #share-btn:hover {
+  transform: rotate(-8deg) scale(1.05);
+}
+
+/* Buttons: small lift, arrow nudges forward. */
+.page-recipe_detail .btn {
+  transition: background-color .16s, border-color .25s, box-shadow .25s, color .25s, transform .25s var(--ease-out);
+}
+.page-recipe_detail .btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+}
+.page-recipe_detail .btn:active:not(:disabled) {
+  transform: translateY(0) scale(.98);
+}
+.page-recipe_detail .btn .icon {
+  transition: transform .25s var(--ease-out);
+}
+.page-recipe_detail .btn-primary:hover .icon {
+  transform: translateX(3px);
+}
+
+@media (hover: none) {
+  .page-recipe_detail .btn:hover:not(:disabled),
+  .page-recipe_detail #share-btn:hover {
+    transform: none;
+  }
+}
