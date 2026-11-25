@@ -1,1 +1,176 @@
-/* Page layout and responsive rules are in /static/css/nakena.css. */
+/* Page layout and responsive rules are in /static/css/nakena.css.
+   Photo loading and card reveal states come from /static/css/recipe_images.css
+   and /static/js/api.js (.recipe-result-card / .is-recipe-ready).
+   This file only adds motion and hover polish for the recipe list page.
+   Reduced-motion users are covered by the global rule in nakena.css. */
+
+.page-recipes {
+  --ease-out: cubic-bezier(.2, .7, .2, 1);
+}
+
+@keyframes rc-rise {
+  from { opacity: 0; translate: 0 18px; }
+  to { opacity: 1; translate: 0 0; }
+}
+@keyframes rc-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+@keyframes rc-pop {
+  from { opacity: 0; scale: .8; }
+  to { opacity: 1; scale: 1; }
+}
+@keyframes rc-reveal {
+  from { opacity: 0; translate: 0 22px; scale: .98; }
+  to { opacity: 1; translate: 0 0; scale: 1; }
+}
+@keyframes rc-photo {
+  from { scale: 1.08; }
+  to { scale: 1; }
+}
+@keyframes rc-heart {
+  0% { scale: 1; }
+  35% { scale: 1.35; }
+  65% { scale: .9; }
+  100% { scale: 1; }
+}
+@keyframes rc-breathe {
+  from { opacity: .55; }
+  to { opacity: 1; }
+}
+
+/* Entrance */
+.page-recipes .page-banner,
+.page-recipes .recipe-toolbar,
+.page-recipes .result-heading,
+.page-recipes .custom-recipe,
+.page-recipes .page-actions {
+  animation: rc-rise .7s var(--ease-out) both;
+}
+.page-recipes .recipe-toolbar { animation-delay: .1s; }
+.page-recipes .result-heading { animation-delay: .16s; }
+.page-recipes .custom-recipe { animation-delay: .3s; }
+.page-recipes .page-actions { animation-delay: .36s; }
+
+.page-recipes .banner-mascot {
+  animation: rc-float 6s ease-in-out 1s infinite;
+}
+
+/* Confirmed ingredient chips pop in one after another. */
+.page-recipes #pantryBadges > * {
+  animation: rc-pop .4s var(--ease-out) both;
+  animation-delay: .75s;
+}
+.page-recipes #pantryBadges > :nth-child(1) { animation-delay: .35s; }
+.page-recipes #pantryBadges > :nth-child(2) { animation-delay: .4s; }
+.page-recipes #pantryBadges > :nth-child(3) { animation-delay: .45s; }
+.page-recipes #pantryBadges > :nth-child(4) { animation-delay: .5s; }
+.page-recipes #pantryBadges > :nth-child(5) { animation-delay: .55s; }
+.page-recipes #pantryBadges > :nth-child(6) { animation-delay: .6s; }
+.page-recipes #pantryBadges > :nth-child(7) { animation-delay: .65s; }
+.page-recipes #pantryBadges > :nth-child(8) { animation-delay: .7s; }
+
+/* Recipe cards: once the photo is ready, the card rises in and the photo
+   settles from a slight zoom. Other cards are staggered by position, so the
+   grid also re-animates in order after a time filter or sort change. */
+.page-recipes .recipe-result-card.is-recipe-ready {
+  animation: rc-reveal .6s var(--ease-out) both;
+}
+.page-recipes .recipe-result-card.is-recipe-ready .recipe-visual img {
+  animation: rc-photo 1s var(--ease-out) both;
+}
+.page-recipes .recipe-card-grid > :nth-child(2) .recipe-result-card.is-recipe-ready { animation-delay: .08s; }
+.page-recipes .recipe-card-grid > :nth-child(3) .recipe-result-card.is-recipe-ready { animation-delay: .16s; }
+.page-recipes .recipe-card-grid > :nth-child(4) .recipe-result-card.is-recipe-ready { animation-delay: .24s; }
+.page-recipes .recipe-card-grid > :nth-child(5) .recipe-result-card.is-recipe-ready { animation-delay: .32s; }
+.page-recipes .recipe-card-grid > :nth-child(n+6) .recipe-result-card.is-recipe-ready { animation-delay: .4s; }
+
+.page-recipes .recipe-results-loading-label {
+  animation: rc-breathe 1.4s ease-in-out infinite alternate;
+}
+
+/* Hover: cards lift, photos zoom in gently. */
+.page-recipes .recipe-other-card,
+.page-recipes .recipe-featured {
+  transition: transform .35s var(--ease-out), border-color .35s ease, box-shadow .35s ease;
+}
+.page-recipes .recipe-other-card:hover {
+  transform: translateY(-4px);
+  border-color: #f3a86642;
+  box-shadow: 0 16px 36px #00000059, 0 0 26px #ff7a1a12;
+}
+.page-recipes .recipe-featured:hover {
+  border-color: #d9944f73;
+  box-shadow: 0 12px 34px #d17d1724;
+}
+.page-recipes .recipe-result-card .recipe-visual img.recipe-photo,
+.page-recipes .recipe-result-card .recipe-visual > img {
+  transition: transform .7s var(--ease-out);
+}
+.page-recipes .recipe-other-card:hover .recipe-visual img,
+.page-recipes .recipe-featured:hover .recipe-visual img {
+  transform: scale(1.05);
+}
+
+/* Favorite heart */
+.page-recipes .recipe-card-favorite {
+  transition: transform .2s var(--ease-out), background-color .2s ease, color .2s ease;
+}
+.page-recipes .recipe-card-favorite:hover {
+  transform: scale(1.08);
+  background-color: #0a1628f0;
+}
+.page-recipes .recipe-card-favorite:active {
+  transform: scale(.92);
+}
+.page-recipes .recipe-card-favorite[aria-pressed=true] svg {
+  animation: rc-heart .45s var(--ease-out);
+}
+.page-recipes .recipe-card-favorite:disabled {
+  opacity: .7;
+}
+
+/* Filter pills and sort */
+.page-recipes .filter-pills button {
+  transition: background-color .25s ease, border-color .25s ease, color .25s ease, box-shadow .25s ease, transform .15s var(--ease-out);
+}
+.page-recipes .filter-pills button:hover {
+  color: #e2ebf7;
+  border-color: #ff923755;
+}
+.page-recipes .filter-pills button:active {
+  transform: scale(.95);
+}
+
+/* Buttons: small lift, arrow nudges forward; busy buttons breathe. */
+.page-recipes .btn {
+  transition: background-color .16s, border-color .25s, box-shadow .25s, transform .25s var(--ease-out);
+}
+.page-recipes .btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+}
+.page-recipes .btn:active:not(:disabled) {
+  transform: translateY(0) scale(.98);
+}
+.page-recipes .btn .icon {
+  transition: transform .25s var(--ease-out);
+}
+.page-recipes .btn-primary:hover .icon {
+  transform: translateX(3px);
+}
+.page-recipes #regenerateRecipes:disabled,
+.page-recipes #customRecipeForm .btn:disabled {
+  animation: rc-breathe .9s ease-in-out infinite alternate;
+}
+
+@media (hover: none) {
+  .page-recipes .recipe-other-card:hover,
+  .page-recipes .btn:hover:not(:disabled),
+  .page-recipes .recipe-card-favorite:hover {
+    transform: none;
+  }
+  .page-recipes .recipe-other-card:hover .recipe-visual img,
+  .page-recipes .recipe-featured:hover .recipe-visual img {
+    transform: none;
+  }
+}
