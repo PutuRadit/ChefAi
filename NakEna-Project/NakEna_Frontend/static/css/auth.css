@@ -1,0 +1,293 @@
+/* Motion and interaction polish shared by the login and register pages.
+   Layout lives in /static/css/nakena.css; the password checklist and error
+   shake classes come from /static/js/auth_motion.js.
+   Reduced-motion users are covered by the global rule in nakena.css. */
+
+.auth-main {
+  --ease-out: cubic-bezier(.2, .7, .2, 1);
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+@keyframes auth-rise {
+  from { opacity: 0; translate: 0 18px; }
+  to { opacity: 1; translate: 0 0; }
+}
+@keyframes auth-card-in {
+  from { opacity: 0; translate: 28px 0; }
+  to { opacity: 1; translate: 0 0; }
+}
+@keyframes auth-pop {
+  from { opacity: 0; scale: .9; }
+  to { opacity: 1; scale: 1; }
+}
+@keyframes auth-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+@keyframes auth-shimmer {
+  from { background-position: 0% 50%; }
+  to { background-position: 100% 50%; }
+}
+@keyframes auth-drift {
+  from { transform: translate(0, 0) scale(1); }
+  to { transform: translate(-18vw, 12vh) scale(1.15); }
+}
+@keyframes auth-shake {
+  0%, 100% { translate: 0 0; }
+  20% { translate: -7px 0; }
+  40% { translate: 6px 0; }
+  60% { translate: -4px 0; }
+  80% { translate: 2px 0; }
+}
+@keyframes auth-spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes auth-tick {
+  0% { scale: .3; }
+  60% { scale: 1.25; }
+  100% { scale: 1; }
+}
+
+/* A warm glow drifts slowly behind the page. */
+.auth-main:before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  top: -20vh;
+  right: -10vw;
+  width: 55vw;
+  height: 55vw;
+  max-width: 720px;
+  max-height: 720px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #ff8a2a14, transparent 65%);
+  pointer-events: none;
+  animation: auth-drift 18s ease-in-out infinite alternate;
+}
+
+/* Story side */
+.auth-story > * {
+  animation: auth-rise .75s var(--ease-out) both;
+}
+.auth-story > :nth-child(1) { animation-delay: .05s; }
+.auth-story > :nth-child(2) { animation-delay: .13s; }
+.auth-story > :nth-child(3) { animation-delay: .21s; }
+.auth-story > .auth-mascot {
+  animation: auth-pop .9s var(--ease-out) .25s both, auth-float 6s ease-in-out 1.3s infinite;
+}
+.auth-story > .auth-coach {
+  transform-origin: 20% 0;
+  animation: auth-pop .5s var(--ease-out) .75s both;
+}
+.auth-story > .auth-features { animation-delay: .9s; }
+
+.auth-story .warm-text {
+  background-size: 220% auto;
+  animation: auth-shimmer 7s ease-in-out infinite alternate;
+}
+
+/* Card side */
+.auth-card {
+  animation: auth-card-in .8s var(--ease-out) .15s both;
+}
+.auth-card > *,
+.auth-card form > * {
+  animation: auth-rise .6s var(--ease-out) both;
+}
+.auth-card > :nth-child(1) { animation-delay: .3s; }
+.auth-card > :nth-child(2) { animation-delay: .36s; }
+.auth-card > :nth-child(3) { animation-delay: .42s; }
+.auth-card form > :nth-child(1) { animation-delay: .48s; }
+.auth-card form > :nth-child(2) { animation-delay: .54s; }
+.auth-card form > :nth-child(3) { animation-delay: .6s; }
+.auth-card form > :nth-child(4) { animation-delay: .66s; }
+.auth-card form > :nth-child(5) { animation-delay: .72s; }
+.auth-card form > :nth-child(6) { animation-delay: .78s; }
+.auth-card > .auth-switch,
+.auth-card > .auth-back { animation-delay: .8s; }
+
+/* The checklist manages its own visibility, so it skips the entrance. */
+.auth-card form > .password-rules,
+.auth-card form > .password-match {
+  animation: none;
+}
+
+/* Kept on the card after an error so removing it never replays the entrance;
+   auth_motion.js restarts it for each new error. */
+.auth-card.is-shaking {
+  animation: auth-shake .45s ease-in-out;
+}
+.auth-card .form-error:not(.hidden) {
+  animation: auth-rise .35s var(--ease-out) both;
+}
+
+/* Inputs: the field warms up while it has focus. */
+.auth-card .input-wrap {
+  transition: border-color .25s ease, box-shadow .25s ease, background-color .25s ease;
+}
+.auth-card .input-wrap > .icon {
+  transition: color .25s ease, transform .25s var(--ease-out);
+}
+.auth-card .input-wrap:hover {
+  border-color: #a5bbd626;
+}
+.auth-card .input-wrap:focus-within {
+  border-color: #ff9a4a;
+  background-color: #1c2433;
+  box-shadow: 0 0 0 3px #ff8a2a33;
+}
+/* The whole field shows the focus ring, so the input's own outline and
+   Edge's built-in reveal button (a second eye icon) are not needed. */
+.auth-card .input-wrap input:focus-visible {
+  outline: none;
+}
+.auth-card .input-wrap input::-ms-reveal,
+.auth-card .input-wrap input::-ms-clear {
+  display: none;
+}
+.auth-card .input-wrap:focus-within > .icon {
+  color: #ffb066;
+  transform: scale(1.08);
+}
+.auth-card .field > span:first-child {
+  transition: color .25s ease;
+}
+.auth-card .field:focus-within > span:first-child {
+  color: #ffd2a8;
+}
+.auth-card [data-password-toggle] {
+  transition: color .2s ease, transform .2s var(--ease-out);
+}
+.auth-card [data-password-toggle]:active {
+  transform: scale(.85);
+}
+
+/* Submit button: lift on hover, spinner while the request runs. */
+.auth-card .btn-primary {
+  position: relative;
+  transition: background-color .16s, box-shadow .25s, transform .25s var(--ease-out);
+}
+.auth-card .btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 26px #ff6c1940;
+}
+.auth-card .btn-primary:active:not(:disabled) {
+  transform: translateY(0) scale(.98);
+}
+.auth-card .btn-primary .icon {
+  transition: transform .25s var(--ease-out);
+}
+.auth-card .btn-primary:hover:not(:disabled) .icon {
+  transform: translateX(3px);
+}
+.auth-card .btn-primary:disabled {
+  opacity: .85;
+  color: transparent;
+}
+.auth-card .btn-primary:disabled .icon {
+  opacity: 0;
+}
+.auth-card .btn-primary:disabled:after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  width: 20px;
+  height: 20px;
+  margin: auto;
+  border: 2px solid #ffffff59;
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: auth-spin .8s linear infinite;
+}
+
+.auth-switch a {
+  transition: color .2s ease, text-underline-offset .2s ease;
+}
+.auth-switch a:hover {
+  color: #ffd0b0;
+  text-underline-offset: 5px;
+}
+.auth-back {
+  transition: color .2s ease;
+}
+.auth-back .icon {
+  transition: transform .25s var(--ease-out);
+}
+.auth-back:hover {
+  color: #c9d5e6;
+}
+.auth-back:hover .icon {
+  transform: translateX(-3px);
+}
+
+/* Register: live password checklist, expands when the field is in use. */
+.password-rules {
+  display: grid;
+  grid-template-rows: 0fr;
+  margin: 0 0 4px;
+  opacity: 0;
+  transition: grid-template-rows .35s var(--ease-out), opacity .3s ease, margin .35s var(--ease-out);
+}
+.password-rules.is-active {
+  grid-template-rows: 1fr;
+  margin: -6px 0 14px;
+  opacity: 1;
+}
+.password-rules > ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  min-height: 0;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.password-rules li,
+.password-match {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #8fa2bb;
+  font-size: 11px;
+  line-height: 1.6;
+  transition: color .25s ease;
+}
+.password-rules li:before,
+.password-match:before {
+  content: '';
+  display: inline-grid;
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+  border: 1px solid #8fa2bb66;
+  border-radius: 50%;
+  transition: background-color .25s ease, border-color .25s ease;
+}
+.password-rules li.is-met,
+.password-match.is-met {
+  color: #7ee0c2;
+}
+.password-rules li.is-met:before,
+.password-match.is-met:before {
+  border-color: transparent;
+  background: #2fbf95 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 12 4 4L19 6'/%3E%3C/svg%3E") center / 10px no-repeat;
+  animation: auth-tick .35s var(--ease-out);
+}
+.password-match {
+  margin: -6px 0 14px;
+}
+.password-match.is-mismatch {
+  color: #ffb4a0;
+}
+.password-match.is-mismatch:before {
+  border-color: #ff9f86;
+}
+
+@media (hover: none) {
+  .auth-card .btn-primary:hover:not(:disabled) {
+    transform: none;
+  }
+}
