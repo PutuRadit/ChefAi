@@ -27,3 +27,175 @@
   .page-detection_result .confirmation-layout .panel{padding:15px}
   .page-detection_result .panel-heading h2{font-size:16px}
 }
+
+/* Motion and interaction polish for the detection result page.
+   Classes and --i indexes come from /static/js/pages/detection_result_motion.js.
+   Reduced-motion users are covered by the global rule in nakena.css. */
+
+.page-detection_result {
+  --ease-out: cubic-bezier(.2, .7, .2, 1);
+}
+
+@keyframes dr-rise {
+  from { opacity: 0; translate: 0 18px; }
+  to { opacity: 1; translate: 0 0; }
+}
+@keyframes dr-float {
+  0%, 100% { transform: translateY(0) rotate(0); }
+  50% { transform: translateY(-4px) rotate(-4deg); }
+}
+@keyframes dr-sweep {
+  0% { opacity: 1; transform: translateY(-100%); }
+  85% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(0); }
+}
+@keyframes dr-box-in {
+  from { opacity: 0; scale: 1.18; }
+  to { opacity: 1; scale: 1; }
+}
+@keyframes dr-item-in {
+  from { opacity: 0; translate: 18px 0; }
+  to { opacity: 1; translate: 0 0; }
+}
+@keyframes dr-item-out {
+  from { opacity: 1; translate: 0 0; max-height: 80px; }
+  to { opacity: 0; translate: 24px 0; max-height: 0; padding-block: 0; border-bottom-width: 0; }
+}
+@keyframes dr-bump {
+  0% { scale: 1; }
+  40% { scale: 1.18; }
+  100% { scale: 1; }
+}
+@keyframes dr-check {
+  0% { scale: .4; rotate: -30deg; }
+  60% { scale: 1.2; }
+  100% { scale: 1; rotate: 0deg; }
+}
+@keyframes dr-progress {
+  from { background-position: -100% 0; }
+  to { background-position: 200% 0; }
+}
+
+/* Entrance */
+.page-detection_result .confirmation-banner,
+.page-detection_result .confirmation-layout > aside > *,
+.page-detection_result .confirmation-controls > * {
+  animation: dr-rise .7s var(--ease-out) both;
+}
+.page-detection_result .confirmation-layout > aside > :nth-child(1) { animation-delay: .1s; }
+.page-detection_result .confirmation-layout > aside > :nth-child(2) { animation-delay: .22s; }
+.page-detection_result .confirmation-layout > aside > :nth-child(3) { animation-delay: .3s; }
+.page-detection_result .confirmation-controls > :nth-child(1) { animation-delay: .16s; }
+.page-detection_result .confirmation-controls > :nth-child(2) { animation-delay: .26s; }
+.page-detection_result .confirmation-controls > :nth-child(3) { animation-delay: .36s; }
+
+.page-detection_result .mini-mascot {
+  animation: dr-float 4s ease-in-out .8s infinite;
+}
+
+/* Photo: one scan sweep, then the detection boxes lock on one by one. */
+.page-detection_result .scan-result-photo:after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(to bottom, transparent 70%, #ff8a2a26 98%, #ffc78a 100%);
+  animation: dr-sweep 1.1s cubic-bezier(.45, 0, .55, 1) .35s both;
+}
+.page-detection_result #detectionBoxes:not(.is-settled) .detection-box {
+  animation: dr-box-in .5s var(--ease-out) both;
+  animation-delay: calc(.8s + var(--i, 0) * 140ms);
+}
+
+/* Ingredient list: rows slide in, removed rows slide out and collapse. */
+.page-detection_result .ingredient-item {
+  animation: dr-item-in .45s var(--ease-out) both;
+  animation-delay: calc(var(--i, 0) * 70ms);
+  transition: background-color .2s ease;
+}
+.page-detection_result .ingredient-item:hover {
+  background-color: #2a46613d;
+}
+.page-detection_result .ingredient-item.is-leaving {
+  overflow: hidden;
+  pointer-events: none;
+  animation: dr-item-out .32s ease-in forwards;
+}
+.page-detection_result .is-bumped {
+  display: inline-block;
+  animation: dr-bump .35s var(--ease-out);
+}
+.page-detection_result .small-badge.is-bumped {
+  display: inline-flex;
+}
+
+/* Choice chips and stepper */
+.page-detection_result .choice-chip {
+  transition: background-color .2s ease, border-color .2s ease, color .2s ease, transform .15s var(--ease-out);
+}
+.page-detection_result .choice-chip:hover {
+  border-color: #f4a1426b;
+}
+.page-detection_result .choice-chip:active {
+  transform: scale(.96);
+}
+.page-detection_result .choice-chip:has(input:checked) svg {
+  animation: dr-check .35s var(--ease-out);
+}
+.page-detection_result .stepper button {
+  transition: color .2s ease, transform .15s var(--ease-out);
+}
+.page-detection_result .stepper button:hover {
+  color: #ffba86;
+}
+.page-detection_result .stepper button:active {
+  transform: scale(.88);
+}
+
+/* Buttons: small lift, arrow nudges forward. */
+.page-detection_result .btn {
+  transition: background-color .16s, border-color .25s, box-shadow .25s, transform .25s var(--ease-out);
+}
+.page-detection_result .btn:hover {
+  transform: translateY(-2px);
+}
+.page-detection_result .btn:active {
+  transform: translateY(0) scale(.98);
+}
+.page-detection_result .btn .icon {
+  transition: transform .25s var(--ease-out);
+}
+.page-detection_result #submitFormBtn:hover .icon {
+  transform: translateX(3px);
+}
+
+/* Toast rises in; generating overlay pops in with a progress shimmer. */
+.page-detection_result .toast {
+  translate: 0 12px;
+  transition: opacity .2s ease, translate .35s var(--ease-out);
+}
+.page-detection_result .toast.is-visible {
+  translate: 0 0;
+}
+.page-detection_result .loading-overlay > .panel {
+  transition: transform .35s var(--ease-out);
+}
+.page-detection_result .loading-overlay.opacity-0 > .panel {
+  transform: translateY(8px) scale(.95);
+}
+.page-detection_result .loading-overlay > .panel:after {
+  content: '';
+  display: block;
+  width: 100%;
+  height: 3px;
+  border-radius: 3px;
+  background: #ffffff0d linear-gradient(90deg, transparent, #ff8a2a, #ffc78a, transparent) no-repeat;
+  background-size: 45% 100%;
+  animation: dr-progress 1.5s ease-in-out infinite;
+}
+
+@media (hover: none) {
+  .page-detection_result .btn:hover {
+    transform: none;
+  }
+}
