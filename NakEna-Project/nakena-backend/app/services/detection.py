@@ -13,6 +13,32 @@ class ModelUnavailableError(RuntimeError):
     pass
 
 
+# Indonesian names for model classes that are still in English or carry a
+# note in brackets. Classes are never merged here: a class that has an
+# Indonesian twin in the model (e.g. "Spinach" next to "Bayam") keeps its name.
+DISPLAY_NAMES = {
+    "Bawang (onion umum)": "Bawang",
+    "Cabai (umum)": "Cabai",
+    "Buncis (green beans)": "Buncis",
+    "Blueberries": "Bluberi",
+    "Cantaloupe": "Melon",
+    "Chocolate": "Cokelat",
+    "Dragon Fruit": "Buah Naga",
+    "Goat Cheese": "Keju Kambing",
+    "Heavy Cream": "Krim Kental",
+    "Lime": "Jeruk Nipis",
+    "Mint Leaves": "Daun Mint",
+    "White Radish": "Lobak Putih",
+    "White Rice": "Nasi Putih",
+    "Zucchini": "Zukini",
+}
+
+
+def display_name(label: str) -> str:
+    label = str(label).strip()
+    return DISPLAY_NAMES.get(label, label)
+
+
 @lru_cache(maxsize=1)
 def _load_model(model_path: str) -> YOLO:
     path = Path(model_path)
@@ -33,6 +59,9 @@ def detect_ingredients(image_data: bytes) -> list[IngredientDetection]:
         source=source,
         conf=settings.yolo_confidence,
         imgsz=800,
+        # One object gets one label: without this, boxes of different classes
+        # on the same item (e.g. Terong and Alpukat) are both kept.
+        agnostic_nms=True,
         verbose=False,
     )
 
@@ -46,10 +75,9 @@ def detect_ingredients(image_data: bytes) -> list[IngredientDetection]:
             result.boxes.conf.tolist(),
             result.boxes.xyxy.tolist(),
         ):
-            label = names[int(class_id)]
             detections.append(
                 IngredientDetection(
-                    name=str(label).strip(),
+                    name=display_name(names[int(class_id)]),
                     confidence=float(confidence),
                     box=[float(value) for value in coordinates],
                 )
