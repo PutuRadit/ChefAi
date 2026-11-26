@@ -1,0 +1,213 @@
+/* Motion and hover polish shared by the Favorit and Riwayat pages.
+   Layout is in /static/css/nakena.css; cards are built by /static/js/api.js
+   (recipeCard + .recipe-result-card / .is-recipe-ready from recipe_images.css).
+   /static/js/collection_motion.js sets --i (position among visible cards) and
+   toggles .is-settled / .is-loading; it never touches the page data.
+   Reduced-motion users are covered by the global rule in nakena.css. */
+
+.page-favorites,
+.page-history {
+  --ease-out: cubic-bezier(.2, .7, .2, 1);
+}
+
+@keyframes col-rise {
+  from { opacity: 0; translate: 0 18px; }
+  to { opacity: 1; translate: 0 0; }
+}
+@keyframes col-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+@keyframes col-pop {
+  from { opacity: 0; scale: .8; }
+  to { opacity: 1; scale: 1; }
+}
+@keyframes col-reveal {
+  from { opacity: 0; translate: 0 22px; scale: .98; }
+  to { opacity: 1; translate: 0 0; scale: 1; }
+}
+@keyframes col-photo {
+  from { scale: 1.08; }
+  to { scale: 1; }
+}
+@keyframes col-heart {
+  0% { scale: 1; }
+  35% { scale: 1.35; }
+  65% { scale: .9; }
+  100% { scale: 1; }
+}
+@keyframes col-breathe {
+  from { opacity: .55; }
+  to { opacity: 1; }
+}
+@keyframes col-bob {
+  0%, 100% { translate: 0 0; }
+  50% { translate: 0 -5px; }
+}
+
+/* Entrance. The server hides <body> until the login check passes, so the
+   intro waits for that instead of playing unseen. */
+:is(.page-favorites, .page-history):not([style*="hidden"]) :is(.page-banner, .collection-toolbar, .collection-status) {
+  animation: col-rise .7s var(--ease-out) both;
+}
+:is(.page-favorites, .page-history):not([style*="hidden"]) .collection-toolbar { animation-delay: .1s; }
+:is(.page-favorites, .page-history):not([style*="hidden"]) .collection-status { animation-delay: .18s; }
+
+:is(.page-favorites, .page-history) .banner-mascot {
+  animation: col-float 6s ease-in-out 1s infinite;
+}
+
+/* Counter badges ("3 resep tersimpan", "5 resep dimasak") pop in. */
+.page-favorites:not([style*="hidden"]) #recipeCounterBadge,
+.page-history #historySummary > * {
+  animation: col-pop .45s var(--ease-out) .35s both;
+}
+
+:is(.page-favorites, .page-history):not([style*="hidden"]) .collection-status.is-loading {
+  animation: col-rise .7s var(--ease-out) .18s both, col-breathe 1.4s ease-in-out .9s infinite alternate;
+}
+
+/* Cards: once the photo is ready, the card rises in and the photo settles
+   from a slight zoom, one after another among the cards still visible. They
+   play again in the new order after a filter or sort change, but not while
+   typing in the search box or after a favorite is removed (.is-settled). */
+:is(.page-favorites, .page-history) .collection-grid .recipe-result-card.is-recipe-ready {
+  animation: col-reveal .6s var(--ease-out) both;
+  animation-delay: calc(min(var(--i, 0), 5) * 80ms);
+}
+:is(.page-favorites, .page-history) .collection-grid .recipe-result-card.is-recipe-ready .recipe-visual img {
+  animation: col-photo 1s var(--ease-out) both;
+  animation-delay: calc(min(var(--i, 0), 5) * 80ms);
+}
+:is(.page-favorites, .page-history) .collection-grid.is-settled .recipe-result-card.is-recipe-ready,
+:is(.page-favorites, .page-history) .collection-grid.is-settled .recipe-result-card.is-recipe-ready .recipe-visual img {
+  animation: none;
+}
+
+/* Hover: cards lift, photos zoom in gently. */
+:is(.page-favorites, .page-history) .recipe-other-card {
+  transition: transform .35s var(--ease-out), border-color .35s ease, box-shadow .35s ease, filter .3s ease;
+}
+:is(.page-favorites, .page-history) .recipe-other-card:hover {
+  transform: translateY(-4px);
+  border-color: #f3a86642;
+  box-shadow: 0 16px 36px #00000059, 0 0 26px #ff7a1a12;
+}
+:is(.page-favorites, .page-history) .recipe-result-card .recipe-visual img.recipe-photo,
+:is(.page-favorites, .page-history) .recipe-result-card .recipe-visual > img {
+  transition: transform .7s var(--ease-out);
+}
+:is(.page-favorites, .page-history) .recipe-other-card:hover .recipe-visual img {
+  transform: scale(1.05);
+}
+
+/* Favorite heart: hover grows, press shrinks. While the removal request is
+   running, the heart breathes and its card dims (filter, because the reveal
+   animation holds opacity and scale). */
+.page-favorites .recipe-card-favorite {
+  transition: transform .2s var(--ease-out), background-color .2s ease, color .2s ease;
+}
+.page-favorites .recipe-card-favorite:hover {
+  transform: scale(1.08);
+  background-color: #0a1628f0;
+}
+.page-favorites .recipe-card-favorite:active {
+  transform: scale(.92);
+}
+.page-favorites .recipe-card-favorite[aria-pressed=true] svg {
+  animation: col-heart .45s var(--ease-out);
+}
+.page-favorites .recipe-card-favorite:disabled {
+  animation: col-breathe .7s ease-in-out infinite alternate;
+}
+.page-favorites .recipe-other-card:has(.recipe-card-favorite:disabled) {
+  filter: grayscale(.6) brightness(.65);
+}
+
+/* Riwayat: the rating badge and review note follow their card in. */
+.page-history .collection-grid .recipe-result-card.is-recipe-ready .recipe-card-body > .small-badge,
+.page-history .collection-grid .recipe-result-card.is-recipe-ready .recipe-card-body > p.muted {
+  animation: col-pop .45s var(--ease-out) both;
+  animation-delay: calc(min(var(--i, 0), 5) * 80ms + .35s);
+}
+.page-history .collection-grid.is-settled .recipe-result-card.is-recipe-ready .recipe-card-body > :is(.small-badge, p.muted) {
+  animation: none;
+}
+
+/* Toolbar: filter pills, search field, sort select. */
+:is(.page-favorites, .page-history) .filter-pills button {
+  transition: background-color .25s ease, border-color .25s ease, color .25s ease, box-shadow .25s ease, transform .15s var(--ease-out);
+}
+:is(.page-favorites, .page-history) .filter-pills button:hover {
+  color: #e2ebf7;
+  border-color: #ff923755;
+}
+:is(.page-favorites, .page-history) .filter-pills button:active {
+  transform: scale(.95);
+}
+:is(.page-favorites, .page-history) .search-field {
+  transition: border-color .25s ease, box-shadow .25s ease, background-color .25s ease;
+}
+:is(.page-favorites, .page-history) .search-field:focus-within {
+  border-color: #ff923766;
+  background-color: #0f1d31;
+  box-shadow: 0 0 0 3px #ff7a1a17;
+}
+:is(.page-favorites, .page-history) .search-field > .icon {
+  transition: color .25s ease, transform .25s var(--ease-out);
+}
+:is(.page-favorites, .page-history) .search-field:focus-within > .icon {
+  color: #f9c077;
+  transform: scale(1.1);
+}
+:is(.page-favorites, .page-history) .search-sort select {
+  transition: border-color .25s ease;
+}
+:is(.page-favorites, .page-history) .search-sort select:hover {
+  border-color: #ff923755;
+}
+
+/* Empty state rises in whenever it appears (also after the last favorite is
+   removed); its icon bobs slowly. */
+:is(.page-favorites, .page-history) .empty-card:not([hidden]) {
+  animation: col-rise .6s var(--ease-out) both;
+}
+:is(.page-favorites, .page-history) .empty-card > .icon {
+  animation: col-bob 3.2s ease-in-out .8s infinite;
+}
+
+/* Buttons: small lift, arrow nudges forward. */
+:is(.page-favorites, .page-history) .btn {
+  transition: background-color .16s, border-color .25s, box-shadow .25s, transform .25s var(--ease-out);
+}
+:is(.page-favorites, .page-history) .btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+}
+:is(.page-favorites, .page-history) .btn:active:not(:disabled) {
+  transform: translateY(0) scale(.98);
+}
+:is(.page-favorites, .page-history) .btn .icon {
+  transition: transform .25s var(--ease-out);
+}
+:is(.page-favorites, .page-history) .btn-primary:hover .icon {
+  transform: translateX(3px);
+}
+
+@media (hover: none) {
+  :is(.page-favorites, .page-history) .recipe-other-card:hover,
+  :is(.page-favorites, .page-history) .btn:hover:not(:disabled),
+  .page-favorites .recipe-card-favorite:hover {
+    transform: none;
+  }
+  :is(.page-favorites, .page-history) .recipe-other-card:hover .recipe-visual img {
+    transform: none;
+  }
+}
+
+/* The global reduced-motion rule shortens animations but keeps their delays,
+   which would leave staggered cards blank for a moment. */
+@media (prefers-reduced-motion: reduce) {
+  :is(.page-favorites, .page-history) * {
+    animation-delay: 0s !important;
+  }
+}
