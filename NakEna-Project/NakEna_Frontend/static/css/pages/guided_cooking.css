@@ -162,3 +162,184 @@
 .guided-cooking-page .gc-step-navigation{margin-top:22px}
 .guided-cooking-page .gc-timer-card{padding:18px 22px}
 @media(max-width:600px){.gc-prep-stage{padding:21px 17px}.gc-prep-stage .gc-ingredient-list{grid-template-columns:minmax(0,1fr)}.gc-prep-actions{align-items:stretch;flex-direction:column}.gc-prep-actions .gc-button{width:100%}.gc-prep-actions .gc-muted{text-align:center}.guided-cooking-page .gc-step-card{padding:23px 19px}}
+
+/* ---------------------------------------------------------------------------
+   Motion and hover polish. Page logic: /static/js/pages/guided_cooking.js.
+   /static/js/pages/guided_cooking_motion.js only watches the DOM that script
+   fills in: it numbers the ingredient rows (--i), picks the slide direction
+   for a new step and sets the is-* classes used below.
+   Reduced-motion users are covered by the global rule in nakena.css.
+   --------------------------------------------------------------------------- */
+.guided-cooking-page { --ease-out: cubic-bezier(.2, .7, .2, 1); }
+
+@keyframes gm-rise { from { opacity: 0; translate: 0 18px; } to { opacity: 1; translate: 0 0; } }
+@keyframes gm-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes gm-pop { from { opacity: 0; scale: .8; } to { opacity: 1; scale: 1; } }
+@keyframes gm-bump { 0% { scale: 1; } 40% { scale: 1.15; } 100% { scale: 1; } }
+@keyframes gm-check { 0% { scale: .5; } 60% { scale: 1.25; } 100% { scale: 1; } }
+@keyframes gm-breathe { from { opacity: .55; } to { opacity: 1; } }
+@keyframes gm-from-right { from { opacity: 0; translate: 36px 0; } to { opacity: 1; translate: 0 0; } }
+@keyframes gm-from-left { from { opacity: 0; translate: -36px 0; } to { opacity: 1; translate: 0 0; } }
+@keyframes gm-sheen { from { translate: -100% 0; } to { translate: 250% 0; } }
+@keyframes gm-ready { 0% { box-shadow: 0 4px 18px #ff731d17, 0 0 0 0 #ff8a3d66; } 70%, 100% { box-shadow: 0 4px 18px #ff731d17, 0 0 0 12px #ff8a3d00; } }
+@keyframes gm-running { 0%, 100% { border-color: #f2914f33; box-shadow: 0 0 0 0 #ff8a3d00; } 50% { border-color: #f2914f80; box-shadow: 0 0 22px #ff8a3d1f; } }
+@keyframes gm-alarm { 0%, 100% { rotate: 0deg; } 15%, 45%, 75% { rotate: -3deg; } 30%, 60%, 90% { rotate: 3deg; } }
+@keyframes gm-spin { from { rotate: 0deg; } to { rotate: -360deg; } }
+@keyframes gm-shake { 0%, 100% { translate: 0 0; } 20%, 60% { translate: -6px 0; } 40%, 80% { translate: 6px 0; } }
+@keyframes gm-dialog { from { opacity: 0; translate: 0 16px; scale: .96; } to { opacity: 1; translate: 0 0; scale: 1; } }
+@keyframes gm-finish { 0% { opacity: 0; scale: .3; rotate: -25deg; } 60% { opacity: 1; scale: 1.15; rotate: 6deg; } 100% { opacity: 1; scale: 1; rotate: 0deg; } }
+@keyframes gm-ring { from { box-shadow: 0 0 0 0 #efa04366; } to { box-shadow: 0 0 0 22px #efa04300; } }
+@keyframes gm-confetti {
+  0% { opacity: 0; translate: 0 0; rotate: 0deg; }
+  12% { opacity: 1; }
+  100% { opacity: 0; translate: var(--x) var(--y); rotate: var(--r); }
+}
+@keyframes gm-speaking { 0%, 100% { scale: 1; } 50% { scale: 1.18; } }
+
+/* Loading text breathes until the recipe is ready. */
+.guided-cooking-page .gc-loading { animation: gm-breathe 1.2s ease-in-out infinite alternate; }
+
+/* Entrance. The server hides <body> until the login check passes; the
+   workspace itself appears once guided_cooking.js has the recipe. :where()
+   keeps these rules weak, so state animations below (e.g. the running timer
+   card) still win once the entrance is over. */
+.guided-cooking-page:not([style*="hidden"]) :where(#cooking-workspace > .gc-topline, #cooking-workspace > .gc-title-row, #cooking-workspace > .gc-progress) {
+  animation: gm-rise .65s var(--ease-out) both;
+}
+.guided-cooking-page:not([style*="hidden"]) :where(#cooking-workspace > .gc-title-row) { animation-delay: .07s; }
+.guided-cooking-page:not([style*="hidden"]) :where(#cooking-workspace > .gc-progress) { animation-delay: .14s; }
+.guided-cooking-page:not([style*="hidden"]) :where(#prep-stage, #cooking-empty, .gc-primary-column > *, .gc-side-column > *) {
+  animation: gm-rise .65s var(--ease-out) .2s both;
+}
+.guided-cooking-page:not([style*="hidden"]) .gc-primary-column > :nth-child(2) { animation-delay: .28s; }
+.guided-cooking-page:not([style*="hidden"]) .gc-side-column > * { animation-delay: .36s; }
+
+/* Progress bar glides and a soft sheen runs along the filled part. */
+.guided-cooking-page #progress-indicator-bar {
+  position: relative;
+  overflow: hidden;
+  transition: width .6s var(--ease-out);
+}
+.guided-cooking-page #progress-indicator-bar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  width: 40%;
+  background: linear-gradient(90deg, #fff0, #ffffff59, #fff0);
+  animation: gm-sheen 2.6s ease-in-out 1s infinite;
+}
+.guided-cooking-page :is(#progress-percent-text, #checked-counter) { display: inline-block; }
+.guided-cooking-page :is(#progress-percent-text, #checked-counter).is-bumped { animation: gm-bump .35s var(--ease-out); }
+
+/* Prep checklist: rows come in one after another; a checked row tints, its
+   box pops and the strike-through fades in. */
+.guided-cooking-page .gc-ingredient-list li {
+  animation: gm-rise .45s var(--ease-out) both;
+  animation-delay: calc(.3s + min(var(--i, 0), 14) * 35ms);
+}
+.guided-cooking-page .gc-ingredient-list label {
+  transition: border-color .25s ease, background-color .25s ease, transform .15s var(--ease-out);
+}
+.guided-cooking-page .gc-ingredient-list label:active { transform: scale(.98); }
+.guided-cooking-page .gc-ingredient-list label:has(input:checked) {
+  border-color: #62ba9640;
+  background-color: #1d2f30;
+}
+.guided-cooking-page .gc-ingredient-list input:checked { animation: gm-check .3s var(--ease-out); }
+.guided-cooking-page .gc-ingredient-list input + span {
+  text-decoration: line-through;
+  text-decoration-color: transparent;
+  transition: color .3s ease, text-decoration-color .3s ease;
+}
+.guided-cooking-page .gc-ingredient-list input:checked + span { text-decoration-color: currentColor; }
+.guided-cooking-page #prep-check-hint.is-filled { animation: gm-fade .4s ease both; }
+
+/* Once every ingredient is ticked, "Mulai memasak" glows to invite a tap. */
+.guided-cooking-page #start-cooking-btn:not(:disabled) { animation: gm-ready 1.8s ease-out .2s infinite; }
+
+/* A new step slides in from the side it comes from. */
+.guided-cooking-page :is(#cooking-instruction, .gc-step-top, .gc-step-duration).is-next { animation: gm-from-right .45s var(--ease-out) both; }
+.guided-cooking-page :is(#cooking-instruction, .gc-step-top, .gc-step-duration).is-prev { animation: gm-from-left .45s var(--ease-out) both; }
+.guided-cooking-page .gc-step-duration:is(.is-next, .is-prev) { animation-delay: .05s; }
+.guided-cooking-page #cooking-instruction:is(.is-next, .is-prev) { animation-delay: .08s; }
+.guided-cooking-page #step-completed-label:not([hidden]) { display: inline-block; animation: gm-pop .35s var(--ease-out) both; }
+.guided-cooking-page #next-step-btn:disabled { animation: gm-breathe .9s ease-in-out infinite alternate; }
+
+/* Timer: the card glows while running, the time rings when it runs out,
+   +1 menit bumps the time and the reset icon spins back. */
+.guided-cooking-page .gc-timer-card.is-running { animation: gm-running 2s ease-in-out infinite; }
+.guided-cooking-page .gc-timer-display { display: inline-block; transition: color .3s ease; }
+.guided-cooking-page .gc-timer-card.is-running .gc-timer-display { color: #ffd9b8; }
+.guided-cooking-page .gc-timer-card.is-done { border-color: #f2914f80; }
+.guided-cooking-page .gc-timer-card.is-done .gc-timer-display { color: #ffb072; animation: gm-alarm .9s ease-in-out 3; }
+.guided-cooking-page .gc-timer-display.is-bumped { animation: gm-bump .35s var(--ease-out); }
+.guided-cooking-page #reset-timer-btn.is-spinning svg { animation: gm-spin .5s var(--ease-out); }
+.guided-cooking-page #timer-error:not([hidden]) { animation: gm-fade .25s ease both; }
+.guided-cooking-page #timer-minutes-input { transition: border-color .25s ease, box-shadow .25s ease; }
+.guided-cooking-page #timer-minutes-input:focus { border-color: #ff923799; box-shadow: 0 0 0 3px #ff7a1a17; }
+.guided-cooking-page #timer-minutes-input[aria-invalid="true"] { border-color: #ff8a6a99; }
+
+/* "Bacakan langkah": the speaker icon pulses while reading aloud. */
+.guided-cooking-page #toggle-voice-btn[aria-pressed="true"] svg { animation: gm-speaking 1s ease-in-out infinite; }
+
+/* Buttons: small lift on hover, press on click, arrows nudge. */
+.guided-cooking-page :is(.gc-button, .gc-icon-button) {
+  transition: background-color .16s ease, border-color .16s ease, box-shadow .25s ease, transform .25s var(--ease-out);
+}
+.guided-cooking-page :is(.gc-button, .gc-icon-button):hover:not(:disabled) { transform: translateY(-2px); }
+.guided-cooking-page :is(.gc-button, .gc-icon-button):active:not(:disabled) { transform: translateY(0) scale(.97); }
+.guided-cooking-page .gc-button .gc-icon { transition: transform .25s var(--ease-out); }
+.guided-cooking-page #next-step-btn:hover:not(:disabled) .gc-icon { transform: translateX(3px); }
+.guided-cooking-page #prev-step-btn:hover:not(:disabled) .gc-icon { transform: translateX(-3px); }
+.guided-cooking-page .gc-back .gc-icon { transition: transform .25s var(--ease-out); }
+.guided-cooking-page .gc-back:hover .gc-icon { transform: translateX(-3px); }
+.guided-cooking-page .gc-text-button { transition: color .2s ease; }
+
+/* Dialogs rise in over a fading backdrop. */
+.guided-cooking-page .gc-dialog[open] { animation: gm-dialog .35s var(--ease-out) both; }
+.guided-cooking-page .gc-dialog[open]::backdrop { animation: gm-fade .3s ease both; }
+
+/* Finish dialog: the check badge bounces in with a ring, the text follows,
+   and guided_cooking_motion.js adds a short burst of confetti. */
+.guided-cooking-page .gc-finish-dialog .gc-dialog-content { position: relative; }
+.guided-cooking-page .gc-finish-dialog .gc-dialog-content > :not(.gc-confetti) { position: relative; z-index: 1; }
+.guided-cooking-page .gc-finish-dialog[open] .gc-finish-icon {
+  animation: gm-finish .7s var(--ease-out) .15s both, gm-ring 1.1s ease-out .6s 2;
+}
+.guided-cooking-page .gc-finish-dialog[open] :is(h2, #finished-recipe-title, .gc-dialog-actions) { animation: gm-rise .5s var(--ease-out) both; }
+.guided-cooking-page .gc-finish-dialog[open] h2 { animation-delay: .35s; }
+.guided-cooking-page .gc-finish-dialog[open] #finished-recipe-title { animation-delay: .42s; }
+.guided-cooking-page .gc-finish-dialog[open] .gc-dialog-actions { animation-delay: .5s; }
+.guided-cooking-page .gc-confetti {
+  position: absolute; left: 50%; top: 60px; z-index: 0;
+  width: 7px; height: 11px; border-radius: 2px; pointer-events: none;
+  animation: gm-confetti 1.3s cubic-bezier(.15, .6, .3, 1) both;
+}
+
+/* Review: stars grow on hover and newly chosen ones pop in turn; an error
+   shakes; the busy submit button breathes. */
+.guided-cooking-page .gc-rating-option { transition: border-color .2s ease, background-color .2s ease, color .2s ease, transform .15s var(--ease-out); }
+.guided-cooking-page .gc-rating-option:hover { transform: translateY(-2px); border-color: #efa04366; color: #d6a46a; }
+.guided-cooking-page .gc-rating-option:active { transform: scale(.92); }
+.guided-cooking-page .gc-rating-option.is-selected > span:first-of-type { display: inline-block; animation: gm-bump .35s var(--ease-out) both; }
+.guided-cooking-page .gc-rating-option:nth-child(2).is-selected > span:first-of-type { animation-delay: .04s; }
+.guided-cooking-page .gc-rating-option:nth-child(3).is-selected > span:first-of-type { animation-delay: .08s; }
+.guided-cooking-page .gc-rating-option:nth-child(4).is-selected > span:first-of-type { animation-delay: .12s; }
+.guided-cooking-page .gc-rating-option:nth-child(5).is-selected > span:first-of-type { animation-delay: .16s; }
+.guided-cooking-page .gc-review-error.is-shaking { animation: gm-shake .4s ease-in-out; }
+.guided-cooking-page #submit-cooking-review-btn:disabled { animation: gm-breathe .9s ease-in-out infinite alternate; }
+.guided-cooking-page .gc-review-comment + textarea { transition: border-color .25s ease, box-shadow .25s ease; }
+.guided-cooking-page .gc-review-comment + textarea:focus { border-color: #ff923799; box-shadow: 0 0 0 3px #ff7a1a17; }
+
+@media (hover: none) {
+  .guided-cooking-page :is(.gc-button, .gc-icon-button):hover:not(:disabled),
+  .guided-cooking-page .gc-rating-option:hover { transform: none; }
+}
+
+/* The global reduced-motion rule shortens animations but keeps their delays,
+   which would leave staggered parts blank for a moment. The page's own rule
+   above already turns transitions off. */
+@media (prefers-reduced-motion: reduce) {
+  .guided-cooking-page *, .guided-cooking-page *::after, .guided-cooking-page ::backdrop { animation-delay: 0s !important; }
+  .guided-cooking-page #progress-indicator-bar::after, .guided-cooking-page .gc-confetti { display: none; }
+}
