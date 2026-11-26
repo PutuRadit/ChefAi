@@ -374,3 +374,144 @@
   .admin-sidebar,
   .admin-sidebar-backdrop { scroll-behavior: auto !important; transition-duration: .01ms !important; animation: none !important; }
 }
+
+/* ---------------------------------------------------------------------------
+   Motion and hover polish. The dashboard is built by /static/js/api.js
+   (setupAdminDashboard); /static/js/pages/admin_dashboard_motion.js only
+   watches that DOM: it counts the stat numbers up, numbers rows, bars and
+   reviews (--i) and sets the is-* classes used below. This page does not load
+   nakena.css, so its reduced-motion rule is at the end of this file.
+   --------------------------------------------------------------------------- */
+#adminSidebar,
+.admin-dashboard-shell { --ease-out: cubic-bezier(.2, .7, .2, 1); }
+
+@keyframes adm-rise { from { opacity: 0; translate: 0 16px; } to { opacity: 1; translate: 0 0; } }
+@keyframes adm-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes adm-pop { from { opacity: 0; scale: .9; } to { opacity: 1; scale: 1; } }
+/* These two move with transform so a hover `translate` still works after
+   the entrance has filled in. */
+@keyframes adm-slide { from { opacity: 0; transform: translateX(-14px); } to { opacity: 1; transform: none; } }
+@keyframes adm-rise-t { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+@keyframes adm-bump { 0% { scale: 1; } 40% { scale: 1.12; } 100% { scale: 1; } }
+@keyframes adm-bar { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@keyframes adm-fill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes adm-breathe { from { opacity: .55; } to { opacity: 1; } }
+@keyframes adm-dialog { from { opacity: 0; translate: 0 14px; scale: .97; } to { opacity: 1; translate: 0 0; scale: 1; } }
+
+/* Entrance: the shell rises once api.js has built it; the sidebar menu and
+   header fade in after the login check (the server hides <body> until then). */
+.admin-dashboard-shell { animation: adm-rise .6s var(--ease-out) both; }
+.admin-dashboard-header { animation: adm-rise .6s var(--ease-out) .08s both; }
+body:not([style*="hidden"]) > .pl-64 > header { animation: adm-fade .5s ease both; }
+body:not([style*="hidden"]) #adminSidebar nav a { animation: adm-slide .45s var(--ease-out) both; }
+body:not([style*="hidden"]) #adminSidebar nav a:nth-child(2) { animation-delay: .04s; }
+body:not([style*="hidden"]) #adminSidebar nav a:nth-child(3) { animation-delay: .08s; }
+body:not([style*="hidden"]) #adminSidebar nav a:nth-child(4) { animation-delay: .12s; }
+body:not([style*="hidden"]) #adminSidebar nav a:nth-child(5) { animation-delay: .16s; }
+body:not([style*="hidden"]) #adminSidebar nav a:nth-child(6) { animation-delay: .2s; }
+
+/* Sidebar links slide a little on hover; their icon nudges. */
+#adminSidebar nav a {
+  transition: background-color .2s ease, color .2s ease, box-shadow .2s ease, translate .2s var(--ease-out);
+}
+#adminSidebar nav a:hover:not([aria-current]) { translate: 3px 0; }
+#adminSidebar nav a .material-symbols-outlined { transition: scale .2s var(--ease-out); }
+#adminSidebar nav a:hover .material-symbols-outlined { scale: 1.15; }
+
+/* Switching views: the new view rises in (replaces the short default). */
+.admin-dashboard-shell .admin-view { animation: adm-rise .45s var(--ease-out) both; }
+
+/* Status lines fade to their new text. */
+.admin-dashboard-status.is-filled { animation: adm-fade .4s ease both; }
+
+/* Stat cards pop in one after another on the first load; numbers count up
+   (admin_dashboard_motion.js) and bump when a refresh changes them. */
+.admin-stats-grid:not(.is-settled) .admin-stat-card {
+  animation: adm-pop .5s var(--ease-out) both;
+  animation-delay: calc(.12s + var(--i, 0) * 70ms);
+}
+.admin-stat-card {
+  transition: translate .3s var(--ease-out), border-color .3s ease, box-shadow .3s ease;
+}
+.admin-stat-card::after { transition: scale .5s var(--ease-out); }
+.admin-stat-card:hover { translate: 0 -3px; border-color: #f3a86638; box-shadow: 0 14px 30px #0000004d; }
+.admin-stat-card:hover::after { scale: 1.35; }
+.admin-stat-value { display: inline-block; font-variant-numeric: tabular-nums; }
+.admin-stat-value.is-bumped { animation: adm-bump .4s var(--ease-out); }
+
+/* Charts: bars grow from the baseline day by day; rating bars fill from the
+   left. Hovering the chart dims the other bars. */
+.admin-dashboard-card { animation: adm-rise .55s var(--ease-out) .3s both; }
+.admin-charts-grid > :nth-child(2) { animation-delay: .38s; }
+.admin-chart-bar {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: adm-bar .7s var(--ease-out) both;
+  animation-delay: calc(.35s + var(--i, 0) * 60ms);
+}
+.admin-chart-bar.is-recipe { animation-delay: calc(.4s + var(--i, 0) * 60ms); }
+.admin-activity-chart svg:hover .admin-chart-bar { opacity: .4; }
+.admin-activity-chart svg:hover .admin-chart-bar:hover { opacity: 1; }
+.admin-legend-item { animation: adm-fade .5s ease .8s both; }
+.admin-rating-fill {
+  transform-origin: 0 50%;
+  animation: adm-fill .8s var(--ease-out) both;
+  animation-delay: calc(.4s + var(--i, 0) * 70ms);
+}
+.admin-rating-row { transition: translate .2s var(--ease-out); }
+.admin-rating-row:hover { translate: 3px 0; }
+
+/* Scan status tiles, review cards and table rows come in one after another
+   whenever they are rendered or their view is opened. */
+.admin-upload-status {
+  animation: adm-pop .45s var(--ease-out) both;
+  animation-delay: calc(.1s + var(--i, 0) * 60ms);
+  transition: translate .3s var(--ease-out), border-color .3s ease;
+}
+.admin-upload-status:hover { translate: 0 -2px; border-color: #54cdaa42; }
+.admin-review-item {
+  animation: adm-rise-t .45s var(--ease-out) both;
+  animation-delay: calc(.1s + min(var(--i, 0), 10) * 50ms);
+  transition: translate .3s var(--ease-out), border-color .3s ease, background-color .3s ease;
+}
+.admin-review-item:hover { translate: 0 -2px; border-color: #f3a86633; background-color: #101c2ee0; }
+.admin-users-table tbody tr {
+  animation: adm-fade .4s ease both;
+  animation-delay: calc(.08s + min(var(--i, 0), 14) * 30ms);
+  transition: background-color .2s ease;
+}
+.admin-logs-empty { animation: adm-fade .5s ease .15s both; }
+
+/* Buttons */
+.admin-refresh-button:active:not(:disabled),
+.admin-export-button:active:not(:disabled),
+.admin-page-button:active:not(:disabled) { transform: translateY(0) scale(.97); }
+.admin-refresh-button:disabled { animation: adm-breathe .8s ease-in-out infinite alternate; }
+.admin-export-button .material-symbols-outlined { transition: translate .25s var(--ease-out); }
+.admin-export-button:hover:not(:disabled) .material-symbols-outlined { translate: 0 2px; }
+.admin-users-table td button { transition: background-color .2s ease, translate .2s var(--ease-out); }
+.admin-users-table td button:hover:not(:disabled) { translate: 0 -1px; }
+.admin-users-table td button:disabled { animation: adm-breathe .8s ease-in-out infinite alternate; }
+
+/* Photo dialog rises in over a fading backdrop; the photo fades in once loaded. */
+.admin-image-dialog[open] { animation: adm-dialog .3s var(--ease-out) both; }
+.admin-image-dialog[open]::backdrop { animation: adm-fade .3s ease both; }
+.admin-upload-preview:not([hidden]) { animation: adm-fade .4s ease both; }
+.admin-image-close { transition: background-color .2s ease; }
+.admin-image-close:hover { background-color: #26364d; }
+
+@media (hover: none) {
+  .admin-stat-card:hover,
+  .admin-upload-status:hover,
+  .admin-review-item:hover,
+  .admin-rating-row:hover,
+  #adminSidebar nav a:hover:not([aria-current]) { translate: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-dashboard-shell,
+  .admin-dashboard-shell *,
+  .admin-dashboard-shell ::backdrop,
+  body > .pl-64 > header,
+  #adminSidebar nav a { animation: none !important; transition-duration: .01ms !important; }
+}
