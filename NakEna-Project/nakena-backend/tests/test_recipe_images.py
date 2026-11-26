@@ -7,7 +7,7 @@ import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
-from urllib.error import URLError
+from urllib.error import HTTPError, URLError
 from urllib.parse import parse_qs, urlsplit
 
 os.environ.setdefault("SECRET_KEY", "image-test-key-image-test-key-1234567890")
@@ -134,6 +134,38 @@ class RecipeImageTests(unittest.TestCase):
         ):
             result = images.find_recipe_image("Ayam goreng")
         self.assertEqual(result["status"], "not_found")
+
+    def test_cdn_copy_is_downloaded_before_the_rate_limited_get_url(self):
+        preview = "https://cdn.pixabay.com/photo/2020/01/01/00/00/chicken-1234_150.jpg"
+        with patch.object(images, "_get_json", return_value={"hits": [hit(previewURL=preview)]}), patch.object(
+            images, "_get_bytes", return_value=("image/jpeg", JPEG)
+        ) as download:
+            result = images.find_recipe_image("Ayam Goreng")
+        self.assertEqual(result["status"], "ok")
+        self.assertEqual(download.call_count, 1)
+        self.assertEqual(download.call_args.args[0], preview.replace("_150.", "_640."))
+
+    def test_refused_download_falls_back_to_the_next_url(self):
+        preview = "https://cdn.pixabay.com/photo/2020/01/01/00/00/chicken-1234_150.jpg"
+        refused = HTTPError(preview.replace("_150.", "_640."), 429, "Too Many Requests", {}, None)
+        with patch.object(images, "_get_json", return_value={"hits": [hit(previewURL=preview)]}), patch.object(
+            images, "_get_bytes", side_effect=[refused, ("image/jpeg", JPEG)]
+        ) as download:
+            result = images.find_recipe_image("Ayam Goreng")
+        self.assertEqual(result["status"], "ok")
+        self.assertEqual(download.call_count, 2)
+        self.assertEqual(download.call_args.args[0], hit()["webformatURL"])
+
+    def test_all_refused_downloads_are_temporary_not_cached_as_not_found(self):
+        refused = HTTPError(hit()["webformatURL"], 429, "Too Many Requests", {}, None)
+        hits = [hit(id=index, webformatURL=f"https://pixabay.com/get/test{index}_640.jpg") for index in range(6)]
+        with patch.object(images, "_get_json", return_value={"hits": hits}), patch.object(
+            images, "_get_bytes", side_effect=refused
+        ) as download:
+            result = images.find_recipe_image("Ayam Goreng")
+        self.assertEqual(result["status"], "unavailable")
+        self.assertEqual(download.call_count, images._MAX_DOWNLOAD_ATTEMPTS)
+        self.assertEqual(list((Path(self.temp_dir.name) / "recipe_images").glob("*.json")), [])
 
     def test_api_key_is_not_logged_or_returned_to_frontend(self):
         with patch.object(images, "urlopen", return_value=FakeResponse(b'{"hits":[]}', "application/json")) as request:

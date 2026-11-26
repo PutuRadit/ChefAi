@@ -21,6 +21,7 @@ _TTL = 24 * 60 * 60
 _FAILURE_TTL = 60
 _MAX_CACHE = 128
 _MAX_IMAGE_BYTES = 8 * 1024 * 1024
+_MAX_DOWNLOAD_ATTEMPTS = 4
 _EXTENSIONS = {"image/jpeg": "jpg", "image/png": "png", "image/webp": "webp"}
 
 
@@ -129,6 +130,25 @@ def _safe_image_url(value):
     return value if parts.scheme == "https" and allowed and not parts.username and not parts.password else ""
 
 
+def _image_urls(hit):
+    """Download URLs for one hit, best first.
+
+    Cloudflare in front of pixabay.com/get/ answers server downloads with
+    HTTP 429, while cdn.pixabay.com serves the same 640 px size: Pixabay
+    documents swapping the size suffix of a CDN URL (_150 -> _640). The API's
+    own image URLs stay as fallbacks.
+    """
+    urls = []
+    preview = _safe_image_url(hit.get("previewURL"))
+    if preview and urlsplit(preview).netloc == "cdn.pixabay.com" and "_150." in preview:
+        urls.append(preview.replace("_150.", "_640.", 1))
+    for field in ("webformatURL", "largeImageURL"):
+        url = _safe_image_url(hit.get(field))
+        if url and url not in urls:
+            urls.append(url)
+    return urls
+
+
 def _safe_page_url(value):
     if not isinstance(value, str):
         return ""
@@ -191,20 +211,36 @@ def _lookup(query, api_key, cache_path):
     for hit in hits:
         if not isinstance(hit, dict) or hit.get("type") != "photo":
             continue
-        image_url = _safe_image_url(hit.get("webformatURL") or hit.get("largeImageURL"))
+        image_urls = _image_urls(hit)
         page_url = _safe_page_url(hit.get("pageURL"))
-        if image_url and page_url:
+        if image_urls and page_url:
             tags = str(hit.get("tags") or "").casefold()
             score = sum(1 for word in query.split() if word.casefold() in tags)
-            candidates.append((score, hit, image_url, page_url))
+            candidates.append((score, hit, image_urls, page_url))
     if not candidates:
         result = _empty("not_found", query)
         _persist_metadata(cache_path, result)
         return result
 
     candidates.sort(key=lambda candidate: candidate[0], reverse=True)
-    for _, hit, image_url, page_url in candidates:
-        content_type, image_data = _get_bytes(image_url, limit=_MAX_IMAGE_BYTES)
+    downloads = [
+        (hit, image_url, page_url)
+        for _, hit, image_urls, page_url in candidates
+        for image_url in image_urls
+    ][:_MAX_DOWNLOAD_ATTEMPTS]
+    last_error = None
+    for hit, image_url, page_url in downloads:
+        # One refused or broken download must not cost the whole recipe its
+        # photo: try the next URL or candidate instead.
+        try:
+            content_type, image_data = _get_bytes(image_url, limit=_MAX_IMAGE_BYTES)
+        except (URLError, OSError, ValueError) as error:
+            last_error = error
+            logger.info(
+                "Pixabay image download failed (%s, HTTP %s); trying the next one",
+                type(error).__name__, getattr(error, "code", "-"),
+            )
+            continue
         extension = _EXTENSIONS.get(content_type)
         if not extension or not _is_image(content_type, image_data):
             continue
@@ -224,6 +260,11 @@ def _lookup(query, api_key, cache_path):
         }
         _persist_metadata(cache_path, result)
         return result
+    if last_error is not None:
+        # Every download was refused: a temporary problem, so report it as
+        # unavailable (retried after a minute) instead of caching "not_found"
+        # for a whole day.
+        raise last_error
     result = _empty("not_found", query)
     _persist_metadata(cache_path, result)
     return result
